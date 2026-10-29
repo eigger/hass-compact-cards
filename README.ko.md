@@ -12,6 +12,11 @@ Home Assistant를 위한 작고 정돈된 대시보드 커스텀 카드 모음�
 | --- | --- |
 | `custom:compact-climate-row` | 운전 모드와 설정 온도를 한 줄로 제어하는 기후 카드 |
 | `custom:compact-home-panel` | 제어, 센서, 제목, 메모, 탐색, 사용량 비교를 묶는 패널 |
+| `custom:compact-light-row` | 전원·밝기·색온도를 직접 제어하는 조명 행 |
+| `custom:compact-cover-row` | 열기·정지·닫기·위치를 직접 제어하는 커튼 행 |
+
+[조명·커튼 설정 가이드](docs/light-cover.md). 홈 패널의 `items`에서도 `type: light`, `type: cover`로 사용할 수 있습니다.
+
 
 ## HACS 설치
 
@@ -27,7 +32,7 @@ url: /hacsfiles/hass-compact-cards/compact-cards.js
 type: module
 ```
 
-위 경로는 GitHub 저장소 이름이 `hass-compact-cards`인 경우입니다. 다른 이름으로 게시했다면 해당 경로도 변경하세요. `compact-cards.js` 하나에 두 카드가 모두 포함되어 있습니다.
+위 경로는 GitHub 저장소 이름이 `hass-compact-cards`인 경우입니다. 다른 이름으로 게시했다면 해당 경로도 변경하세요. `compact-cards.js` 하나에 모든 카드가 포함되어 있습니다.
 
 ## 수동 설치
 
@@ -83,7 +88,7 @@ items:
 
 ### `custom:compact-home-panel`
 
-`items`에 아래 항목을 조합합니다. 일반 엔티티 항목은 두 열로 표시하고 380px 이하에서는 한 열로 전환합니다. `columns`는 `auto`(기본), `1`, `2`로 설정할 수 있습니다. 제목·메모·냉난방·비교·탐색과 select 항목은 전체 너비를 사용합니다.
+`items`에 아래 항목을 조합합니다. 일반 엔티티 항목은 두 열로 표시하고 380px 이하에서는 한 열로 전환합니다. `columns`는 `auto`(기본), `1`, `2`로 설정할 수 있습니다. 제목·메모·냉난방·조명 행·커튼·비교·탐색과 select 항목은 전체 너비를 사용합니다.
 
 | 항목 | 필드와 동작 |
 | --- | --- |
