@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add capability-aware media playback and volume controls, per-card guides and representative browser screenshots for all seven cards.
+
 - Add one-tap scene/script shortcuts and compact environment readings with explicit warning thresholds.
 
 - Add direct light and cover rows with capability-aware controls, committed sliders and shared home-panel embedding.
