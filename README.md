@@ -92,7 +92,7 @@ items:
 
 Replace entity IDs with those in your installation. More examples are available in [examples/dashboard.yaml](examples/dashboard.yaml).
 
-You can also choose **Compact climate row** or **Compact home panel** in the card picker. Configure them in the YAML editor; a visual configuration editor is not provided.
+All seven cards appear in the card picker and include a [visual configuration editor](docs/visual-editor.md). YAML configuration remains supported.
 
 Built-in control labels and notifications currently use Korean.
 

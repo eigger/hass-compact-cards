@@ -112,3 +112,9 @@ test('native fallback note editor preserves and edits multiline text without fla
   assert.equal(editor._config.items[0].future,'keep');assert.equal(original.items[0].name,'First line\nSecond line\n\nFourth line');
   editor.setConfig(events[0].detail.config);assert.equal(editor.shadowRoot.querySelector('textarea').value,'Updated first line\nSecond line\n');
 });
+test('native text input previews each edit without waiting for blur or replacing focus node',async t=>{
+  const {window,editor,events}=await setup(t,'compact-light-row',{entity:'light.room'},false);
+  const input=editor.shadowRoot.querySelector('input[data-field="name"]');input.value='거실';input.dispatchEvent(new window.Event('input'));
+  assert.equal(events.at(-1).detail.config.name,'거실');assert.equal(editor.shadowRoot.querySelector('input[data-field="name"]'),input);
+  input.dispatchEvent(new window.Event('change'));assert.equal(events.length,1);
+});

@@ -878,6 +878,7 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
           if(selector.number&&next!==undefined&&!Number.isFinite(next))return;
           this._update(path,{[item.name]:next},[item]);
         };
+        if(input.type==='text'||input.localName==='textarea')input.oninput=input.onchange;
         label.append(input);form.append(label);
       }
     }
