@@ -51,3 +51,13 @@ test('pending volume never restores focus after the user moves to transport cont
  q('.play').focus();assert.equal(card.shadowRoot.activeElement,q('.play'));resolve();await pending;assert.equal(card.shadowRoot.activeElement,q('.play'));
  hass.states['media_player.room'].state='unavailable';slider.focus();card.hass=hass;assert.equal(slider.disabled,true);
 });
+
+test('mute-only devices use a compact main-row control and adapt to changing volume support',async t=>{
+ const {card,hass,calls,q}=setup(t,'compact-media-row',{entity:'media_player.room'},{'media_player.room':state('media_player.room','playing',{supported_features:8,is_volume_muted:true})});
+ assert.equal(q('.mute').parentElement,q('.main'));assert.equal(q('.mute').hidden,false);assert.equal(q('.mute').disabled,false);assert.equal(q('.volume').hidden,true);assert.equal(q('input').hidden,true);assert.equal(q('output').hidden,true);
+ q('.mute').click();await new Promise(setImmediate);assert.equal(calls[0][1],'volume_mute');assert.equal(calls[0][2].is_volume_muted,false);
+ hass.states['media_player.room'].attributes.supported_features=12;hass.states['media_player.room'].attributes.volume_level=.5;card.hass=hass;
+ assert.equal(q('.mute').parentElement,q('.volume'));assert.equal(q('.volume').hidden,false);assert.equal(q('input').hidden,false);assert.equal(q('output').hidden,false);
+ hass.states['media_player.room'].attributes.supported_features=8;card.hass=hass;assert.equal(q('.mute').parentElement,q('.main'));assert.equal(q('.volume').hidden,true);
+ card.setConfig({entity:'media_player.room',show_volume:false});assert.equal(q('.mute').hidden,true);assert.equal(q('.volume').hidden,true);assert.match(q('.state').textContent,/음소거/);
+});
