@@ -4,6 +4,32 @@ function compactText(el, value) { const text=String(value ?? '');if(el.textConte
 function compactAttr(el, key, value) { const text=String(value);if(el.getAttribute(key)!==text)el.setAttribute(key,text); }
 function compactProp(el, key, value) { if(el[key]!==value)el[key]=value; }
 function compactStyle(el, key, value) { if(el.style.getPropertyValue(key)!==value)el.style.setProperty(key,value); }
+// Feedback describes a service request, never an assumed physical device state.
+function compactClearFeedback(host) {
+  clearTimeout(host._feedbackTimer);host._feedbackTimer=undefined;
+  host._feedbackEpoch=(host._feedbackEpoch||0)+1;host.removeAttribute('data-feedback');
+  if(host._feedbackText)compactText(host._feedbackText,'');
+}
+function compactFeedback(host,status,message,epoch) {
+  if(epoch!==undefined && epoch!==host._feedbackEpoch)return;
+  clearTimeout(host._feedbackTimer);
+  if(epoch===undefined)host._feedbackEpoch=(host._feedbackEpoch||0)+1;
+  compactAttr(host,'data-feedback',status);compactText(host._feedbackText,message);
+  if(status!=='pending')host._feedbackTimer=setTimeout(()=>{compactClearFeedback(host);host._render();},1800);
+  return host._feedbackEpoch;
+}
+function compactInteractions(host) {
+  const style=document.createElement('style');
+  style.textContent=`button{touch-action:manipulation;transition:transform 100ms ease,background-color 150ms ease,color 150ms ease}
+    button:active:not(:disabled){transform:scale(.96);background:color-mix(in srgb,var(--primary-color) 12%,transparent)}
+    :host([data-feedback=pending]) ha-card{box-shadow:inset 0 2px var(--primary-color)}
+    :host([data-feedback=success]) ha-card{box-shadow:inset 0 2px var(--success-color,#43a047)}
+    :host([data-feedback=error]) ha-card{box-shadow:inset 0 2px var(--error-color,#db4437)}
+    .compact-feedback{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+    @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}}`;
+  const status=document.createElement('span');status.className='compact-feedback';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+  host.shadowRoot.append(style,status);host._feedbackText=status;
+}
 class CompactClimateRow extends HTMLElement {
   constructor() {
     super();
@@ -20,7 +46,7 @@ class CompactClimateRow extends HTMLElement {
         .modes button{transition:color 180ms ease,background-color 180ms ease}
         output{transition:color 180ms ease}
         .modes button.just-changed{animation:compact-mode-press 180ms ease-out}
-        ha-icon.running[data-motion=fan]{animation:compact-fan 1.8s linear infinite}
+        ha-icon.running[data-motion=fan]{animation:compact-fan 2.6s linear infinite}
         ha-icon.running[data-motion=heating],ha-icon.running[data-motion=cooling]{animation:compact-breathe 2s ease-in-out infinite}
         ha-icon.running[data-motion=drying]{animation:compact-dry 2.2s ease-in-out infinite}
         @keyframes compact-mode-press{0%{transform:scale(.92)}100%{transform:scale(1)}}
@@ -51,6 +77,7 @@ class CompactClimateRow extends HTMLElement {
           <button class="minus" aria-label="설정 온도 낮추기">−</button><output aria-live="polite">—</output><button class="plus" aria-label="설정 온도 높이기">+</button>
         </div>
       </ha-card>`;
+    compactInteractions(this);
     this.shadowRoot.querySelector('.info').onclick = () => this.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: this._config.entity }, bubbles: true, composed: true }));
     this.shadowRoot.querySelector('.minus').onclick = () => this._step(-1);
     this.shadowRoot.querySelector('.plus').onclick = () => this._step(1);
@@ -58,11 +85,13 @@ class CompactClimateRow extends HTMLElement {
   setConfig(config) {
     if (typeof config?.entity !== 'string' || !config.entity.startsWith('climate.')) throw new Error('climate 엔티티가 필요합니다.');
     const key=JSON.stringify(config);if(this._configKey===key)return;this._configKey=key;
+    compactClearFeedback(this);
     this._config = { ...config };
     if(this.hasAttribute('embedded')!==Boolean(config.embedded))this.toggleAttribute('embedded', Boolean(config.embedded));
     this._render();
   }
   set hass(value) { this._hass = value; this._render(); }
+  disconnectedCallback(){compactClearFeedback(this);}
   getCardSize() { return (this._hass?.states[this._config?.entity]?.attributes.hvac_modes?.length || 0) > 3 ? 2 : 1; }
   static getStubConfig(hass) {
     return { entity: Object.keys(hass?.states || {}).find(id => id.startsWith('climate.')) || 'climate.living_room' };
@@ -143,9 +172,11 @@ class CompactClimateRow extends HTMLElement {
     if (this._busy || !this._hass || !this._config) return;
     const state = this._hass.states[this._config.entity];
     if (!state || ['unknown','unavailable'].includes(state.state)) return;
+    const feedback=compactFeedback(this,'pending','변경 요청 중');
     this._busy = true; this._render();
-    try { await this._hass.callService('climate', service, { entity_id: this._config.entity, ...data }); }
+    try { await this._hass.callService('climate', service, { entity_id: this._config.entity, ...data });compactFeedback(this,'success','요청 전달됨',feedback); }
     catch (error) {
+      compactFeedback(this,'error','요청 실패',feedback);
       this.dispatchEvent(new CustomEvent('hass-notification', { detail: { message: '냉난방 변경 실패: ' + (error?.message || error) }, bubbles: true, composed: true }));
     } finally { this._busy = false; this._render(); }
   }
@@ -226,6 +257,7 @@ class CompactHomePanel extends HTMLElement {
       @media(pointer:coarse){button,select,.subheading button,td button{min-height:44px}.switch{min-width:44px}}
       @media(prefers-reduced-motion:reduce){.track,.track:after,ha-icon,.value{transition:none!important}}
     </style><ha-card><div class="items"></div></ha-card>`;
+    compactInteractions(this);
   }
   setConfig(config) {
     if (!Array.isArray(config?.items)) throw new Error('items 목록이 필요합니다.');
@@ -243,9 +275,11 @@ class CompactHomePanel extends HTMLElement {
       if (item.tap_action && (item.tap_action.action !== 'perform-action' || typeof item.tap_action.perform_action !== 'string' || !/^[a-z_]+\.[a-z0-9_]+$/.test(item.tap_action.perform_action))) fail('tap_action에 perform-action과 domain.service 형식의 perform_action이 필요합니다.');
     }
     const key=JSON.stringify(config);if(this._configKey===key)return;this._configKey=key;
+    compactClearFeedback(this);
     this._config = config; this.setAttribute('columns',config.columns ?? 'auto'); this._build(); this._render();
   }
   set hass(hass) { this._hass = hass; this._render(); }
+  disconnectedCallback(){compactClearFeedback(this);}
   getCardSize() { return Math.max(1, Math.ceil((this._config?.items.length || 1) * 40 / 50)); }
   static getStubConfig(hass) {
     const entity = Object.keys(hass?.states || {}).find(id => /^(light|switch|sensor)\./.test(id));
@@ -366,9 +400,10 @@ class CompactHomePanel extends HTMLElement {
   async _call(ref,domain,service,data,target) {
     const id=ref.item.entity,state=this._hass?.states[id];
     if (!state || ['unknown','unavailable'].includes(state.state) || this._busy.has(id)) return;
+    const feedback=compactFeedback(this,'pending','변경 요청 중');
     this._busy.add(id);this._render();
-    try {await this._hass.callService(domain,service,data,undefined,target);}
-    catch(error) {this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'변경 실패: '+(error?.message || error)},bubbles:true,composed:true}));}
+    try {await this._hass.callService(domain,service,data,undefined,target);compactFeedback(this,'success','요청 전달됨',feedback);}
+    catch(error) {compactFeedback(this,'error','요청 실패',feedback);this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'변경 실패: '+(error?.message || error)},bubbles:true,composed:true}));}
     finally {this._busy.delete(id);this._render();}
   }
 }
@@ -407,8 +442,10 @@ class CompactControlRow extends HTMLElement {
       .slider ha-icon{--mdc-icon-size:16px;width:16px;height:16px;color:var(--secondary-text-color)}
       @container(max-width:360px){ha-card{gap:4px 8px}.info{flex-basis:84px}}
       @media(pointer:coarse){button,input{min-height:44px}.controls button{min-width:44px}}
+      .open.moving ha-icon{animation:compact-opening 1.4s ease-in-out infinite}.close.moving ha-icon{animation:compact-closing 1.4s ease-in-out infinite}@keyframes compact-opening{0%,100%{transform:translateY(1px)}50%{transform:translateY(-2px)}}@keyframes compact-closing{0%,100%{transform:translateY(-1px)}50%{transform:translateY(2px)}}@media(prefers-reduced-motion:reduce){.moving ha-icon{animation:none!important}}
       :host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding:4px 0}
     </style><ha-card><button class="info"><span class="name"></span><span class="state"></span></button><div class="controls"></div></ha-card>`;
+    compactInteractions(this);
     this._card = this.shadowRoot.querySelector('ha-card');
     this.shadowRoot.querySelector('.info').onclick = () => {
       if(this._config)this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:this._config.entity},bubbles:true,composed:true}));
@@ -418,11 +455,13 @@ class CompactControlRow extends HTMLElement {
     if(typeof config?.entity !== 'string' || !new RegExp(`^${this._domain}\\.[a-z0-9_]+$`).test(config.entity)) throw new Error(`${this._domain} 엔티티가 필요합니다.`);
     if(config.name !== undefined && typeof config.name !== 'string') throw new Error('name은 문자열이어야 합니다.');
     if(this._config?.entity !== config.entity)this._editing.clear();
+    compactClearFeedback(this);
     this._config = {...config};
     this.toggleAttribute('embedded',Boolean(config.embedded));
     this._render();
   }
   set hass(hass) {this._hass=hass;this._render();}
+  disconnectedCallback(){compactClearFeedback(this);this._editing.clear();for(const ref of [this._brightness,this._kelvin,this._position])if(ref){clearTimeout(ref.timer);ref.pending=undefined;}}
   getCardSize() {return 2;}
   getGridOptions() {return {columns:12,min_columns:6};}
   _button(key,label,icon,action) {
@@ -479,9 +518,11 @@ class CompactControlRow extends HTMLElement {
     if(!entity || this._offline(this._state()) || (this._busy.has(entity)&&!interrupt))return;
     const token=interrupt?`${entity}:stop`:entity;
     if(this._busy.has(token))return;
+    const feedback=compactFeedback(this,'pending','변경 요청 중');
     const hass=this._hass;this._busy.add(token);this._render();
-    try {await hass.callService(this._domain,service,{entity_id:entity,...data});}
+    try {await hass.callService(this._domain,service,{entity_id:entity,...data});compactFeedback(this,'success','요청 전달됨',feedback);}
     catch(error) {
+      compactFeedback(this,'error','요청 실패',feedback);
       for(const ref of [this._brightness,this._kelvin,this._position])if(ref?.pending?.entity===entity){clearTimeout(ref.timer);ref.pending=undefined;}
       this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'변경 실패: '+(error?.message || error)},bubbles:true,composed:true}));
     }
@@ -501,6 +542,7 @@ class CompactLightRow extends CompactControlRow {
     const state=this._state(),a=state?.attributes || {},offline=this._offline(state),busy=this._busy.has(this._config.entity);
     this._renderInfo(state);
     compactProp(this._toggle,'disabled',offline||busy);compactAttr(this._toggle,'aria-busy',busy);compactAttr(this._toggle,'aria-pressed',state?.state==='on');
+    compactAttr(this._toggle,'aria-label',`${this._config.name||a.friendly_name||this._config.entity} ${state?.state==='on'?'끄기':'켜기'}`);
     const modes=Array.isArray(a.supported_color_modes)?a.supported_color_modes:[];
     const brightness=modes.some(mode=>['brightness','color_temp','hs','xy','rgb','rgbw','rgbww','white'].includes(mode));
     this._syncSlider(this._brightness,state?.state==='off'?0:(Number.isFinite(a.brightness)?Math.round(a.brightness/255*100):NaN),brightness,offline||busy);
@@ -528,6 +570,7 @@ class CompactCoverRow extends CompactControlRow {
       button.disabled=offline || (button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
       compactAttr(button,'aria-busy',button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
     }
+    this._open.classList.toggle('moving',!offline&&state.state==='opening');this._close.classList.toggle('moving',!offline&&state.state==='closing');
     this._syncSlider(this._position,a.current_position,Boolean(features&4),offline||busy);
   }
 }
@@ -580,13 +623,16 @@ for(const [type,constructor,name,description] of [
     constructor() {
       super(); this.attachShadow({mode:'open'});
       this.shadowRoot.innerHTML = `<style>${styles}</style><ha-card><h2 hidden></h2><div class="grid"></div></ha-card>`;
+      compactInteractions(this);
       this._refs = []; this._busy = new Set();
     }
     set hass(value) { this._hass = value; this._render(); }
+    disconnectedCallback(){compactClearFeedback(this);}
     getCardSize() { return Math.max(1, Math.ceil((this._config?.items.length || 1) / (Number(this._config?.columns) || 3)) + (this._config?.name ? 1 : 0)); }
     getGridOptions() { return {columns:12}; }
     _configure(config) {
       // Own configuration so later caller mutations do not bypass validation.
+      compactClearFeedback(this);
       this._config = JSON.parse(JSON.stringify(config));
       const heading = this.shadowRoot.querySelector('h2');
       compactText(heading, config.name || ''); heading.hidden = !config.name;
@@ -628,7 +674,7 @@ for(const [type,constructor,name,description] of [
         const busy = this._busy.has(ref.item.entity), running = state?.entity_id.startsWith('script.') && state.state === 'on';
         const available = this._available(state);
         compactText(ref.label,name);
-        compactText(ref.detail,busy ? '실행 요청 중…' : !available ? '확인 불가' : running ? '실행 중' : '실행');
+        compactText(ref.detail,busy ? '실행 요청 중…' : !available ? '확인 불가' : running ? '실행 중' : this.getAttribute('data-feedback')==='success' && this._feedbackEntity===ref.item.entity ? '요청 전달됨' : '실행');
         compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || (ref.item.entity.startsWith('scene.') ? 'mdi:palette-outline' : 'mdi:play'));
         compactProp(ref.button,'disabled',!available || busy || running);
         compactAttr(ref.button,'aria-busy',busy);
@@ -640,9 +686,11 @@ for(const [type,constructor,name,description] of [
       const id = ref.item.entity, state = this._hass?.states[id];
       if (!this._available(state) || this._busy.has(id) || (id.startsWith('script.') && state.state === 'on')) return;
       if (ref.item.confirmation && !window.confirm(ref.item.confirmation)) return;
+      this._feedbackEntity=id;
+      const feedback=compactFeedback(this,'pending','실행 요청 중');
       this._busy.add(id); this._render();
-      try { await this._hass.callService(id.split('.')[0],'turn_on',{entity_id:id}); }
-      catch(error) { this._notify('실행 실패: ' + (error?.message || error)); }
+      try { await this._hass.callService(id.split('.')[0],'turn_on',{entity_id:id});compactFeedback(this,'success','요청 전달됨',feedback); }
+      catch(error) { compactFeedback(this,'error','요청 실패',feedback);this._notify('실행 실패: ' + (error?.message || error)); }
       finally { this._busy.delete(id); this._render(); }
     }
   }
@@ -719,12 +767,13 @@ class CompactMediaRow extends HTMLElement {
       button:hover:not(:disabled){background:var(--secondary-background-color)}button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}button[aria-busy=true]{cursor:progress;background:var(--secondary-background-color)}
       .name,.title,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.name{font-size:12px;color:var(--secondary-text-color)}.title{font-size:14px;line-height:20px}.state{font-size:12px;color:var(--secondary-text-color)}
-      ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color)}
+      ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:after{content:'';position:absolute;width:4px;height:4px;border-radius:50%;background:currentColor;bottom:4px;left:calc(50% - 2px)}
       .volume{display:flex;align-items:center;gap:8px;min-height:32px;padding-inline:4px}.volume ha-icon{margin:0;color:var(--secondary-text-color);width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
       [hidden]{display:none!important}:host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding-inline:0}
       @media(pointer:coarse){button{min-width:44px;min-height:44px}.volume{min-height:44px}.volume input{height:40px}}
       @media(prefers-reduced-motion:reduce){button{transition:none}}
     </style><ha-card><div class="main"><button class="info"><span class="name"></span><span class="title"></span><span class="state"></span></button><button class="play"><ha-icon></ha-icon></button><button class="next" aria-label="다음 곡" title="다음 곡"><ha-icon icon="mdi:skip-next"></ha-icon></button></div><div class="volume"><ha-icon icon="mdi:volume-medium"></ha-icon><input type="range" min="0" max="100" step="1" aria-label="음량"><output></output></div></ha-card>`;
+    compactInteractions(this);
     this._q('.info').onclick=()=>{if(this._config)this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:this._config.entity},bubbles:true,composed:true}));};
     this._q('.play').onclick=()=>this._call(this._playAction());
     this._q('.next').onclick=()=>this._call('media_next_track');
@@ -743,6 +792,7 @@ class CompactMediaRow extends HTMLElement {
     for(const key of ['show_volume','show_next','embedded'])if(config[key]!==undefined&&typeof config[key]!=='boolean')throw new Error(`${key}는 true 또는 false여야 합니다.`);
     if(config.name!==undefined&&typeof config.name!=='string')throw new Error('name은 문자열이어야 합니다.');
     if(this._config?.entity!==config.entity){this._editingVolume=false;this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
+    compactClearFeedback(this);
     this._config={...config};this.toggleAttribute('embedded',Boolean(config.embedded));this._render();
   }
   set hass(value){this._hass=value;this._render();}
@@ -766,6 +816,7 @@ class CompactMediaRow extends HTMLElement {
     const labels={off:'꺼짐',on:'켜짐',idle:'대기',playing:'재생 중',paused:'일시정지',buffering:'버퍼링',standby:'대기'};
     compactText(this._q('.state'),this._busy?'처리 중…':offline?'연결을 확인하세요':[a.media_artist,this._hass.formatEntityState?.(state)||labels[state.state]||state.state].filter(Boolean).join(' · '));
     compactProp(this._q('.info'),'title',`${name} · ${a.media_title||''} · ${a.media_artist||''}`);
+    this._q('.play').classList.toggle('playing',!offline&&state.state==='playing');
     const action=this._playAction(),play=this._q('.play'),label={turn_on:'전원 켜기',media_pause:'일시정지',media_play:'재생'}[action];
     const actionBit={turn_on:128,media_pause:1,media_play:16384}[action];
     play.hidden=!offline&&!this._supports(actionBit);compactAttr(play,'aria-label',`${name} ${label}`);compactProp(play,'title',label);
@@ -786,12 +837,13 @@ class CompactMediaRow extends HTMLElement {
   }
   async _call(service,data={}){
     if(this._busy||!this._allowed(service))return false;
+    const feedback=compactFeedback(this,'pending','변경 요청 중');
     this._busy=true;this._render();
-    try{await this._hass.callService('media_player',service,{entity_id:this._config.entity,...data});return true;}
-    catch(error){this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'미디어 변경 실패: '+(error?.message||error)},bubbles:true,composed:true}));return false;}
+    try{await this._hass.callService('media_player',service,{entity_id:this._config.entity,...data});compactFeedback(this,'success','요청 전달됨',feedback);return true;}
+    catch(error){compactFeedback(this,'error','요청 실패',feedback);this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'미디어 변경 실패: '+(error?.message||error)},bubbles:true,composed:true}));return false;}
     finally{this._busy=false;this._render();}
   }
-  disconnectedCallback(){clearTimeout(this._volumeTimer);this._pendingVolume=undefined;this._editingVolume=false;}
+  disconnectedCallback(){compactClearFeedback(this);clearTimeout(this._volumeTimer);this._pendingVolume=undefined;this._editingVolume=false;}
 }
 if(!customElements.get('compact-media-row'))customElements.define('compact-media-row',CompactMediaRow);
 window.customCards=window.customCards||[];
