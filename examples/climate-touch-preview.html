@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Climate touch layout regression fixture</title>
+<style>
+body{font-family:system-ui;margin:16px;background:#fafafa;color:#212121;--primary-text-color:#212121;--secondary-text-color:#666;--primary-color:#03a9f4;--divider-color:#ddd;--card-background-color:#fff;--state-active-color:#03a9f4;--state-inactive-color:#888}
+.fixture{width:min(550px,100%);border:1px solid #ddd;background:#fff}p{max-width:550px;font-size:14px}
+</style>
+<p>Touch regression: emulate a coarse pointer in browser device mode. At 550px, seven mode buttons must appear below the name and temperature. No controls may be clipped. Narrow the viewport to verify wrapping at 320px.</p>
+<div class="fixture"><compact-climate-row></compact-climate-row></div>
+<script src="../compact-cards.js"></script>
+<script>
+customElements.define('ha-icon',class extends HTMLElement {
+  static observedAttributes=['icon'];
+  attributeChangedCallback(){this.textContent={'mdi:power':'⏻','mdi:fire':'♨','mdi:snowflake':'❄','mdi:water-percent':'♧','mdi:fan':'✣','mdi:alpha-a-circle':'A','mdi:thermostat-auto':'↔'}[this.getAttribute('icon')]||'•';}
+});
+const card=document.querySelector('compact-climate-row');
+card.setConfig({entity:'climate.room',name:'Living room climate'});
+card.hass={states:{'climate.room':{entity_id:'climate.room',state:'cool',attributes:{temperature:23,current_temperature:25,min_temp:16,max_temp:30,supported_features:1,hvac_modes:['off','heat','cool','dry','fan_only','auto','heat_cool']}}},callService:async()=>{}};
+</script>
+</html>

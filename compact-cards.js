@@ -41,7 +41,7 @@ class CompactClimateRow extends HTMLElement {
         output{font-size:14px;font-variant-numeric:tabular-nums;min-width:39px;text-align:center;white-space:nowrap}
         @container(max-width:380px){ha-card{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px;gap:2px 6px}.modes{grid-row:2;grid-column:1/-1;flex-wrap:wrap}.temperature{grid-column:2;grid-row:1;border:0;padding:0}}
         @container(max-width:540px){ha-card.many-modes{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.many-modes .modes{grid-row:2;grid-column:1/-1;flex-wrap:wrap}.many-modes .temperature{grid-column:2;grid-row:1;border:0;padding:0}}
-        @media(pointer:coarse){button{min-height:44px}.modes button,.temperature button{width:44px}.modes{flex-wrap:wrap;max-width:100%}@container(max-width:440px){ha-card{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.modes{grid-row:2;grid-column:1/-1}.temperature{grid-column:2;grid-row:1;border:0;padding:0}}}
+        @media(pointer:coarse){button{min-height:44px}.modes button,.temperature button{width:44px}.modes{flex-wrap:wrap;max-width:100%}@container(max-width:640px){ha-card.many-modes{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.many-modes .modes{grid-row:2;grid-column:1/-1}.many-modes .temperature{grid-column:2;grid-row:1;border:0;padding:0}}@container(max-width:440px){ha-card{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.modes{grid-row:2;grid-column:1/-1}.temperature{grid-column:2;grid-row:1;border:0;padding:0}}}
         :host([embedded]) ha-card{min-height:48px;border:0;box-shadow:none;background:transparent;padding:4px 0}
       </style>
       <ha-card>
