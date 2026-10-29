@@ -117,6 +117,9 @@ test('comparison shows unit mismatches and embedded climate receives hass', () =
     { type: 'comparison', rows: [{ entity: 'sensor.now', previous: 'sensor.previous', name: '전기' }] },
     { type: 'climate', entity: 'climate.room' },
   ] });
+  assert.deepEqual([...element.shadowRoot.querySelectorAll('th')].map(node=>node.textContent), ['항목','이번 달 누적','지난달 전체','차이']);
+  assert.equal(element.shadowRoot.querySelector('tbody tr td:nth-child(2)').dataset.label, '이번 달 누적');
+  assert.equal(element.shadowRoot.querySelector('.note'), null);
   assert.equal(element._refs[0].delta.textContent, '+5 kWh');
   assert.equal(element._refs[0].percent.textContent, '+50.0%');
   assert.equal(element._refs[1].child._hass, hass);

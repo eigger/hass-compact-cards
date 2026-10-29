@@ -314,7 +314,7 @@ class CompactHomePanel extends HTMLElement {
       }
       if (item.type === 'comparison') {
         const table=this._make('table'),thead=this._make('thead'),head=this._make('tr');table.setAttribute('role','table');thead.setAttribute('role','rowgroup');head.setAttribute('role','row');thead.append(head);table.append(thead);
-        for (const label of ['항목','이번 달','지난달','차이']) { const th=this._make('th',null,label);th.scope='col';th.setAttribute('role','columnheader');head.append(th); }
+        for (const label of ['항목','이번 달 누적','지난달 전체','차이']) { const th=this._make('th',null,label);th.scope='col';th.setAttribute('role','columnheader');head.append(th); }
         const tbody=this._make('tbody');tbody.setAttribute('role','rowgroup');table.append(tbody);
         for (const comparison of item.rows) {
           const row=this._make('tr');tbody.append(row);row.append(this._make('td',null,comparison.name));
@@ -322,10 +322,10 @@ class CompactHomePanel extends HTMLElement {
           now.onclick=()=>this._more(this._hass?.states[comparison.entity]);prev.onclick=()=>this._more(this._hass?.states[comparison.previous]);
           const delta=this._make('span'),percent=this._make('small'),deltaCell=this._make('td');deltaCell.append(delta,percent);row.append(deltaCell);
           row.setAttribute('role','row');
-          [...row.children].forEach((cell,index)=>{cell.setAttribute('role','cell');cell.dataset.label=['항목','이번 달','지난달','차이'][index];});
+          [...row.children].forEach((cell,index)=>{cell.setAttribute('role','cell');cell.dataset.label=['항목','이번 달 누적','지난달 전체','차이'][index];});
           this._refs.push({item:comparison,now,prev,delta,percent});
         }
-        body.append(table,this._make('div','note','이번 달 누적 / 지난달 전체'));continue;
+        body.append(table);continue;
       }
       const row=this._make('div','row'),label=this._make('button','label'),icon=this._make('ha-icon'),name=this._make('span',null,item.name || '');
       label.append(icon,name);row.append(label);

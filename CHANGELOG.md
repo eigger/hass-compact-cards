@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Clarify comparison periods directly beside values and retain icon-centered climate controls following the UX review.
+
 - Polish press feedback, accessible request status, scene acceptance, true-state fan/cover motion, media playback indication and direct per-card help links.
 
 - Add visual configuration editors for all seven cards, including nested items, ordering, actions, confirmations and thresholds while preserving YAML settings.
