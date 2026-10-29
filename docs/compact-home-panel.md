@@ -1,12 +1,14 @@
 # Compact home panel — 홈 패널
 
+[UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
+
 ![홈 패널 대표 화면](../images/compact-home-panel.jpg)
 
 조명·스위치·센서·냉난방·사용량 비교·실행 버튼을 한 패널에 묶습니다. 일반 항목은 두 열로 묶고, 자세한 조작이 필요한 행은 전체 너비를 사용합니다. 이미지는 모의 상태를 사용하는 로컬 미리보기이며 설정과 카드 너비에 따라 실제 화면은 달라집니다.
 
 ## 대표 예제
 
-[리소스를 설치](../README.ko.md#hacs-설치)한 뒤 수동 카드의 YAML 편집기에 추가합니다. 모든 엔티티 ID와 탐색 경로는 실제 환경에 맞게 변경하세요.
+[리소스를 설치](../README.ko.md#hacs-설치)한 뒤 카드 선택 화면에서 추가하고 UI로 구성하거나 아래 YAML을 사용합니다. 모든 엔티티 ID와 탐색 경로는 실제 환경에 맞게 변경하세요.
 
 ```yaml
 type: custom:compact-home-panel
@@ -35,7 +37,7 @@ items:
     navigation_path: /energy
 ```
 
-카드 추가 화면에서는 **Compact home panel**을 선택할 수 있습니다. 설정은 YAML 편집기를 사용합니다.
+카드 추가 화면에서는 **Compact home panel**을 선택할 수 있습니다. UI 편집기와 YAML 편집기를 모두 사용할 수 있습니다.
 
 ## 패널 옵션
 

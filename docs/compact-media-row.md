@@ -1,5 +1,7 @@
 # Compact media row · 미디어
 
+[UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
+
 ![미디어 대표 화면](../images/compact-media-row.jpg)
 
 모의 상태로 렌더링한 대표 이미지입니다. 곡명·아티스트와 재생·다음 곡·음량을 표시하며, 큰 앨범 아트 없이 자주 쓰는 조작에 공간을 집중합니다.

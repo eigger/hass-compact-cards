@@ -37,6 +37,8 @@ Screenshots use mocked states; each guide includes options and detailed YAML exa
 | [compact-environment-panel](docs/compact-environment-panel.md) | ![compact-environment-panel](images/compact-environment-panel.jpg) |
 | [compact-media-row](docs/compact-media-row.md) | ![compact-media-row](images/compact-media-row.jpg) |
 
+[Configure cards in the UI](docs/visual-editor.md), including nested rows, thresholds, confirmation and ordering.
+
 ## HACS installation
 
 Install [this repository](https://github.com/eigger/hass-compact-cards) through HACS **Custom repositories**. This project is not in the default HACS catalog.
@@ -90,7 +92,7 @@ items:
 
 Replace entity IDs with those in your installation. More examples are available in [examples/dashboard.yaml](examples/dashboard.yaml).
 
-You can also choose **Compact climate row** or **Compact home panel** in the card picker. Configure them in the YAML editor; a visual configuration editor is not provided.
+All seven cards appear in the card picker and include a [visual configuration editor](docs/visual-editor.md). YAML configuration remains supported.
 
 Built-in control labels and notifications currently use Korean.
 

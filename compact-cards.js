@@ -796,3 +796,212 @@ class CompactMediaRow extends HTMLElement {
 if(!customElements.get('compact-media-row'))customElements.define('compact-media-row',CompactMediaRow);
 window.customCards=window.customCards||[];
 if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.push({type:'compact-media-row',name:'Compact media row',description:'곡 정보와 재생·음량을 간결하게 제어'});
+
+// Visual configuration: HA forms where available, native fields as a loading fallback.
+// All edits copy configuration and emit the complete config; card services are never called.
+(() => {
+  const clone=value=>value===undefined?undefined:JSON.parse(JSON.stringify(value));
+  const at=(root,path)=>path.reduce((value,key)=>value?.[key],root);
+  const put=(root,path,value)=>{const parent=at(root,path.slice(0,-1));if(value===undefined)delete parent[path.at(-1)];else parent[path.at(-1)]=value;};
+  const field=(name,label,selector,required=false)=>({name,label,selector,required});
+  const text=(name,label,required=false)=>field(name,label,{text:{}},required);
+  const entity=(name,label,domain,required=true)=>field(name,label,{entity:domain?{domain}:{}},required);
+  const select=(name,label,options)=>field(name,label,{select:{mode:'dropdown',options:options.map(([value,label])=>({value,label}))}});
+  const columns=max=>select('columns','열 수',[['auto','자동'],...Array.from({length:max},(_,i)=>[String(i+1),`${i+1}열`])]);
+  const labels={entity:'엔티티',lookup:'이름으로 센서 찾기',heading:'제목',note:'메모',climate:'냉난방',comparison:'사용량 비교',navigate:'페이지 이동',light:'조명',cover:'커튼',media:'미디어'};
+  class CompactCardEditor extends HTMLElement {
+    constructor(kind){
+      super();this._kind=kind;this._forms=[];this.attachShadow({mode:'open'});
+      this.shadowRoot.innerHTML=`<style>
+        :host{display:block;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit)}
+        .root{display:grid;gap:12px}.list{display:grid;gap:8px}details{border:1px solid var(--divider-color,#ddd);border-radius:10px;padding:8px}summary{cursor:pointer;font-size:14px;font-weight:500;overflow-wrap:anywhere;min-height:32px;align-content:center}details>.content{display:grid;gap:10px;padding-top:8px}
+        .toolbar,.add{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:flex-end}.toolbar button{min-width:36px}.add select{flex:1;min-width:130px}.heading{font-size:14px;font-weight:500;margin:0}.hint{font-size:12px;color:var(--secondary-text-color);margin:0;line-height:1.5}
+        button,input,textarea,select{font:inherit;color:var(--primary-text-color);box-sizing:border-box}button{border:1px solid var(--divider-color,#ddd);background:var(--card-background-color,transparent);border-radius:7px;padding:6px 10px;cursor:pointer;min-height:36px}button:hover:not(:disabled){background:var(--secondary-background-color,#eee)}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
+        .native{display:grid;gap:10px}.native label{display:grid;gap:5px;font-size:13px}.native input,.native textarea,.native select,.add select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.native input[type=checkbox]{width:24px;height:24px;min-height:24px}.content>label,.subsection>label{display:grid;gap:5px;font-size:13px}.content>label>select,.subsection>label>input:not([type=checkbox]),.subsection>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.subsection{display:grid;gap:8px;border-top:1px solid var(--divider-color,#ddd);padding-top:10px}
+        @media(pointer:coarse){button{min-height:44px;min-width:44px}}
+      </style><div class="root"></div>`;
+    }
+    setConfig(config){
+      const next=clone(config||{});if(JSON.stringify(next)===JSON.stringify(this._config))return;
+      this._config=next;this._render();
+    }
+    set hass(value){const initial=!this._hass;this._hass=value;for(const ref of this._forms)ref.form.hass=value;if(initial&&this._config&&!customElements.get('ha-form'))this._render();}
+    _make(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
+    _button(label,action,disabled=false){const button=this._make('button',null,label);button.type='button';button.disabled=disabled;button.onclick=action;return button;}
+    _commit(change,rebuild=false){
+      const next=clone(this._config);change(next);if(JSON.stringify(next)===JSON.stringify(this._config))return;
+      this._config=next;
+      if(rebuild)this._render();else {
+        for(const ref of this._forms)ref.form.data=ref.data();
+        for(const row of this.shadowRoot.querySelectorAll('details[data-path]')){
+          const path=JSON.parse(row.dataset.path),item=at(next,path);
+          const title=item?.name||item?.entity||item?.find_name||(item?.value!==undefined?`${item.value} · ${item.level||''}`:row.dataset.label);
+          row.querySelector('summary').textContent=`${Number(path.at(-1))+1}. ${title}`;
+          for(const button of row.querySelectorAll(':scope > .content > .toolbar > button'))button.setAttribute('aria-label',`${title} ${button.textContent}`);
+        }
+      }
+      this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:clone(next)},bubbles:true,composed:true}));
+    }
+    _update(path,values,schema){
+      this._commit(next=>{
+        const target=at(next,path);
+        for(const item of schema){
+          if(!Object.prototype.hasOwnProperty.call(values,item.name))continue;
+          let value=clone(values[item.name]);
+          if(item.name==='columns'&&value!=='auto'&&value!==undefined&&value!==null&&value!=='')value=Number(value);
+          if(value===undefined||value===null||value==='')delete target[item.name];else target[item.name]=value;
+        }
+      });
+    }
+    _form(parent,path,schema){
+      const data=()=>{
+        const source=at(this._config,path)||{},result={};
+        for(const item of schema){if(source[item.name]!==undefined)result[item.name]=item.name==='columns'?String(source[item.name]):clone(source[item.name]);else if(item.name==='columns')result[item.name]='auto';else if(['show_volume','show_next'].includes(item.name))result[item.name]=true;}
+        return result;
+      };
+      if(!customElements.get('ha-form')){this._nativeForm(parent,path,schema,data);return;}
+      const form=this._make('ha-form');form.dataset.path=JSON.stringify(path);form.hass=this._hass;form.schema=schema;
+      form.computeLabel=item=>item.label||item.name;form.data=data();
+      form.addEventListener('value-changed',event=>{event.stopPropagation();if(event.target!==form||!event.detail?.value)return;this._update(path,event.detail.value,schema);});
+      this._forms.push({form,data});parent.append(form);
+    }
+    _nativeForm(parent,path,schema,data){
+      const form=this._make('div','native');form.dataset.path=JSON.stringify(path);parent.append(form);
+      for(const item of schema){
+        const label=this._make('label',null,item.label),selector=item.selector,value=data()[item.name];let input;
+        if(selector.select){input=this._make('select');if(!item.required){const empty=this._make('option',null,'기본값');empty.value='';input.append(empty);}for(const option of selector.select.options){const node=this._make('option',null,option.label);node.value=option.value;input.append(node);}input.value=value??'';}
+        else {input=this._make(selector.text?.multiline?'textarea':'input');if(selector.text?.multiline){input.rows=4;input.value=value??'';}else {input.type=selector.boolean?'checkbox':selector.number?'number':'text';if(selector.boolean)input.checked=value??false;else if(selector.target)input.value=Array.isArray(value?.entity_id)?value.entity_id.join(', '):value?.entity_id||'';else input.value=value??'';if(selector.number)input.step='any';}}
+        input.dataset.field=item.name;input.required=item.required;input.setAttribute('aria-label',item.label);
+        if(selector.entity){const list=this._make('datalist');list.id=`entities-${this._kind}-${this.shadowRoot.querySelectorAll('datalist').length}`;const domains=selector.entity.domain;for(const id of Object.keys(this._hass?.states||{})){if(domains&&!(Array.isArray(domains)?domains:[domains]).includes(id.split('.')[0]))continue;const option=this._make('option');option.value=id;list.append(option);}input.setAttribute('list',list.id);form.append(list);}
+        input.onchange=()=>{
+          let next=selector.boolean?input.checked:selector.number?input.value===''?undefined:Number(input.value):input.value;
+          if(selector.target){next={...clone(at(this._config,path)?.[item.name]||{})};const ids=input.value.split(',').map(v=>v.trim()).filter(Boolean);if(ids.length)next.entity_id=ids;else delete next.entity_id;}
+          if(selector.number&&next!==undefined&&!Number.isFinite(next))return;
+          this._update(path,{[item.name]:next},[item]);
+        };
+        if(input.type==='text'||input.localName==='textarea')input.oninput=input.onchange;
+        label.append(input);form.append(label);
+      }
+    }
+    _section(parent,title){const section=this._make('div','subsection');section.append(this._make('p','heading',title));parent.append(section);return section;}
+    _first(domain,fallback){return Object.keys(this._hass?.states||{}).find(id=>(Array.isArray(domain)?domain:[domain]).includes(id.split('.')[0]))||fallback;}
+    _defaultItem(type){
+      if(this._kind==='compact-scene-panel')return {entity:this._first(['scene','script'],'scene.relax')};
+      if(this._kind==='compact-environment-panel')return {entity:this._first('sensor','sensor.room_temperature')};
+      if(type==='heading')return {type,name:'제목'};
+      if(type==='note')return {type,name:'메모'};
+      if(type==='navigate')return {type,name:'페이지 이동',navigation_path:'/lovelace/0'};
+      if(type==='comparison')return {type,rows:[{name:'사용량',entity:this._first('sensor','sensor.current'),previous:this._first('sensor','sensor.previous')}]};
+      if(type==='lookup')return {find_name:'센서 이름',domain:'sensor'};
+      if(['climate','light','cover','media'].includes(type)){const domain=type==='media'?'media_player':type;return {type,entity:this._first(domain,`${domain}.living_room`)};}
+      return {entity:this._first(['sensor','light','switch'],'sensor.example')};
+    }
+    _list(parent,path,label,renderItem,create,min=0){
+      const wrapper=this._section(parent,label),list=this._make('div','list');wrapper.append(list);
+      const entries=at(this._config,path)||[];
+      entries.forEach((item,index)=>{
+        const row=this._make('details');row.dataset.path=JSON.stringify([...path,index]);row.dataset.label=`${label} ${index+1}`;row.open=this._openDetails?.has(row.dataset.path)||(!this._openDetails?.size&&index===0);
+        const title=item.name||item.entity||item.find_name||(item.value!==undefined?`${item.value} · ${item.level||''}`:`${label} ${index+1}`);
+        row.append(this._make('summary',null,`${index+1}. ${title}`));
+        const content=this._make('div','content'),toolbar=this._make('div','toolbar');
+        for(const [text,offset] of [['위로',-1],['아래로',1]]){const button=this._button(text,()=>this._commit(next=>{const items=at(next,path);[items[index],items[index+offset]]=[items[index+offset],items[index]];},true),index+offset<0||index+offset>=entries.length);button.setAttribute('aria-label',`${title} ${text}`);toolbar.append(button);}
+        const remove=this._button('삭제',()=>this._commit(next=>{at(next,path).splice(index,1);},true),entries.length<=min);remove.setAttribute('aria-label',`${title} 삭제`);toolbar.append(remove);content.append(toolbar);row.append(content);list.append(row);
+        renderItem(content,[...path,index],item);
+      });
+      const add=this._make('div','add');let chooser;
+      if(this._kind==='compact-home-panel'&&path.length===1){chooser=this._make('select');chooser.setAttribute('aria-label','추가할 항목 유형');for(const [value,label] of Object.entries(labels)){const option=this._make('option',null,label);option.value=value;chooser.append(option);}add.append(chooser);}
+      const button=this._button(`${label} 추가`,()=>{this._openNext=JSON.stringify([...path,entries.length]);this._commit(next=>{if(!at(next,path))put(next,path,[]);at(next,path).push(create(chooser?.value));},true);});button.dataset.add=JSON.stringify(path);add.append(button);wrapper.append(add);
+    }
+    _itemType(item){return item.type||(item.find_name?'lookup':'entity');}
+    _homeItem(parent,path,item){
+      const type=this._itemType(item),label=this._make('label',null,'항목 유형'),input=this._make('select');input.setAttribute('aria-label','항목 유형');
+      for(const [value,name] of Object.entries(labels)){const option=this._make('option',null,name);option.value=value;input.append(option);}input.value=type;
+      input.onchange=()=>this._commit(next=>{
+        const original=at(next,path),defaults=this._defaultItem(input.value),value={...original,...defaults};
+        if(original.name!==undefined)value.name=original.name;
+        if(input.value==='entity'||input.value==='lookup')delete value.type;
+        if(input.value==='lookup')delete value.entity;else {delete value.find_name;if(original.find_name)delete value.domain;}
+        put(next,path,value);
+      },true);label.append(input);parent.append(label);
+      if(type==='heading'){
+        this._form(parent,path,[text('name','제목',true)]);
+        this._list(parent,[...path,'badges'],'배지',(body,p)=>this._form(body,p,[entity('entity','센서'),text('name','표시 이름')]),()=>({entity:this._first('sensor','sensor.example')}));return;
+      }
+      if(type==='note'){this._form(parent,path,[field('name','메모',{text:{multiline:true}},true)]);return;}
+      if(type==='comparison'){
+        this._list(parent,[...path,'rows'],'비교 항목',(body,p)=>this._form(body,p,[text('name','항목 이름'),entity('entity','이번 달 센서','sensor'),entity('previous','지난달 센서','sensor')]),()=>({name:'사용량',entity:this._first('sensor','sensor.current'),previous:this._first('sensor','sensor.previous')}),1);return;
+      }
+      if(type==='navigate'){this._form(parent,path,[text('name','표시 이름',true),text('navigation_path','로컬 이동 경로 (예: /energy)',true),field('icon','아이콘',{icon:{}})]);return;}
+      if(type==='lookup'){this._form(parent,path,[text('find_name','센서의 정확한 이름',true),text('domain','도메인 (기본 sensor)'),text('name','표시 이름'),field('icon','아이콘',{icon:{}})]);return;}
+      const domain={climate:'climate',light:'light',cover:'cover',media:'media_player'}[type];
+      const fields=[entity('entity','엔티티',domain),text('name','표시 이름')];
+      if(type==='entity')fields.push(field('icon','아이콘',{icon:{}}));
+      if(type==='media')fields.push(field('show_volume','음량 표시',{boolean:{}}),field('show_next','다음 곡 표시',{boolean:{}}));
+      this._form(parent,path,fields);
+      if(type==='entity')this._action(parent,path,item);
+    }
+    _action(parent,path,item){
+      const section=this._section(parent,'실행 버튼'),label=this._make('label',null,' 실행 버튼 사용'),enabled=this._make('input');enabled.type='checkbox';enabled.checked=Boolean(item.tap_action);enabled.setAttribute('aria-label','실행 버튼 사용');label.prepend(enabled);section.append(label);
+      enabled.onchange=()=>this._commit(next=>{const target=at(next,path);if(enabled.checked)target.tap_action={action:'perform-action',perform_action:'script.turn_on'};else delete target.tap_action;},true);
+      if(!item.tap_action)return;
+      section.append(this._make('p','hint','light · switch · select는 전용 제어를 사용합니다. 실행 버튼은 다른 엔티티에서 표시됩니다.'));
+      this._form(section,[...path,'tap_action'],[text('perform_action','실행할 액션 (예: button.press)',true),field('target','대상 (생략하면 항목의 엔티티)',{target:{}})]);
+      this._confirmation(section,[...path,'tap_action'],'confirmation',item.tap_action.confirmation,true);
+      this._dataFields(section,[...path,'tap_action','data']);
+    }
+    _confirmation(parent,path,key,value,object=false){
+      const section=this._section(parent,'실행 전 확인'),label=this._make('label',null,' 확인 메시지 사용'),check=this._make('input');check.type='checkbox';check.checked=Boolean(value);check.setAttribute('aria-label','확인 메시지 사용');label.prepend(check);section.append(label);
+      check.onchange=()=>this._commit(next=>{const target=at(next,path);if(check.checked)target[key]=object?{text:'실행할까요?'}:'실행할까요?';else delete target[key];},true);
+      if(value)this._form(section,object?[...path,key]:path,[text(object?'text':key,'확인 메시지')]);
+    }
+    _dataFields(parent,path){
+      const section=this._section(parent,'액션 데이터'),data=at(this._config,path)||{};
+      for(const [key,value] of Object.entries(data)){
+        const row=this._make('div','subsection');row.append(this._make('p','heading',key));section.append(row);
+        if(value!==null&&typeof value==='object')row.append(this._make('p','hint','구조화된 데이터는 YAML에서 편집합니다. 기존 값은 보존됩니다.'));
+        else {
+          const label=this._make('label',null,`${key} 값`),input=this._make('input');input.setAttribute('aria-label',`${key} 값`);input.type=typeof value==='boolean'?'checkbox':typeof value==='number'?'number':'text';if(typeof value==='boolean')input.checked=value;else input.value=value??'';if(input.type==='number')input.step='any';
+          input.onchange=()=>this._commit(next=>{let result=input.type==='checkbox'?input.checked:input.type==='number'?Number(input.value):input.value;if(typeof result==='number'&&!Number.isFinite(result))return;at(next,path)[key]=result;});label.append(input);row.append(label);
+        }
+        const remove=this._button(`${key} 삭제`,()=>this._commit(next=>{delete at(next,path)[key];},true));row.append(remove);
+      }
+      const label=this._make('label',null,'새 데이터 키'),key=this._make('input');key.setAttribute('aria-label','새 데이터 키');label.append(key);section.append(label);
+      const type=this._make('select');type.setAttribute('aria-label','새 데이터 유형');for(const [value,label] of [['text','문자열'],['number','숫자'],['boolean','참/거짓']]){const option=this._make('option',null,label);option.value=value;type.append(option);}section.append(type);
+      const error=this._make('p','hint');error.setAttribute('role','status');section.append(error);
+      section.append(this._button('데이터 추가',()=>{
+        const name=key.value.trim();if(!name||['__proto__','prototype','constructor'].includes(name)||Object.prototype.hasOwnProperty.call(data,name)){error.textContent='중복되지 않는 데이터 키를 입력하세요.';return;}
+        this._commit(next=>{if(!at(next,path))put(next,path,{});at(next,path)[name]=type.value==='number'?0:type.value==='boolean'?false:'';},true);
+      }));
+    }
+    _render(){
+      if(!this._config)return;this._openDetails=new Set([...this.shadowRoot.querySelectorAll('details[open]')].map(node=>node.dataset.path));if(this._openNext){this._openDetails.add(this._openNext);this._openNext=undefined;}const root=this.shadowRoot.querySelector('.root');root.replaceChildren();this._forms=[];
+      if(['compact-climate-row','compact-light-row','compact-cover-row','compact-media-row'].includes(this._kind)){
+        const domain={'compact-climate-row':'climate','compact-light-row':'light','compact-cover-row':'cover','compact-media-row':'media_player'}[this._kind];
+        const schema=[entity('entity','엔티티',domain),text('name','표시 이름')];
+        if(this._kind==='compact-media-row')schema.push(field('show_volume','음량 표시',{boolean:{}}),field('show_next','다음 곡 표시',{boolean:{}}));
+        this._form(root,[],schema);return;
+      }
+      const home=this._kind==='compact-home-panel';
+      this._form(root,[],home?[columns(2)]:[text('name','패널 이름'),columns(4)]);
+      this._list(root,['items'],'항목',(body,path,item)=>{
+        if(home){this._homeItem(body,path,item);return;}
+        this._form(body,path,[entity('entity','엔티티',this._kind==='compact-scene-panel'?['scene','script']:'sensor'),text('name','표시 이름'),field('icon','아이콘',{icon:{}})]);
+        if(this._kind==='compact-scene-panel')this._confirmation(body,path,'confirmation',item.confirmation);
+        else this._list(body,[...path,'thresholds'],'임계값',(section,p)=>this._form(section,p,[field('value','기준값',{number:{mode:'box',step:'any'}},true),select('direction','비교 방향',[['above','이상'],['below','이하']]),select('level','강조 수준',[['warning','주의'],['critical','위험']])]),()=>({value:0,direction:'above',level:'warning'}));
+      },type=>this._defaultItem(type),home?0:1);
+    }
+  }
+  for(const type of ['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row']){
+    const tag=`${type}-editor`;
+    if(!customElements.get(tag))customElements.define(tag,class extends CompactCardEditor{constructor(){super(type);}});
+    customElements.get(type).getConfigElement=async()=>{
+      // HA loads ha-form lazily with native card editors. Ask its public helpers to
+      // load the entities editor before creating ours; the native fallback also
+      // keeps the editor useful in older or independently hosted HA frontends.
+      if(!customElements.get('ha-form')&&window.loadCardHelpers){
+        try{const helpers=await window.loadCardHelpers();const card=helpers.createCardElement({type:'entities',entities:[]});await card.constructor.getConfigElement?.();}catch{/* Native fallback remains available. */}
+      }
+      return document.createElement(tag);
+    };
+  }
+})();

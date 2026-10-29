@@ -1,5 +1,7 @@
 # Compact cover row · 커튼
 
+[UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
+
 ![커튼 대표 화면](../images/compact-cover-row.jpg)
 
 모의 상태로 렌더링한 대표 이미지입니다. 열기·정지·닫기와 열림 위치를 직접 조작하는 커튼·블라인드 행입니다.
