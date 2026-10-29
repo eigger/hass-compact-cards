@@ -73,6 +73,7 @@ test('environment threshold forms edit numeric direction and level with immutabl
   const original={items:[{entity:'sensor.room',thresholds:[{value:25,direction:'above',level:'warning',future:9}]}]};
   const {editor,change,add,form}=await setup(t,'compact-environment-panel',original);
   change(['items',0,'thresholds',0],{value:-2.35,direction:'below',level:'critical'});
+  assert.equal([...editor.shadowRoot.querySelectorAll('details')].find(node=>node.dataset.path===JSON.stringify(['items',0,'thresholds',0])).querySelector('.toolbar button').getAttribute('aria-label'),'-2.35 · critical 위로');
   assert.equal(editor._config.items[0].thresholds[0].value,-2.35);assert.equal(editor._config.items[0].thresholds[0].future,9);assert.equal(original.items[0].thresholds[0].value,25);
   add(['items',0,'thresholds']);assert.equal(editor._config.items[0].thresholds.length,2);assert.ok(form(['items',0,'thresholds',1]));
   change([],{columns:'3'});assert.equal(editor._config.columns,3);

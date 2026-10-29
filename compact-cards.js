@@ -837,6 +837,7 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
           const path=JSON.parse(row.dataset.path),item=at(next,path);
           const title=item?.name||item?.entity||item?.find_name||(item?.value!==undefined?`${item.value} · ${item.level||''}`:row.dataset.label);
           row.querySelector('summary').textContent=`${Number(path.at(-1))+1}. ${title}`;
+          for(const button of row.querySelectorAll(':scope > .content > .toolbar > button'))button.setAttribute('aria-label',`${title} ${button.textContent}`);
         }
       }
       this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:clone(next)},bubbles:true,composed:true}));
