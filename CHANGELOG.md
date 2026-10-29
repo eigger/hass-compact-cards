@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add visual configuration editors for all seven cards, including nested items, ordering, actions, confirmations and thresholds while preserving YAML settings.
+
 - Add capability-aware media playback and volume controls, per-card guides and representative browser screenshots for all seven cards.
 
 - Add one-tap scene/script shortcuts and compact environment readings with explicit warning thresholds.

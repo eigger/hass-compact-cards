@@ -1,5 +1,7 @@
 # Compact scene panel · 장면 빠른 실행
 
+[UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
+
 ![장면·스크립트를 작은 버튼으로 모은 Compact scene panel](../images/compact-scene-panel.jpg)
 
 휴식·외출·취침처럼 자주 사용하는 장면과 스크립트를 작은 버튼으로 모읍니다. 버튼 한 번으로 실행하고, 확인이 필요한 항목만 확인 문구를 추가할 수 있습니다. 실행 요청 중에는 해당 엔티티의 버튼이 비활성화되어 중복 명령을 막습니다.

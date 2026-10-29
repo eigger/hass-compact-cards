@@ -37,6 +37,8 @@ Screenshots use mocked states; each guide includes options and detailed YAML exa
 | [compact-environment-panel](docs/compact-environment-panel.md) | ![compact-environment-panel](images/compact-environment-panel.jpg) |
 | [compact-media-row](docs/compact-media-row.md) | ![compact-media-row](images/compact-media-row.jpg) |
 
+[Configure cards in the UI](docs/visual-editor.md), including nested rows, thresholds, confirmation and ordering.
+
 ## HACS installation
 
 Install [this repository](https://github.com/eigger/hass-compact-cards) through HACS **Custom repositories**. This project is not in the default HACS catalog.

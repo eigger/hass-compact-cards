@@ -37,6 +37,8 @@ Home Assistant를 위한 작고 정돈된 대시보드 커스텀 카드 모음�
 | [환경](docs/compact-environment-panel.md) | ![환경](images/compact-environment-panel.jpg) |
 | [미디어](docs/compact-media-row.md) | ![미디어](images/compact-media-row.jpg) |
 
+[UI 설정 가이드](docs/visual-editor.md): 엔티티 선택, 항목 추가·정렬, 임계값과 실행 확인을 화면에서 설정합니다.
+
 ## HACS 설치
 
 [이 저장소](https://github.com/eigger/hass-compact-cards)를 HACS의 **사용자 지정 저장소(Custom repositories)** 로 설치할 수 있습니다. 기본 HACS 목록에 등록된 프로젝트는 아닙니다.
@@ -90,7 +92,7 @@ items:
 
 엔티티 ID는 실제 환경에 맞게 변경하세요. 추가 예제는 `examples/dashboard.yaml`에 있습니다.
 
-카드 추가 화면에서도 **Compact climate row**, **Compact home panel**을 선택할 수 있습니다. 설정은 YAML 편집기로 작성하며, 별도의 시각적 설정 편집기는 제공하지 않습니다.
+카드 추가 화면에서도 **Compact climate row**, **Compact home panel**을 선택할 수 있습니다. 7종 모두 [시각적 설정 편집기](docs/visual-editor.md)를 제공하며 YAML 편집도 지원합니다.
 
 내장 제어 레이블과 알림은 현재 한국어로 표시됩니다.
 
