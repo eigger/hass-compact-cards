@@ -75,3 +75,51 @@ test('light and cover rows embed in the home panel with shared hass and no paire
   assert.equal(panel._refs[1].child._config.entity,'cover.room');
   assert.throws(()=>panel.setConfig({items:[{type:'light',entity:'cover.room'}]}),/items\[0\]/);
 });
+
+test('Kelvin keyboard uses practical increments, exact device bounds and one command per change',async()=>{
+  const {window,card,calls}=setup('compact-light-row',{
+    supported_color_modes:['color_temp'],min_color_temp_kelvin:2235,max_color_temp_kelvin:6473,color_temp_kelvin:3500,
+  });
+  const input=card._kelvin.input;
+  const press=async(key,options={})=>{
+    const event=new window.KeyboardEvent('keydown',{key,cancelable:true,...options});input.dispatchEvent(event);
+    await new Promise(resolve=>setImmediate(resolve));return event;
+  };
+  assert.equal((await press('ArrowRight')).defaultPrevented,true);
+  assert.equal(calls.length,1);assert.equal(calls.at(-1)[2].color_temp_kelvin,3600);
+  await press('ArrowLeft',{shiftKey:true});assert.equal(calls.at(-1)[2].color_temp_kelvin,3550);
+  await press('PageUp');assert.equal(calls.at(-1)[2].color_temp_kelvin,4050);
+  await press('Home');assert.equal(calls.at(-1)[2].color_temp_kelvin,2235);
+  const atMin=calls.length;await press('ArrowLeft');assert.equal(calls.length,atMin);
+  await press('End');assert.equal(calls.at(-1)[2].color_temp_kelvin,6473);
+  const atMax=calls.length;await press('ArrowRight');assert.equal(calls.length,atMax);
+  assert.equal((await press('ArrowLeft',{ctrlKey:true})).defaultPrevented,false);assert.equal(calls.length,atMax);
+  assert.equal(input.step,'1');input.value='3501';input.dispatchEvent(new window.Event('input'));input.dispatchEvent(new window.Event('change'));
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.at(-1)[2].color_temp_kelvin,3501);
+  window.happyDOM.abort();
+});
+
+test('Kelvin shortcuts do not act during a request or for unsupported color temperature',async()=>{
+  const {window,card,hass,calls,entity}=setup('compact-light-row',{
+    supported_color_modes:['color_temp'],min_color_temp_kelvin:2200,max_color_temp_kelvin:6500,color_temp_kelvin:3500,
+  });
+  let done;hass.callService=(...args)=>{calls.push(args);return new Promise(resolve=>done=resolve);};
+  const input=card._kelvin.input;
+  input.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowRight',cancelable:true}));
+  assert.equal(input.disabled,true);input.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowRight',cancelable:true}));assert.equal(calls.length,1);
+  done();await new Promise(resolve=>setImmediate(resolve));
+  hass.states[entity].attributes.supported_color_modes=['onoff'];card.hass=hass;
+  input.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowRight',cancelable:true}));assert.equal(calls.length,1);
+  window.happyDOM.abort();
+});
+
+test('cover action labels preserve direct open stop close actions and capability visibility',async()=>{
+  const {window,card,hass,calls,entity}=setup('compact-cover-row',{supported_features:15,current_position:30},'open');
+  for(const [key,label,service] of [['_open','열기','open_cover'],['_stop','정지','stop_cover'],['_close','닫기','close_cover']]){
+    assert.equal(card[key].querySelector('.control-label').textContent,label);
+    card[key].click();await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.at(-1)[1],service);assert.equal(calls.at(-1)[2].entity_id,entity);
+  }
+  hass.states[entity].attributes.supported_features=4;card.hass=hass;
+  assert.equal(card._open.hidden,true);assert.equal(card._stop.hidden,true);assert.equal(card._close.hidden,true);
+  window.happyDOM.abort();
+});

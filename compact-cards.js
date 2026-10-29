@@ -440,8 +440,14 @@ class CompactControlRow extends HTMLElement {
       input{accent-color:var(--primary-color);width:100%;min-width:40px;min-height:36px;margin:0;cursor:pointer}
       output{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:36px;text-align:right}
       .slider ha-icon{--mdc-icon-size:16px;width:16px;height:16px;color:var(--secondary-text-color)}
+      .kelvin input{appearance:none;background:transparent}
+      .kelvin input::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,#e5ba7b,#e9e7df,#afcfe5);border:1px solid var(--divider-color)}
+      .kelvin input::-moz-range-track{height:4px;border-radius:6px;background:linear-gradient(90deg,#e5ba7b,#e9e7df,#afcfe5);border:1px solid var(--divider-color)}
+      .kelvin input::-webkit-slider-thumb{appearance:none;width:16px;height:16px;margin-top:-6px;border:2px solid var(--card-background-color);border-radius:50%;background:var(--primary-color)}
+      .kelvin input::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--card-background-color);border-radius:50%;background:var(--primary-color)}
+      .cover-control{width:36px;height:36px;padding:2px;grid-template-rows:16px 12px;row-gap:1px;align-content:center}.cover-control ha-icon{--mdc-icon-size:16px;width:16px;height:16px}.control-label{font-size:10px;line-height:12px;white-space:nowrap}
       @container(max-width:360px){ha-card{gap:4px 8px}.info{flex-basis:84px}}
-      @media(pointer:coarse){button,input{min-height:44px}.controls button{min-width:44px}}
+      @media(pointer:coarse){button,input{min-height:44px}.controls button{min-width:44px}.cover-control{width:44px;height:44px}}
       .open.moving ha-icon{animation:compact-opening 1.4s ease-in-out infinite}.close.moving ha-icon{animation:compact-closing 1.4s ease-in-out infinite}@keyframes compact-opening{0%,100%{transform:translateY(1px)}50%{transform:translateY(-2px)}}@keyframes compact-closing{0%,100%{transform:translateY(-1px)}50%{transform:translateY(2px)}}@media(prefers-reduced-motion:reduce){.moving ha-icon{animation:none!important}}
       :host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding:4px 0}
     </style><ha-card><button class="info"><span class="name"></span><span class="state"></span></button><div class="controls"></div></ha-card>`;
@@ -535,6 +541,21 @@ class CompactLightRow extends CompactControlRow {
     this._toggle=this._button('toggle','조명 켜기/끄기','mdi:power',()=>this._call('toggle'));
     this._brightness=this._slider('brightness','밝기','mdi:brightness-6',0,100,1,value=>this._call(value===0?'turn_off':'turn_on',value===0?{}:{brightness_pct:value}));
     this._kelvin=this._slider('kelvin','색온도','mdi:thermometer',2000,6500,1,value=>this._call('turn_on',{color_temp_kelvin:value}));
+    this._kelvin.group.title='색온도 · 왼쪽은 따뜻한 빛, 오른쪽은 차가운 빛';
+    this._kelvin.input.onkeydown=event=>{
+      if(event.altKey||event.ctrlKey||event.metaKey)return;
+      const input=this._kelvin.input,step=event.shiftKey?50:100;
+      const increments={ArrowRight:step,ArrowUp:step,ArrowLeft:-step,ArrowDown:-step,PageUp:500,PageDown:-500};
+      if(!(event.key in increments)&&!['Home','End'].includes(event.key))return;
+      event.preventDefault();
+      if(input.disabled||this._kelvin.group.hidden)return;
+      const min=Number(input.min),max=Number(input.max),value=Number(input.value);
+      const target=event.key==='Home'?min:event.key==='End'?max:Math.max(min,Math.min(max,value+increments[event.key]));
+      if(target===value)return;
+      input.value=String(target);
+      input.dispatchEvent(new Event('input',{bubbles:true,composed:true}));
+      input.dispatchEvent(new Event('change',{bubbles:true,composed:true}));
+    };
   }
   static getStubConfig(hass) {return {entity:Object.keys(hass?.states || {}).find(id=>id.startsWith('light.')) || 'light.living_room'};}
   _render() {
@@ -558,6 +579,9 @@ class CompactCoverRow extends CompactControlRow {
     this._open=this._button('open','열기','mdi:chevron-up',()=>this._call('open_cover'));
     this._stop=this._button('stop','정지','mdi:stop',()=>this._call('stop_cover',{},true));
     this._close=this._button('close','닫기','mdi:chevron-down',()=>this._call('close_cover'));
+    for(const [button,label] of [[this._open,'열기'],[this._stop,'정지'],[this._close,'닫기']]){
+      button.classList.add('cover-control');const text=document.createElement('span');text.className='control-label';text.textContent=label;button.append(text);
+    }
     this._position=this._slider('position','열림 위치','mdi:blinds-horizontal',0,100,1,value=>this._call('set_cover_position',{position:value}));
   }
   static getStubConfig(hass) {return {entity:Object.keys(hass?.states || {}).find(id=>id.startsWith('cover.')) || 'cover.living_room'};}
