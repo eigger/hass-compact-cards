@@ -29,10 +29,11 @@ show_next: true
 - 재생 중: 일시정지. 일시정지·대기 중: 재생. 꺼짐·대기 전원 상태: 지원 시 전원 켜기.
 - 다음 곡: 기기가 지원하고 설정에서 숨기지 않았을 때 표시.
 - 음량: 0–100%, 변경 확정 시 `volume_set` 한 번 전송.
+- 음량 아이콘: 음소거 상태를 표시하며 기기가 지원하고 현재 음소거 상태가 확인되면 같은 자리에서 음소거·해제를 한 번에 조작합니다.
 
 지원하지 않는 기능은 숨깁니다. 음량 설정 기능이 있어도 현재 음량을 보고하지 않으면 슬라이더를 비활성화하고 `—`를 표시합니다. 전원이 꺼진 기기의 다음 곡·음량은 사용할 수 없습니다. 전원 켜기만 지원한다면 같은 버튼 자리에서 전원을 켤 수 있습니다.
 
-음량 드래그와 키보드 조절 중에는 외부 상태 갱신이 편집 값을 덮어쓰지 않습니다. 전송 후 요청 값은 최대 3초 동안 유지되어 기기 보고 지연에 따른 튀는 현상을 줄입니다. 실패하면 알림과 실제 상태로 돌아옵니다. 처리 중에는 중복 조작을 막고 `처리 중…`을 표시합니다.
+음량 드래그와 키보드 조절 중에는 외부 상태 갱신이 편집 값을 덮어쓰지 않습니다. 전송 후 요청 값은 최대 3초 동안 유지되어 기기 보고 지연에 따른 튀는 현상을 줄입니다. 실패하면 알림과 실제 상태로 돌아옵니다. 음량·음소거와 재생 조작은 각각 중복 요청을 막습니다. 음량 요청을 기다리는 중에도 일시정지·다음 곡을 조작할 수 있습니다. 음소거 중에는 상태 문구와 아이콘으로 알리며 음소거 제어를 지원하지 않아도 상태를 표시합니다. `show_volume: false`는 음량 행 전체를 숨기지만 상태 문구의 음소거 표시는 유지합니다.
 
 ## 더 작은 구성
 
@@ -61,4 +62,4 @@ items:
 
 ## English
 
-Use a media_player entity and optional name, show_volume and show_next (both default true). Capability-aware play/pause/power, next, and volume controls use no album-art space. Missing volume disables the slider. Drafts survive state updates; volume commits once on release and waits briefly for acknowledgment. Pending requests disable duplicate controls and errors restore state with notification. Screenshot uses mocked data; live device behavior depends on HA support.
+Use a media_player entity and optional name, show_volume and show_next (both default true). Capability-aware play/pause/power, next, and volume controls use no album-art space. Missing volume disables the slider. Drafts survive state updates; volume commits once on release and waits briefly for acknowledgment. Audio and transport requests suppress duplicates independently, so pending volume changes do not block Pause. The volume icon indicates mute and offers one-tap mute/unmute when supported and its state is known; muted status remains visible even without mute control. Errors restore state with notification. Screenshot uses mocked data; live device behavior depends on HA support.

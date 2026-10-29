@@ -675,13 +675,22 @@ for(const [type,constructor,name,description] of [
     _notify(message) { this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message},bubbles:true,composed:true})); }
   }
   class CompactScenePanel extends CompactSmallPanel {
+    constructor(){super();this._itemFeedback=new Map();this._itemEpoch=0;}
+    _clearItemFeedback(){for(const entry of this._itemFeedback.values())clearTimeout(entry.timer);this._itemFeedback.clear();this._itemEpoch++;}
+    disconnectedCallback(){super.disconnectedCallback();this._clearItemFeedback();}
+    _setItemFeedback(id,status,epoch){
+      if(epoch!==this._itemEpoch)return;
+      clearTimeout(this._itemFeedback.get(id)?.timer);
+      const entry={status};entry.timer=setTimeout(()=>{if(this._itemFeedback.get(id)===entry){this._itemFeedback.delete(id);this._render();}},1800);
+      this._itemFeedback.set(id,entry);
+    }
     setConfig(config) {
       validate(config);
       config.items.forEach((item,i) => {
         if (!/^(scene|script)\.[a-z0-9_]+$/.test(item.entity)) throw new Error(`items[${i}]: scene 또는 script 엔티티가 필요합니다.`);
         if (item.confirmation !== undefined && typeof item.confirmation !== 'string') throw new Error(`items[${i}]: confirmation은 문자열이어야 합니다.`);
       });
-      this._configure(config);
+      this._clearItemFeedback();this._configure(config);
     }
     static getStubConfig(hass) {
       return {items:[{entity:Object.keys(hass?.states || {}).find(id => /^(scene|script)\./.test(id)) || 'scene.relax',name:'휴식'}]};
@@ -698,7 +707,9 @@ for(const [type,constructor,name,description] of [
         const busy = this._busy.has(ref.item.entity), running = state?.entity_id.startsWith('script.') && state.state === 'on';
         const available = this._available(state);
         compactText(ref.label,name);
-        compactText(ref.detail,busy ? '실행 요청 중…' : !available ? '확인 불가' : running ? '실행 중' : this.getAttribute('data-feedback')==='success' && this._feedbackEntity===ref.item.entity ? '요청 전달됨' : '실행');
+        const feedback=this._itemFeedback.get(ref.item.entity)?.status;
+        compactText(ref.detail,busy ? '실행 요청 중…' : !available ? '확인 불가' : running ? '실행 중' : feedback==='success' ? '요청 전달됨' : feedback==='error' ? '요청 실패' : '실행');
+        compactAttr(ref.button,'data-result',feedback||'');
         compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || (ref.item.entity.startsWith('scene.') ? 'mdi:palette-outline' : 'mdi:play'));
         compactProp(ref.button,'disabled',!available || busy || running);
         compactAttr(ref.button,'aria-busy',busy);
@@ -711,10 +722,11 @@ for(const [type,constructor,name,description] of [
       if (!this._available(state) || this._busy.has(id) || (id.startsWith('script.') && state.state === 'on')) return;
       if (ref.item.confirmation && !window.confirm(ref.item.confirmation)) return;
       this._feedbackEntity=id;
+      const itemEpoch=this._itemEpoch;
       const feedback=compactFeedback(this,'pending','실행 요청 중');
       this._busy.add(id); this._render();
-      try { await this._hass.callService(id.split('.')[0],'turn_on',{entity_id:id});compactFeedback(this,'success','요청 전달됨',feedback); }
-      catch(error) { compactFeedback(this,'error','요청 실패',feedback);this._notify('실행 실패: ' + (error?.message || error)); }
+      try { await this._hass.callService(id.split('.')[0],'turn_on',{entity_id:id});this._setItemFeedback(id,'success',itemEpoch);compactFeedback(this,'success','요청 전달됨',feedback); }
+      catch(error) { this._setItemFeedback(id,'error',itemEpoch);compactFeedback(this,'error','요청 실패',feedback);this._notify('실행 실패: ' + (error?.message || error)); }
       finally { this._busy.delete(id); this._render(); }
     }
   }
@@ -722,12 +734,33 @@ for(const [type,constructor,name,description] of [
     constructor() {
       super();
       const style = make('style');
-      style.textContent = `.reading{font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.3;overflow-wrap:anywhere}.unit{font-size:11px;font-weight:400;margin-left:3px;color:var(--secondary-text-color)}
+      style.textContent = `.reading{display:inline-flex;align-items:baseline;gap:3px;font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap;max-width:100%}.reading>span:first-child{white-space:nowrap}.reading.unit-first{flex-direction:row-reverse}.unit{font-size:11px;font-weight:400;color:var(--secondary-text-color)}.unit:empty{display:none}
         button{align-items:center}.label{font-size:12px;color:var(--secondary-text-color)}
         button[data-level=warning]{border-color:var(--warning-color,#ffa600)}button[data-level=critical]{border-color:var(--error-color,#db4437)}
         button[data-level=warning] ha-icon{color:var(--warning-color,#ffa600)}button[data-level=critical] ha-icon{color:var(--error-color,#db4437)}
         @container(max-width:360px){ha-icon{display:none}}`;
       this.shadowRoot.append(style);
+      if(typeof ResizeObserver==='function')this._resize=new ResizeObserver(()=>this._layout());
+    }
+    connectedCallback(){this._resize?.observe(this);this._layout();}
+    disconnectedCallback(){super.disconnectedCallback();this._resize?.disconnect();}
+    _readingParts(state,formatted){
+      const unit=state.attributes.unit_of_measurement||'';
+      if(!unit)return {number:formatted,unit:'',prefix:false};
+      if(formatted.endsWith(unit))return {number:formatted.slice(0,-unit.length).trimEnd(),unit,prefix:false};
+      if(formatted.startsWith(unit))return {number:formatted.slice(unit.length).trimStart(),unit,prefix:true};
+      // Preserve a formatter's unfamiliar representation rather than guessing at its digits.
+      return {number:formatted,unit:'',prefix:false};
+    }
+    _layout(){
+      if(!this._config||!(this._config.columns===undefined||this._config.columns==='auto'))return;
+      const width=this.getBoundingClientRect().width;if(!width)return;
+      const grid=this.shadowRoot.querySelector('.grid'),available=Math.max(1,width-18),iconSpace=width>360?28:0;
+      const required=Math.max(90,...this._refs.map(ref=>ref.reading.scrollWidth+18+iconSpace));
+      const columns=Math.max(1,Math.min(this._refs.length,Math.floor((available+6)/(required+6))));
+      compactStyle(grid,'grid-template-columns',`repeat(${columns},minmax(0,1fr))`);
+      // Let a final unpaired metric use its row instead of leaving an empty half-card.
+      for(const [index,ref] of this._refs.entries())compactStyle(ref.button,'grid-column',columns===2&&this._refs.length%2===1&&index===this._refs.length-1?'1 / -1':'auto');
     }
     setConfig(config) {
       validate(config);
@@ -737,6 +770,7 @@ for(const [type,constructor,name,description] of [
       });
       this._configure(config);
       if(config.columns===undefined || config.columns==='auto')this.shadowRoot.querySelector('.grid').style.gridTemplateColumns='repeat(auto-fit,minmax(min(90px,100%),1fr))';
+      this._layout();
     }
     static getStubConfig(hass) {
       const state = Object.values(hass?.states || {}).find(s => s.entity_id.startsWith('sensor.') && ['temperature','humidity','carbon_dioxide'].includes(s.attributes.device_class));
@@ -761,14 +795,15 @@ for(const [type,constructor,name,description] of [
         const status = level === 'critical' ? '위험' : level === 'warning' ? '주의' : '';
         compactText(ref.label,name);
         // Use HA's localized formatting when available; never append its unit twice.
-        compactText(ref.number,available ? this._hass.formatEntityState ? reading : state.state : '—');
-        compactText(ref.unit,available && !this._hass.formatEntityState ? state.attributes.unit_of_measurement || '' : '');
+        const parts=available?this._readingParts(state,reading):{number:'—',unit:'',prefix:false};
+        compactText(ref.number,parts.number);compactText(ref.unit,parts.unit);ref.reading.classList.toggle('unit-first',parts.prefix);
         compactText(ref.detail,available ? status : '확인 불가'); ref.detail.hidden = available && !status;
         compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || icons[state?.attributes.device_class] || 'mdi:gauge');
         compactAttr(ref.button,'data-level',level); compactProp(ref.button,'disabled',!state);
         compactAttr(ref.button,'aria-label',`${name} · ${reading}${status ? ' · ' + status : ''}`);
         compactProp(ref.button,'title',`${name} · ${reading}${status ? ' · ' + status : ''}`);
       }
+      this._layout();
     }
   }
   for (const [type,Constructor,name,description] of [
@@ -783,7 +818,7 @@ for(const [type,constructor,name,description] of [
 // Compact media playback: capability-aware controls, committed volume changes only.
 class CompactMediaRow extends HTMLElement {
   constructor() {
-    super(); this.attachShadow({mode:'open'}); this._busy=false; this._editingVolume=false;
+    super(); this.attachShadow({mode:'open'}); this._busy=new Set(); this._requestContext=0; this._editingVolume=false;
     this.shadowRoot.innerHTML=`<style>
       :host{display:block;container-type:inline-size}ha-card{padding:4px 10px;box-sizing:border-box;overflow:hidden}
       .main{display:flex;align-items:center;gap:4px;min-height:48px}.info{flex:1;min-width:0;text-align:left;padding-inline:4px}
@@ -792,15 +827,16 @@ class CompactMediaRow extends HTMLElement {
       button:disabled,input:disabled{opacity:.4;cursor:default}button[aria-busy=true]{cursor:progress;background:var(--secondary-background-color)}
       .name,.title,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.name{font-size:12px;color:var(--secondary-text-color)}.title{font-size:14px;line-height:20px}.state{font-size:12px;color:var(--secondary-text-color)}
       ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:after{content:'';position:absolute;width:4px;height:4px;border-radius:50%;background:currentColor;bottom:4px;left:calc(50% - 2px)}
-      .volume{display:flex;align-items:center;gap:8px;min-height:32px;padding-inline:4px}.volume ha-icon{margin:0;color:var(--secondary-text-color);width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
+      .volume{display:flex;align-items:center;gap:4px;min-height:32px;padding-inline:4px}.volume .mute{flex:none;min-width:32px;width:32px;min-height:32px;padding:0}.volume .mute:disabled{opacity:1}.volume .mute[aria-pressed=true]{color:var(--primary-color)}.volume .mute:disabled:hover{background:transparent}.volume ha-icon{color:inherit;width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
       [hidden]{display:none!important}:host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding-inline:0}
-      @media(pointer:coarse){button{min-width:44px;min-height:44px}.volume{min-height:44px}.volume input{height:40px}}
+      @media(pointer:coarse){button{min-width:44px;min-height:44px}.volume{min-height:44px}.volume .mute{min-width:44px;min-height:44px}.volume input{height:40px}}
       @media(prefers-reduced-motion:reduce){button{transition:none}}
-    </style><ha-card><div class="main"><button class="info"><span class="name"></span><span class="title"></span><span class="state"></span></button><button class="play"><ha-icon></ha-icon></button><button class="next" aria-label="다음 곡" title="다음 곡"><ha-icon icon="mdi:skip-next"></ha-icon></button></div><div class="volume"><ha-icon icon="mdi:volume-medium"></ha-icon><input type="range" min="0" max="100" step="1" aria-label="음량"><output></output></div></ha-card>`;
+    </style><ha-card><div class="main"><button class="info"><span class="name"></span><span class="title"></span><span class="state"></span></button><button class="play"><ha-icon></ha-icon></button><button class="next" aria-label="다음 곡" title="다음 곡"><ha-icon icon="mdi:skip-next"></ha-icon></button></div><div class="volume"><button class="mute"><ha-icon icon="mdi:volume-medium"></ha-icon></button><input type="range" min="0" max="100" step="1" aria-label="음량"><output></output></div></ha-card>`;
     compactInteractions(this);
     this._q('.info').onclick=()=>{if(this._config)this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:this._config.entity},bubbles:true,composed:true}));};
     this._q('.play').onclick=()=>this._call(this._playAction());
     this._q('.next').onclick=()=>this._call('media_next_track');
+    this._q('.mute').onclick=()=>{const muted=this._state()?.attributes.is_volume_muted;if(typeof muted==='boolean')this._call('volume_mute',{is_volume_muted:!muted});};
     const volume=this._q('input');
     volume.onpointerdown=()=>{this._editingVolume=true;this._volumeGestureChanged=false;this._volumeGestureStart=Number(volume.value);};
     volume.oninput=()=>{this._editingVolume=true;this._volumeGestureChanged=true;this._showVolume(volume.value);};
@@ -815,7 +851,7 @@ class CompactMediaRow extends HTMLElement {
     if(typeof config?.entity!=='string'||!/^media_player\.[a-zA-Z0-9_]+$/.test(config.entity))throw new Error('media_player 엔티티가 필요합니다.');
     for(const key of ['show_volume','show_next','embedded'])if(config[key]!==undefined&&typeof config[key]!=='boolean')throw new Error(`${key}는 true 또는 false여야 합니다.`);
     if(config.name!==undefined&&typeof config.name!=='string')throw new Error('name은 문자열이어야 합니다.');
-    if(this._config?.entity!==config.entity){this._editingVolume=false;this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
+    if(this._config?.entity!==config.entity){this._requestContext++;this._editingVolume=false;this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
     compactClearFeedback(this);
     this._config={...config};this.toggleAttribute('embedded',Boolean(config.embedded));this._render();
   }
@@ -825,10 +861,12 @@ class CompactMediaRow extends HTMLElement {
   getGridOptions(){return {columns:12,min_columns:6};}
   _state(){return this._hass?.states[this._config?.entity];}
   _supports(bit){return (Number(this._state()?.attributes.supported_features)&bit)!==0;}
+  _channel(service){return ['volume_set','volume_mute'].includes(service)?'audio':'transport';}
+  _isBusy(channel){return this._busy.has(`${this._config?.entity}:${channel}`);}
   _playAction(){const state=this._state()?.state;return state==='off'||state==='standby'?'turn_on':state==='playing'||state==='buffering'?'media_pause':'media_play';}
   _allowed(service){
     const state=this._state();if(!state||['unknown','unavailable'].includes(state.state))return false;
-    const bit={turn_on:128,media_pause:1,media_play:16384,media_next_track:32,volume_set:4}[service];
+    const bit={turn_on:128,media_pause:1,media_play:16384,media_next_track:32,volume_set:4,volume_mute:8}[service];
     return Boolean(bit&&this._supports(bit)&&(service==='turn_on'||!['off','standby'].includes(state.state)));
   }
   _showVolume(value){compactText(this._q('output'),`${Math.round(Number(value))}%`);compactAttr(this._q('input'),'aria-valuetext',`${Math.round(Number(value))}%`);}
@@ -838,7 +876,7 @@ class CompactMediaRow extends HTMLElement {
     compactText(this._q('.name'),name);compactText(this._q('.title'),offline?'확인 불가':a.media_title||name);
     this._q('.name').hidden=!a.media_title||offline;
     const labels={off:'꺼짐',on:'켜짐',idle:'대기',playing:'재생 중',paused:'일시정지',buffering:'버퍼링',standby:'대기'};
-    compactText(this._q('.state'),this._busy?'처리 중…':offline?'연결을 확인하세요':[a.media_artist,this._hass.formatEntityState?.(state)||labels[state.state]||state.state].filter(Boolean).join(' · '));
+    compactText(this._q('.state'),offline?'연결을 확인하세요':[a.media_artist,this._hass.formatEntityState?.(state)||labels[state.state]||state.state,a.is_volume_muted===true?'음소거':'',this._isBusy('audio')||this._isBusy('transport')?'처리 중…':''].filter(Boolean).join(' · '));
     compactProp(this._q('.info'),'title',`${name} · ${a.media_title||''} · ${a.media_artist||''}`);
     this._q('.play').classList.toggle('playing',!offline&&state.state==='playing');
     const action=this._playAction(),play=this._q('.play'),label={turn_on:'전원 켜기',media_pause:'일시정지',media_play:'재생'}[action];
@@ -846,28 +884,35 @@ class CompactMediaRow extends HTMLElement {
     play.hidden=!offline&&!this._supports(actionBit);compactAttr(play,'aria-label',`${name} ${label}`);compactProp(play,'title',label);
     compactAttr(play.querySelector('ha-icon'),'icon',{turn_on:'mdi:power',media_pause:'mdi:pause',media_play:'mdi:play'}[action]);
     const next=this._q('.next');next.hidden=this._config.show_next===false||!this._supports(32);
-    for(const [button,service] of [[play,action],[next,'media_next_track']]){compactProp(button,'disabled',this._busy||!this._allowed(service));compactAttr(button,'aria-busy',this._busy);}
+    for(const [button,service] of [[play,action],[next,'media_next_track']]){compactProp(button,'disabled',this._isBusy('transport')||!this._allowed(service));compactAttr(button,'aria-busy',this._isBusy('transport'));}
+    const mute=this._q('.mute'),muted=a.is_volume_muted===true,muteLabel=muted?'음소거 해제':'음소거';
+    compactAttr(mute.querySelector('ha-icon'),'icon',muted?'mdi:volume-off':'mdi:volume-medium');
+    compactAttr(mute,'aria-label',`${name} ${muteLabel}`);compactProp(mute,'title',muteLabel);compactAttr(mute,'aria-pressed',muted);compactAttr(mute,'aria-busy',this._isBusy('audio'));
+    compactProp(mute,'disabled',this._isBusy('audio')||!this._allowed('volume_mute')||typeof a.is_volume_muted!=='boolean');
     const slider=this._q('input'),level=a.volume_level,valid=typeof level==='number'&&Number.isFinite(level)&&level>=0&&level<=1;
     this._q('.volume').hidden=this._config.show_volume===false||!this._supports(4);
-    compactProp(slider,'disabled',this._busy||!this._allowed('volume_set')||!valid);compactAttr(slider,'aria-label',`${name} 음량`);
+    compactProp(slider,'disabled',this._isBusy('audio')||!this._allowed('volume_set')||!valid);compactAttr(slider,'aria-label',`${name} 음량${muted?' (음소거 중)':''}`);
     if(this._pendingVolume!==undefined&&valid&&Math.round(level*100)===this._pendingVolume){this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
     if(!this._editingVolume){compactProp(slider,'value',String(this._pendingVolume??(valid?Math.round(level*100):0)));this._showVolume(slider.value);if(!valid)compactText(this._q('output'),'—');}
   }
   async _commitVolume(value){
-    if(!Number.isFinite(value)||value<0||value>100||this._busy||!this._allowed('volume_set'))return;
+    if(!Number.isFinite(value)||value<0||value>100||this._isBusy('audio')||!this._allowed('volume_set'))return;
+    const context=this._requestContext,entity=this._config.entity;
     this._pendingVolume=value;clearTimeout(this._volumeTimer);
     this._volumeTimer=setTimeout(()=>{this._pendingVolume=undefined;this._render();},3000);
-    if(!await this._call('volume_set',{volume_level:value/100})){this._pendingVolume=undefined;clearTimeout(this._volumeTimer);this._render();}
+    if(!await this._call('volume_set',{volume_level:value/100})&&context===this._requestContext&&entity===this._config.entity){this._pendingVolume=undefined;clearTimeout(this._volumeTimer);this._render();}
   }
   async _call(service,data={}){
-    if(this._busy||!this._allowed(service))return false;
+    const channel=this._channel(service),entity=this._config?.entity,context=this._requestContext;
+    if(this._isBusy(channel)||!this._allowed(service))return false;
+    const token=`${entity}:${channel}`,hass=this._hass;
     const feedback=compactFeedback(this,'pending','변경 요청 중');
-    this._busy=true;this._render();
-    try{await this._hass.callService('media_player',service,{entity_id:this._config.entity,...data});compactFeedback(this,'success','요청 전달됨',feedback);return true;}
-    catch(error){compactFeedback(this,'error','요청 실패',feedback);this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'미디어 변경 실패: '+(error?.message||error)},bubbles:true,composed:true}));return false;}
-    finally{this._busy=false;this._render();}
+    this._busy.add(token);this._render();
+    try{await hass.callService('media_player',service,{entity_id:entity,...data});if(context===this._requestContext)compactFeedback(this,'success','요청 전달됨',feedback);return true;}
+    catch(error){if(context===this._requestContext){compactFeedback(this,'error','요청 실패',feedback);this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'미디어 변경 실패: '+(error?.message||error)},bubbles:true,composed:true}));}return false;}
+    finally{this._busy.delete(token);this._render();}
   }
-  disconnectedCallback(){compactClearFeedback(this);clearTimeout(this._volumeTimer);this._pendingVolume=undefined;this._editingVolume=false;}
+  disconnectedCallback(){this._requestContext++;compactClearFeedback(this);clearTimeout(this._volumeTimer);this._pendingVolume=undefined;this._editingVolume=false;}
 }
 if(!customElements.get('compact-media-row'))customElements.define('compact-media-row',CompactMediaRow);
 window.customCards=window.customCards||[];
