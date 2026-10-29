@@ -831,7 +831,14 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
     _commit(change,rebuild=false){
       const next=clone(this._config);change(next);if(JSON.stringify(next)===JSON.stringify(this._config))return;
       this._config=next;
-      if(rebuild)this._render();else for(const ref of this._forms)ref.form.data=ref.data();
+      if(rebuild)this._render();else {
+        for(const ref of this._forms)ref.form.data=ref.data();
+        for(const row of this.shadowRoot.querySelectorAll('details[data-path]')){
+          const path=JSON.parse(row.dataset.path),item=at(next,path);
+          const title=item?.name||item?.entity||item?.find_name||(item?.value!==undefined?`${item.value} · ${item.level||''}`:row.dataset.label);
+          row.querySelector('summary').textContent=`${Number(path.at(-1))+1}. ${title}`;
+        }
+      }
       this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:clone(next)},bubbles:true,composed:true}));
     }
     _update(path,values,schema){
@@ -891,7 +898,7 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       const wrapper=this._section(parent,label),list=this._make('div','list');wrapper.append(list);
       const entries=at(this._config,path)||[];
       entries.forEach((item,index)=>{
-        const row=this._make('details');row.dataset.path=JSON.stringify([...path,index]);row.open=this._openDetails?.has(row.dataset.path)||(!this._openDetails?.size&&index===0);
+        const row=this._make('details');row.dataset.path=JSON.stringify([...path,index]);row.dataset.label=`${label} ${index+1}`;row.open=this._openDetails?.has(row.dataset.path)||(!this._openDetails?.size&&index===0);
         const title=item.name||item.entity||item.find_name||(item.value!==undefined?`${item.value} · ${item.level||''}`:`${label} ${index+1}`);
         row.append(this._make('summary',null,`${index+1}. ${title}`));
         const content=this._make('div','content'),toolbar=this._make('div','toolbar');

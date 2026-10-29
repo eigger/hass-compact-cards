@@ -46,7 +46,7 @@ test('form edits emit immutable complete configs preserving unknown YAML and foc
 
 test('scene items add remove reorder and preserve confirmation while editing names',async t=>{
   const {editor,change,add,events}=await setup(t,'compact-scene-panel',{items:[{entity:'scene.first',confirmation:'Sure?',custom:7},{entity:'script.second'}]});
-  change(['items',0],{name:'First'});assert.equal(editor._config.items[0].confirmation,'Sure?');assert.equal(editor._config.items[0].custom,7);
+  change(['items',0],{name:'First'});assert.equal(editor._config.items[0].confirmation,'Sure?');assert.equal(editor._config.items[0].custom,7);assert.equal(editor.shadowRoot.querySelector('summary').textContent,'1. First');
   let details=[...editor.shadowRoot.querySelectorAll('details')];details[0].querySelector('button[aria-label$="아래로"]').click();assert.equal(editor._config.items[1].entity,'scene.first');
   add(['items']);assert.equal(editor._config.items.length,3);assert.equal(editor._config.items[2].entity,'scene.relax');
   details=[...editor.shadowRoot.querySelectorAll('details')];details[2].querySelector('button[aria-label$="삭제"]').click();assert.equal(editor._config.items.length,2);assert.equal(events.length,4);
