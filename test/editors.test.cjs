@@ -101,3 +101,14 @@ test('existing advanced configuration round trips without unsolicited config cha
     const {editor,events}=await setup(t,type,original);assert.deepEqual(plain(editor._config),original);assert.equal(events.length,0);original.future.x='caller mutation';assert.equal(editor._config.future.x,null);
   }
 });
+
+test('native fallback note editor preserves and edits multiline text without flattening YAML',async t=>{
+  const original={items:[{type:'note',name:'First line\nSecond line\n\nFourth line',future:'keep'}]};
+  const {window,editor,events}=await setup(t,'compact-home-panel',original,false);
+  const note=editor.shadowRoot.querySelector('textarea[data-field="name"]');
+  assert.ok(note);assert.equal(note.value,original.items[0].name);assert.equal(events.length,0);
+  note.value='Updated first line\nSecond line\n';note.dispatchEvent(new window.Event('change'));
+  assert.equal(events[0].detail.config.items[0].name,'Updated first line\nSecond line\n');
+  assert.equal(editor._config.items[0].future,'keep');assert.equal(original.items[0].name,'First line\nSecond line\n\nFourth line');
+  editor.setConfig(events[0].detail.config);assert.equal(editor.shadowRoot.querySelector('textarea').value,'Updated first line\nSecond line\n');
+});
