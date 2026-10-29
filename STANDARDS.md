@@ -34,6 +34,6 @@ The concrete commands, versions, results and outstanding checks are recorded in 
 
 ## Repository setup follow-up
 
-The repository is being published as `eigger/hass-compact-cards` with `main` as its default branch. Settings follow `hass-niimbot` where applicable: squash auto-merge, branch deletion, read-only default workflow permissions and a strict required status check for the card's `test` job. The funding account is `eigger`, matching that repository's `FUNDING.yml`.
+The repository is published as [eigger/hass-compact-cards](https://github.com/eigger/hass-compact-cards) with `main` as its default branch. Settings follow `hass-niimbot` where applicable: squash auto-merge, branch deletion, read-only default workflow permissions and a strict required status check for the card's `test` job. Pull requests require no additional approving review, linear history is required, force pushes and branch deletion are disabled, and administrators retain their existing bypass capability. The funding account is `eigger`, matching that repository's `FUNDING.yml`.
 
 Only the generic Dependabot auto-merge/cleanup workflow is reused from standards `v1.1.4`, pinned to its verified commit `a90531d05613597632a4c10c11ce1dbc45e0bab6`. Its published contents were inspected: it accepts same-repository Dependabot PRs against the default branch, allows only patch/minor auto-merge, and checks metadata without executing PR code. This is standalone CI reuse, not central enrollment or automatic standards adoption. Central integration CI and the adoption table remain unchanged.

@@ -32,3 +32,16 @@ Scope and applicability: [STANDARDS.md](STANDARDS.md). This is a card-specific r
 The primary agent implemented and reviewed this limited documentation/local workflow change. No shared standards workflow implementation or card service behavior changed; a separate integration lifecycle review was not needed. Standardized integration README blocks, automatic badge generation and central adoption status updates were intentionally excluded under the user's selective-reference instruction.
 
 Before the first release, rerun checks on the committed tree, confirm the actual GitHub repository and support features, run CI on Node.js 22, and verify installation and controls in Home Assistant. Record those results separately; the TODO entries above are not passes.
+
+## Publication and automation follow-up — 2026-10-30
+
+The user subsequently requested commit/push, repository metadata, CI/auto-merge settings and sponsorship in this chat. The earlier table describes the initial local reference review; this section records the later remote checks.
+
+- Published initial commit `89b795b319bacdca2578c0df1daccdb2b233b19f` to public repository `eigger/hass-compact-cards`, default branch `main`.
+- PASS: [GitHub Check run 40970451163](https://github.com/eigger/hass-compact-cards/actions/runs/40970451163) on that commit succeeded on Ubuntu/Node.js 22. This resolves the initial unverified Node.js 22 and GitHub test execution items for that commit.
+- PASS: local `npm run check`, `npm test` (7 tests), `git diff --cached --check`, and actionlint 1.7.12 on all three workflow files before the initial commit.
+- PASS: GitHub API read-back confirmed description, seven card-related topics, public visibility, default branch, enabled Issues/Discussions, auto-merge, squash/rebase merge, disabled merge commits and automatic head-branch deletion.
+- PASS: API read-back confirmed read-only default workflow permissions and strict `test` requirement from the GitHub Actions app (15368), linear history and disabled force-push/deletion. Review count is zero and administrator enforcement is off, matching the inspected reference repository.
+- PASS: `.github/FUNDING.yml` uses `github: eigger`, matching `hass-niimbot`.
+- The pinned generic auto-merge workflow was inspected at `a90531d05613597632a4c10c11ce1dbc45e0bab6` (standards `v1.1.4`). It allows only same-repository Dependabot patch/minor PRs against the default branch and includes scheduled cleanup. This does not enroll the card repository in central standards management.
+- TODO: no Dependabot PR has yet completed the automatic merge path. No tag/release was created, and release publishing, live HACS installation, rendering and device control remain unverified.
