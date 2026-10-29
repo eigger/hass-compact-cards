@@ -16,11 +16,26 @@ This is a frontend card project. Use a single JavaScript file without a build st
 | `custom:compact-cover-row` | Open, stop, close and position controls |
 | `custom:compact-scene-panel` | One-tap scene and script shortcuts |
 | `custom:compact-environment-panel` | Compact sensor readings with explicit thresholds |
+| `custom:compact-media-row` | Playback, next track and committed volume controls |
 
 See [direct light and cover controls](docs/light-cover.md) for configuration. These rows also work inside `compact-home-panel` using `type: light` or `type: cover`.
 
 
 See [scene and environment panels](docs/scene-environment.md) for options and examples.
+
+## Card previews and guides
+
+Screenshots use mocked states; each guide includes options and detailed YAML examples.
+
+| Card / guide | Preview |
+| --- | --- |
+| [compact-climate-row](docs/compact-climate-row.md) | ![compact-climate-row](images/compact-climate-row.jpg) |
+| [compact-home-panel](docs/compact-home-panel.md) | ![compact-home-panel](images/compact-home-panel.jpg) |
+| [compact-light-row](docs/compact-light-row.md) | ![compact-light-row](images/compact-light-row.jpg) |
+| [compact-cover-row](docs/compact-cover-row.md) | ![compact-cover-row](images/compact-cover-row.jpg) |
+| [compact-scene-panel](docs/compact-scene-panel.md) | ![compact-scene-panel](images/compact-scene-panel.jpg) |
+| [compact-environment-panel](docs/compact-environment-panel.md) | ![compact-environment-panel](images/compact-environment-panel.jpg) |
+| [compact-media-row](docs/compact-media-row.md) | ![compact-media-row](images/compact-media-row.jpg) |
 
 ## HACS installation
 

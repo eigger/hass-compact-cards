@@ -16,11 +16,26 @@ Home Assistant를 위한 작고 정돈된 대시보드 커스텀 카드 모음�
 | `custom:compact-cover-row` | 열기·정지·닫기·위치를 직접 제어하는 커튼 행 |
 | `custom:compact-scene-panel` | 한 번에 실행하는 장면·스크립트 바로가기 |
 | `custom:compact-environment-panel` | 온도·습도·공기질과 사용자 지정 임계값 |
+| `custom:compact-media-row` | 곡 정보·재생·다음 곡·음량 직접 제어 |
 
 [조명·커튼 설정 가이드](docs/light-cover.md). 홈 패널의 `items`에서도 `type: light`, `type: cover`로 사용할 수 있습니다.
 
 
 [장면·환경 패널 가이드](docs/scene-environment.md)에서 설정과 예제를 확인하세요.
+
+## 카드 미리보기와 상세 가이드
+
+모의 상태로 렌더링한 대표 화면입니다. 각 카드별 문서에 옵션과 상세 YAML 예제를 제공합니다.
+
+| 카드 / 전용 문서 | 대표 이미지 |
+| --- | --- |
+| [냉난방](docs/compact-climate-row.md) | ![냉난방](images/compact-climate-row.jpg) |
+| [홈 패널](docs/compact-home-panel.md) | ![홈 패널](images/compact-home-panel.jpg) |
+| [조명](docs/compact-light-row.md) | ![조명](images/compact-light-row.jpg) |
+| [커튼](docs/compact-cover-row.md) | ![커튼](images/compact-cover-row.jpg) |
+| [장면](docs/compact-scene-panel.md) | ![장면](images/compact-scene-panel.jpg) |
+| [환경](docs/compact-environment-panel.md) | ![환경](images/compact-environment-panel.jpg) |
+| [미디어](docs/compact-media-row.md) | ![미디어](images/compact-media-row.jpg) |
 
 ## HACS 설치
 
