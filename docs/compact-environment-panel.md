@@ -82,6 +82,8 @@ items:
 - 임계값은 표시 상태에만 사용됩니다. 자동화·알림 전송·기기 제어를 실행하거나 과거 데이터를 조회하지 않습니다.
 - 버튼 높이는 최소 44px이며 키보드 포커스와 동작 줄이기 설정을 지원합니다.
 
+![320px에서 긴 숫자를 유지하는 예시](../images/compact-environment-long.jpg)
+
 ## English
 
 Use `custom:compact-environment-panel` with a nonempty `items` list of numeric `sensor.*` entities. Items accept optional `name`, `icon`, and `thresholds`. The panel accepts optional title `name` and `columns: auto` (default) or 1–4. Automatic cells favor compact readings and hide decorative icons at widths of 360px or less.
