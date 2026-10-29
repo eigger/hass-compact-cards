@@ -66,3 +66,12 @@ test('released light and cover slider values remain until acknowledgment and res
     assert.equal(ref.pending,undefined);assert.equal(ref.input.value,'51');
   }
 });
+test('light and cover rows embed in the home panel with shared hass and no paired grid',()=>{
+  const {window,hass}=setup('compact-light-row',{supported_color_modes:['brightness']});
+  const panel=window.document.createElement('compact-home-panel');
+  panel.setConfig({items:[{type:'light',entity:'light.room'},{type:'cover',entity:'cover.room'}]});panel.hass=hass;
+  assert.equal(panel.shadowRoot.querySelector('.pair-grid'),null);
+  assert.equal(panel._refs[0].child._hass,hass);assert.equal(panel._refs[0].child.hasAttribute('embedded'),true);
+  assert.equal(panel._refs[1].child._config.entity,'cover.room');
+  assert.throws(()=>panel.setConfig({items:[{type:'light',entity:'cover.room'}]}),/items\[0\]/);
+});

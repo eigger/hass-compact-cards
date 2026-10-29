@@ -12,6 +12,11 @@ This is a frontend card project. Use a single JavaScript file without a build st
 | --- | --- |
 | `custom:compact-climate-row` | Climate modes and target temperature controls in one row |
 | `custom:compact-home-panel` | A panel combining controls, sensors, headings, notes, navigation and usage comparisons |
+| `custom:compact-light-row` | Direct power, brightness and color temperature controls |
+| `custom:compact-cover-row` | Open, stop, close and position controls |
+
+See [direct light and cover controls](docs/light-cover.md) for configuration. These rows also work inside `compact-home-panel` using `type: light` or `type: cover`.
+
 
 ## HACS installation
 

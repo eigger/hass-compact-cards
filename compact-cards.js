@@ -233,10 +233,10 @@ class CompactHomePanel extends HTMLElement {
     for (const [index, item] of config.items.entries()) {
       const fail = message => { throw new Error(`items[${index}]: ${message}`); };
       if (!item || typeof item !== 'object' || Array.isArray(item)) fail('항목은 객체여야 합니다.');
-      if (item.type && !['heading','note','climate','comparison','navigate'].includes(item.type)) fail('지원하지 않는 항목 유형입니다.');
+      if (item.type && !['heading','note','climate','light','cover','comparison','navigate'].includes(item.type)) fail('지원하지 않는 항목 유형입니다.');
       if (['heading','note','navigate'].includes(item.type) && typeof item.name !== 'string') fail('name이 필요합니다.');
       if (item.type === 'heading' && item.badges !== undefined && (!Array.isArray(item.badges) || item.badges.some(b => !b || typeof b.entity !== 'string'))) fail('badges에 entity 목록이 필요합니다.');
-      if (item.type === 'climate' && (typeof item.entity !== 'string' || !item.entity.startsWith('climate.'))) fail('climate 엔티티가 필요합니다.');
+      if (['climate','light','cover'].includes(item.type) && (typeof item.entity !== 'string' || !item.entity.startsWith(item.type+'.'))) fail(`${item.type} 엔티티가 필요합니다.`);
       if (item.type === 'comparison' && (!Array.isArray(item.rows) || item.rows.some(r => !r || typeof r.entity !== 'string' || typeof r.previous !== 'string'))) fail('rows에 entity와 previous가 필요합니다.');
       if (item.type === 'navigate' && (typeof item.navigation_path !== 'string' || !item.navigation_path.startsWith('/') || item.navigation_path.startsWith('//') || /[\\\\\s]/.test(item.navigation_path))) fail('navigation_path는 로컬 경로여야 합니다.');
       if (!item.type && typeof item.entity !== 'string' && typeof item.find_name !== 'string') fail('entity 또는 find_name이 필요합니다.');
@@ -264,7 +264,7 @@ class CompactHomePanel extends HTMLElement {
     let pairGroup=null;
     for (const item of this._config.items) {
       const rowDomain=(item.entity || '').split('.')[0];
-      const paired=!['heading','note','climate','comparison','navigate'].includes(item.type) && rowDomain!=='select';
+      const paired=!['heading','note','climate','light','cover','comparison','navigate'].includes(item.type) && rowDomain!=='select';
       if (!paired) pairGroup=null;
       if (paired && !pairGroup) {pairGroup=this._make('div','pair-grid');body.append(pairGroup);}
       if (item.type === 'heading') {
@@ -273,9 +273,9 @@ class CompactHomePanel extends HTMLElement {
         body.append(h);continue;
       }
       if (item.type === 'note') { body.append(this._make('div','note',item.name));continue; }
-      if (item.type === 'climate') {
-        const child = document.createElement('compact-climate-row');child.className='climate';body.append(child);
-        customElements.whenDefined('compact-climate-row').then(()=>this._render());
+      if (['climate','light','cover'].includes(item.type)) {
+        const child = document.createElement(`compact-${item.type}-row`);child.className='climate';body.append(child);
+        customElements.whenDefined(`compact-${item.type}-row`).then(()=>this._render());
         this._refs.push({item,child,configured:false});continue;
       }
       if (item.type === 'comparison') {
@@ -393,19 +393,19 @@ class CompactControlRow extends HTMLElement {
       button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}
       button[aria-busy=true]{background:color-mix(in srgb,var(--primary-color) 14%,transparent)}
-      .info{display:block;flex:1 1 84px;min-width:0;text-align:left;padding:2px 0}
+      .info{display:block;justify-items:normal;align-items:normal;flex:1 1 84px;min-width:0;text-align:left;padding:2px 0}
       .name,.state{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
       .name{font-size:14px}.state{font-size:12px;color:var(--secondary-text-color);margin-top:2px}
       .controls{display:flex;align-items:center;gap:2px;flex:none}
       .controls:empty{display:none}
       ha-icon{--mdc-icon-size:20px;width:20px;height:20px}
       button[aria-pressed=true]{color:var(--state-light-active-color,var(--primary-color));background:color-mix(in srgb,var(--primary-color) 12%,transparent)}
-      .slider{display:flex;align-items:center;gap:8px;flex:1 1 138px;min-width:0;max-width:220px}
+      .slider{display:flex;align-items:center;gap:8px;flex:1 1 138px;min-width:0}
       .slider[hidden],button[hidden]{display:none}
       input{accent-color:var(--primary-color);width:100%;min-width:40px;min-height:36px;margin:0;cursor:pointer}
       output{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:36px;text-align:right}
       .slider ha-icon{--mdc-icon-size:16px;width:16px;height:16px;color:var(--secondary-text-color)}
-      @container(max-width:360px){ha-card{gap:4px 8px}.slider{flex-basis:calc(100% - 24px);max-width:none}.info{flex-basis:100px}}
+      @container(max-width:360px){ha-card{gap:4px 8px}.info{flex-basis:84px}}
       @media(pointer:coarse){button,input{min-height:44px}.controls button{min-width:44px}}
       :host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding:4px 0}
     </style><ha-card><button class="info"><span class="name"></span><span class="state"></span></button><div class="controls"></div></ha-card>`;
