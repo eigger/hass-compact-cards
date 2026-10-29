@@ -929,16 +929,19 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
   const entity=(name,label,domain,required=true)=>field(name,label,{entity:domain?{domain}:{}},required);
   const select=(name,label,options)=>field(name,label,{select:{mode:'dropdown',options:options.map(([value,label])=>({value,label}))}});
   const columns=max=>select('columns','열 수',[['auto','자동'],...Array.from({length:max},(_,i)=>[String(i+1),`${i+1}열`])]);
+  const flatSchema=schema=>schema.flatMap(item=>item.schema&&(!item.name||item.flatten)?flatSchema(item.schema):[item]);
+  const display=fields=>({type:'expandable',name:'',flatten:true,title:'표시 설정',schema:fields});
+  const grid=fields=>({type:'grid',name:'',flatten:true,column_min_width:'90px',schema:fields});
   const labels={entity:'엔티티',lookup:'이름으로 센서 찾기',heading:'제목',note:'메모',climate:'냉난방',comparison:'사용량 비교',navigate:'페이지 이동',light:'조명',cover:'커튼',media:'미디어'};
   class CompactCardEditor extends HTMLElement {
     constructor(kind){
-      super();this._kind=kind;this._forms=[];this.attachShadow({mode:'open'});
+      super();this._kind=kind;this._forms=[];this._haDisplayOpen=new Set();this.attachShadow({mode:'open'});
       this.shadowRoot.innerHTML=`<style>
         :host{display:block;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit)}
         .root{display:grid;gap:12px}.list{display:grid;gap:8px}details{border:1px solid var(--divider-color,#ddd);border-radius:10px;padding:8px}summary{cursor:pointer;font-size:14px;font-weight:500;overflow-wrap:anywhere;min-height:32px;align-content:center}details>.content{display:grid;gap:10px;padding-top:8px}
         .toolbar,.add{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:flex-end}.toolbar button{min-width:36px}.add select{flex:1;min-width:130px}.heading{font-size:14px;font-weight:500;margin:0}.hint{font-size:12px;color:var(--secondary-text-color);margin:0;line-height:1.5}
         button,input,textarea,select{font:inherit;color:var(--primary-text-color);box-sizing:border-box}button{border:1px solid var(--divider-color,#ddd);background:var(--card-background-color,transparent);border-radius:7px;padding:6px 10px;cursor:pointer;min-height:36px}button:hover:not(:disabled){background:var(--secondary-background-color,#eee)}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
-        .native{display:grid;gap:10px}.native label{display:grid;gap:5px;font-size:13px}.native input,.native textarea,.native select,.add select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.native input[type=checkbox]{width:24px;height:24px;min-height:24px}.content>label,.subsection>label{display:grid;gap:5px;font-size:13px}.content>label>select,.subsection>label>input:not([type=checkbox]),.subsection>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.subsection{display:grid;gap:8px;border-top:1px solid var(--divider-color,#ddd);padding-top:10px}
+        .native{display:grid;gap:10px;min-width:0}.native-grid{grid-template-columns:repeat(auto-fit,minmax(min(90px,100%),1fr));align-items:start}.native label{min-width:0}.display{background:transparent}.display summary{font-size:13px;color:var(--secondary-text-color)}.native label{display:grid;gap:5px;font-size:13px}.native input,.native textarea,.native select,.add select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.native input[type=checkbox]{width:24px;height:24px;min-height:24px}.content>label,.subsection>label{display:grid;gap:5px;font-size:13px}.content>label>select,.subsection>label>input:not([type=checkbox]),.subsection>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.subsection{display:grid;gap:8px;border-top:1px solid var(--divider-color,#ddd);padding-top:10px}
         @media(pointer:coarse){button{min-height:44px;min-width:44px}}
       </style><div class="root"></div>`;
     }
@@ -946,7 +949,7 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       const next=clone(config||{});if(JSON.stringify(next)===JSON.stringify(this._config))return;
       this._config=next;this._render();
     }
-    set hass(value){const initial=!this._hass;this._hass=value;for(const ref of this._forms)ref.form.hass=value;if(initial&&this._config&&!customElements.get('ha-form'))this._render();}
+    set hass(value){const initial=!this._hass;this._hass=value;for(const ref of this._forms)ref.form.hass=value;if(initial&&this._config&&!customElements.get('ha-form'))this._render();else this._refreshSummaries();}
     _make(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
     _button(label,action,disabled=false){const button=this._make('button',null,label);button.type='button';button.disabled=disabled;button.onclick=action;return button;}
     _commit(change,rebuild=false){
@@ -954,19 +957,54 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       this._config=next;
       if(rebuild)this._render();else {
         for(const ref of this._forms)ref.form.data=ref.data();
-        for(const row of this.shadowRoot.querySelectorAll('details[data-path]')){
-          const path=JSON.parse(row.dataset.path),item=at(next,path);
-          const title=item?.name||item?.entity||item?.find_name||(item?.value!==undefined?`${item.value} · ${item.level||''}`:row.dataset.label);
-          row.querySelector('summary').textContent=`${Number(path.at(-1))+1}. ${title}`;
-          for(const button of row.querySelectorAll(':scope > .content > .toolbar > button'))button.setAttribute('aria-label',`${title} ${button.textContent}`);
-        }
+        this._refreshSummaries();this._refreshActions();
       }
       this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:clone(next)},bubbles:true,composed:true}));
+    }
+    _title(item,path,fallback){
+      if(path.at(-2)==='thresholds'&&item?.value!==undefined){
+        const sensor=at(this._config,path.slice(0,-2));
+        const unit=this._hass?.states[sensor?.entity]?.attributes.unit_of_measurement||'';
+        return `${item.value}${unit} ${item.direction==='below'?'이하':'이상'} · ${{warning:'주의',critical:'위험'}[item.level]||item.level||''}`;
+      }
+      return item?.name||item?.entity||item?.find_name||fallback;
+    }
+    _refreshSummaries(){
+      for(const row of this.shadowRoot.querySelectorAll('details[data-path]')){
+        const path=JSON.parse(row.dataset.path),title=this._title(at(this._config,path),path,row.dataset.label);
+        row.querySelector('summary').textContent=`${Number(path.at(-1))+1}. ${title}`;
+        for(const button of row.querySelectorAll(':scope > .content > .toolbar > button'))button.setAttribute('aria-label',`${title} ${button.textContent}`);
+      }
+    }
+    _remapPath(path){
+      const move=this._moving;if(!move||!move.path.every((key,index)=>path[index]===key))return path;
+      const index=move.path.length,result=[...path];
+      if(result[index]===move.from)result[index]=move.to;else if(result[index]===move.to)result[index]=move.from;
+      return result;
+    }
+    _move(path,index,offset){
+      this._moving={path,from:index,to:index+offset};this._focusAfter={path:[...path,index+offset],action:offset<0?'up':'down'};
+      this._commit(next=>{const items=at(next,path);[items[index],items[index+offset]]=[items[index+offset],items[index]];},true);
+    }
+    _restoreReorderFocus(){
+      if(!this._focusAfter)return;
+      const {path,action}=this._focusAfter;this._focusAfter=undefined;
+      const row=[...this.shadowRoot.querySelectorAll('details[data-path]')].find(node=>node.dataset.path===JSON.stringify(path));
+      const button=row?.querySelector(`:scope > .content > .toolbar > button[data-move=${action}]`);
+      (button&&!button.disabled?button:row?.querySelector('summary'))?.focus();
+    }
+    _refreshActions(){
+      for(const section of this.shadowRoot.querySelectorAll('[data-action-path]')){
+        const path=JSON.parse(section.dataset.actionPath),item=at(this._config,path);
+        const dedicated=['light','switch','select'].includes((item?.entity||'').split('.')[0]);
+        if(section.dataset.dedicated===String(dedicated))continue;
+        this._forms=this._forms.filter(ref=>!section.contains(ref.form));this._action(null,path,item,section);
+      }
     }
     _update(path,values,schema){
       this._commit(next=>{
         const target=at(next,path);
-        for(const item of schema){
+        for(const item of flatSchema(schema)){
           if(!Object.prototype.hasOwnProperty.call(values,item.name))continue;
           let value=clone(values[item.name]);
           if(item.name==='columns'&&value!=='auto'&&value!==undefined&&value!==null&&value!=='')value=Number(value);
@@ -977,11 +1015,13 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
     _form(parent,path,schema){
       const data=()=>{
         const source=at(this._config,path)||{},result={};
-        for(const item of schema){if(source[item.name]!==undefined)result[item.name]=item.name==='columns'?String(source[item.name]):clone(source[item.name]);else if(item.name==='columns')result[item.name]='auto';else if(['show_volume','show_next'].includes(item.name))result[item.name]=true;}
+        for(const item of flatSchema(schema)){if(source[item.name]!==undefined)result[item.name]=item.name==='columns'?String(source[item.name]):clone(source[item.name]);else if(item.name==='columns')result[item.name]='auto';else if(['show_volume','show_next'].includes(item.name))result[item.name]=true;}
         return result;
       };
       if(!customElements.get('ha-form')){this._nativeForm(parent,path,schema,data);return;}
+      schema=schema.map(item=>item.type==='expandable'?{...item,expanded:this._haDisplayOpen.has(JSON.stringify(path))}:item);
       const form=this._make('ha-form');form.dataset.path=JSON.stringify(path);form.hass=this._hass;form.schema=schema;
+      form.addEventListener('expanded-changed',event=>{if(typeof event.detail?.expanded!=='boolean'||!event.composedPath().some(node=>node.localName==='ha-form-expandable'))return;this._haDisplayOpen[event.detail.expanded?'add':'delete'](JSON.stringify(path));for(const item of schema)if(item.type==='expandable')item.expanded=event.detail.expanded;});
       form.computeLabel=item=>item.label||item.name;form.data=data();
       form.addEventListener('value-changed',event=>{event.stopPropagation();if(event.target!==form||!event.detail?.value)return;this._update(path,event.detail.value,schema);});
       this._forms.push({form,data});parent.append(form);
@@ -989,6 +1029,13 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
     _nativeForm(parent,path,schema,data){
       const form=this._make('div','native');form.dataset.path=JSON.stringify(path);parent.append(form);
       for(const item of schema){
+        if(item.schema){
+          if(item.type==='expandable'){
+            const details=this._make('details','display');details.dataset.displayPath=JSON.stringify(path);details.open=this._openDisplay?.has(details.dataset.displayPath)||false;
+            details.append(this._make('summary',null,item.title));const content=this._make('div','content');details.append(content);form.append(details);this._nativeForm(content,path,item.schema,data);
+          }else {this._nativeForm(form,path,item.schema,data);form.lastElementChild.classList.add('native-grid');}
+          continue;
+        }
         const label=this._make('label',null,item.label),selector=item.selector,value=data()[item.name];let input;
         if(selector.select){input=this._make('select');if(!item.required){const empty=this._make('option',null,'기본값');empty.value='';input.append(empty);}for(const option of selector.select.options){const node=this._make('option',null,option.label);node.value=option.value;input.append(node);}input.value=value??'';}
         else {input=this._make(selector.text?.multiline?'textarea':'input');if(selector.text?.multiline){input.rows=4;input.value=value??'';}else {input.type=selector.boolean?'checkbox':selector.number?'number':'text';if(selector.boolean)input.checked=value??false;else if(selector.target)input.value=Array.isArray(value?.entity_id)?value.entity_id.join(', '):value?.entity_id||'';else input.value=value??'';if(selector.number)input.step='any';}}
@@ -1022,10 +1069,10 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       const entries=at(this._config,path)||[];
       entries.forEach((item,index)=>{
         const row=this._make('details');row.dataset.path=JSON.stringify([...path,index]);row.dataset.label=`${label} ${index+1}`;row.open=this._openDetails?.has(row.dataset.path)||(!this._openDetails?.size&&index===0);
-        const title=item.name||item.entity||item.find_name||(item.value!==undefined?`${item.value} · ${item.level||''}`:`${label} ${index+1}`);
+        const title=this._title(item,[...path,index],`${label} ${index+1}`);
         row.append(this._make('summary',null,`${index+1}. ${title}`));
         const content=this._make('div','content'),toolbar=this._make('div','toolbar');
-        for(const [text,offset] of [['위로',-1],['아래로',1]]){const button=this._button(text,()=>this._commit(next=>{const items=at(next,path);[items[index],items[index+offset]]=[items[index+offset],items[index]];},true),index+offset<0||index+offset>=entries.length);button.setAttribute('aria-label',`${title} ${text}`);toolbar.append(button);}
+        for(const [text,offset] of [['위로',-1],['아래로',1]]){const button=this._button(text,()=>this._move(path,index,offset),index+offset<0||index+offset>=entries.length);button.dataset.move=offset<0?'up':'down';button.setAttribute('aria-label',`${title} ${text}`);toolbar.append(button);}
         const remove=this._button('삭제',()=>this._commit(next=>{at(next,path).splice(index,1);},true),entries.length<=min);remove.setAttribute('aria-label',`${title} 삭제`);toolbar.append(remove);content.append(toolbar);row.append(content);list.append(row);
         renderItem(content,[...path,index],item);
       });
@@ -1046,26 +1093,30 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       },true);label.append(input);parent.append(label);
       if(type==='heading'){
         this._form(parent,path,[text('name','제목',true)]);
-        this._list(parent,[...path,'badges'],'배지',(body,p)=>this._form(body,p,[entity('entity','센서'),text('name','표시 이름')]),()=>({entity:this._first('sensor','sensor.example')}));return;
+        this._list(parent,[...path,'badges'],'배지',(body,p)=>this._form(body,p,[entity('entity','센서'),display([text('name','표시 이름')])]),()=>({entity:this._first('sensor','sensor.example')}));return;
       }
       if(type==='note'){this._form(parent,path,[field('name','메모',{text:{multiline:true}},true)]);return;}
       if(type==='comparison'){
-        this._list(parent,[...path,'rows'],'비교 항목',(body,p)=>this._form(body,p,[text('name','항목 이름'),entity('entity','이번 달 센서','sensor'),entity('previous','지난달 센서','sensor')]),()=>({name:'사용량',entity:this._first('sensor','sensor.current'),previous:this._first('sensor','sensor.previous')}),1);return;
+        this._list(parent,[...path,'rows'],'비교 항목',(body,p)=>this._form(body,p,[text('name','항목 이름'),entity('entity','이번 달 누적 센서','sensor'),entity('previous','지난달 전체 센서','sensor')]),()=>({name:'사용량',entity:this._first('sensor','sensor.current'),previous:this._first('sensor','sensor.previous')}),1);return;
       }
       if(type==='navigate'){this._form(parent,path,[text('name','표시 이름',true),text('navigation_path','로컬 이동 경로 (예: /energy)',true),field('icon','아이콘',{icon:{}})]);return;}
-      if(type==='lookup'){this._form(parent,path,[text('find_name','센서의 정확한 이름',true),text('domain','도메인 (기본 sensor)'),text('name','표시 이름'),field('icon','아이콘',{icon:{}})]);return;}
+      if(type==='lookup'){this._form(parent,path,[text('find_name','센서의 정확한 이름',true),text('domain','도메인 (기본 sensor)'),display([text('name','표시 이름'),field('icon','아이콘',{icon:{}})])]);return;}
       const domain={climate:'climate',light:'light',cover:'cover',media:'media_player'}[type];
-      const fields=[entity('entity','엔티티',domain),text('name','표시 이름')];
-      if(type==='entity')fields.push(field('icon','아이콘',{icon:{}}));
+      const fields=[entity('entity','엔티티',domain),display([text('name','표시 이름'),...(type==='entity'?[field('icon','아이콘',{icon:{}})]:[])])];
       if(type==='media')fields.push(field('show_volume','음량 표시',{boolean:{}}),field('show_next','다음 곡 표시',{boolean:{}}));
       this._form(parent,path,fields);
       if(type==='entity')this._action(parent,path,item);
     }
-    _action(parent,path,item){
-      const section=this._section(parent,'실행 버튼'),label=this._make('label',null,' 실행 버튼 사용'),enabled=this._make('input');enabled.type='checkbox';enabled.checked=Boolean(item.tap_action);enabled.setAttribute('aria-label','실행 버튼 사용');label.prepend(enabled);section.append(label);
-      enabled.onchange=()=>this._commit(next=>{const target=at(next,path);if(enabled.checked)target.tap_action={action:'perform-action',perform_action:'script.turn_on'};else delete target.tap_action;},true);
+    _action(parent,path,item,existing){
+      const section=existing||this._section(parent,'실행 버튼');
+      if(existing){section.replaceChildren();section.append(this._make('p','heading','실행 버튼'));}
+      section.dataset.actionPath=JSON.stringify(path);
+      const dedicated=['light','switch','select'].includes((item.entity||'').split('.')[0]);section.dataset.dedicated=String(dedicated);
+      if(dedicated){section.append(this._make('p','hint','이 엔티티는 전용 제어를 사용합니다. 기존 YAML 실행 설정은 보존됩니다.'));return;}
+      const label=this._make('label',null,' 실행 버튼 사용'),enabled=this._make('input');enabled.type='checkbox';enabled.checked=Boolean(item.tap_action);enabled.setAttribute('aria-label','실행 버튼 사용');label.prepend(enabled);section.append(label);
+      enabled.onchange=()=>this._commit(next=>{const target=at(next,path);if(enabled.checked)target.tap_action={action:'perform-action',perform_action:({button:'button.press',input_button:'input_button.press'}[(target.entity||'').split('.')[0]]||'script.turn_on')};else delete target.tap_action;},true);
       if(!item.tap_action)return;
-      section.append(this._make('p','hint','light · switch · select는 전용 제어를 사용합니다. 실행 버튼은 다른 엔티티에서 표시됩니다.'));
+      section.append(this._make('p','hint','실행할 액션을 지정하세요. 대상을 생략하면 항목의 엔티티를 사용합니다.'));
       this._form(section,[...path,'tap_action'],[text('perform_action','실행할 액션 (예: button.press)',true),field('target','대상 (생략하면 항목의 엔티티)',{target:{}})]);
       this._confirmation(section,[...path,'tap_action'],'confirmation',item.tap_action.confirmation,true);
       this._dataFields(section,[...path,'tap_action','data']);
@@ -1095,10 +1146,15 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       }));
     }
     _render(){
-      if(!this._config)return;this._openDetails=new Set([...this.shadowRoot.querySelectorAll('details[open]')].map(node=>node.dataset.path));if(this._openNext){this._openDetails.add(this._openNext);this._openNext=undefined;}const root=this.shadowRoot.querySelector('.root');root.replaceChildren();this._forms=[];
+      if(!this._config)return;
+      this._openDetails=new Set([...this.shadowRoot.querySelectorAll('details[data-path][open]')].map(node=>JSON.stringify(this._remapPath(JSON.parse(node.dataset.path)))));
+      this._openDisplay=new Set([...this.shadowRoot.querySelectorAll('details[data-display-path][open]')].map(node=>JSON.stringify(this._remapPath(JSON.parse(node.dataset.displayPath)))));
+      this._haDisplayOpen=new Set([...this._haDisplayOpen].map(path=>JSON.stringify(this._remapPath(JSON.parse(path)))));
+      this._moving=undefined;if(this._openNext){this._openDetails.add(this._openNext);this._openNext=undefined;}
+      const root=this.shadowRoot.querySelector('.root');root.replaceChildren();this._forms=[];
       if(['compact-climate-row','compact-light-row','compact-cover-row','compact-media-row'].includes(this._kind)){
         const domain={'compact-climate-row':'climate','compact-light-row':'light','compact-cover-row':'cover','compact-media-row':'media_player'}[this._kind];
-        const schema=[entity('entity','엔티티',domain),text('name','표시 이름')];
+        const schema=[entity('entity','엔티티',domain),display([text('name','표시 이름')])];
         if(this._kind==='compact-media-row')schema.push(field('show_volume','음량 표시',{boolean:{}}),field('show_next','다음 곡 표시',{boolean:{}}));
         this._form(root,[],schema);return;
       }
@@ -1106,10 +1162,11 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       this._form(root,[],home?[columns(2)]:[text('name','패널 이름'),columns(4)]);
       this._list(root,['items'],'항목',(body,path,item)=>{
         if(home){this._homeItem(body,path,item);return;}
-        this._form(body,path,[entity('entity','엔티티',this._kind==='compact-scene-panel'?['scene','script']:'sensor'),text('name','표시 이름'),field('icon','아이콘',{icon:{}})]);
+        this._form(body,path,[entity('entity','엔티티',this._kind==='compact-scene-panel'?['scene','script']:'sensor'),display([text('name','표시 이름'),field('icon','아이콘',{icon:{}})])]);
         if(this._kind==='compact-scene-panel')this._confirmation(body,path,'confirmation',item.confirmation);
-        else this._list(body,[...path,'thresholds'],'임계값',(section,p)=>this._form(section,p,[field('value','기준값',{number:{mode:'box',step:'any'}},true),select('direction','비교 방향',[['above','이상'],['below','이하']]),select('level','강조 수준',[['warning','주의'],['critical','위험']])]),()=>({value:0,direction:'above',level:'warning'}));
+        else this._list(body,[...path,'thresholds'],'임계값',(section,p)=>this._form(section,p,[grid([field('value','기준값',{number:{mode:'box',step:'any'}},true),select('direction','비교 방향',[['above','이상'],['below','이하']]),select('level','강조 수준',[['warning','주의'],['critical','위험']])])]),()=>({value:0,direction:'above',level:'warning'}));
       },type=>this._defaultItem(type),home?0:1);
+      this._restoreReorderFocus();
     }
   }
   for(const type of ['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row']){

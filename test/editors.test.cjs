@@ -73,7 +73,7 @@ test('environment threshold forms edit numeric direction and level with immutabl
   const original={items:[{entity:'sensor.room',thresholds:[{value:25,direction:'above',level:'warning',future:9}]}]};
   const {editor,change,add,form}=await setup(t,'compact-environment-panel',original);
   change(['items',0,'thresholds',0],{value:-2.35,direction:'below',level:'critical'});
-  assert.equal([...editor.shadowRoot.querySelectorAll('details')].find(node=>node.dataset.path===JSON.stringify(['items',0,'thresholds',0])).querySelector('.toolbar button').getAttribute('aria-label'),'-2.35 · critical 위로');
+  assert.equal([...editor.shadowRoot.querySelectorAll('details')].find(node=>node.dataset.path===JSON.stringify(['items',0,'thresholds',0])).querySelector('.toolbar button').getAttribute('aria-label'),'-2.35 이하 · 위험 위로');
   assert.equal(editor._config.items[0].thresholds[0].value,-2.35);assert.equal(editor._config.items[0].thresholds[0].future,9);assert.equal(original.items[0].thresholds[0].value,25);
   add(['items',0,'thresholds']);assert.equal(editor._config.items[0].thresholds.length,2);assert.ok(form(['items',0,'thresholds',1]));
   change([],{columns:'3'});assert.equal(editor._config.columns,3);
@@ -118,4 +118,72 @@ test('native text input previews each edit without waiting for blur or replacing
   const input=editor.shadowRoot.querySelector('input[data-field="name"]');input.value='거실';input.dispatchEvent(new window.Event('input'));
   assert.equal(events.at(-1).detail.config.name,'거실');assert.equal(editor.shadowRoot.querySelector('input[data-field="name"]'),input);
   input.dispatchEvent(new window.Event('change'));assert.equal(events.length,1);
+});
+
+test('reordering keeps the moved item expanded with its nested settings and keyboard focus',async t=>{
+  const {editor}=await setup(t,'compact-home-panel',{items:[{type:'heading',name:'A',badges:[{entity:'sensor.room'}]},{type:'note',name:'B'},{type:'note',name:'C'}]},false);
+  const row=path=>[...editor.shadowRoot.querySelectorAll('details[data-path]')].find(node=>node.dataset.path===JSON.stringify(path));
+  const display=row(['items',0,'badges',0]).querySelector('details.display');display.open=true;
+  const down=row(['items',0]).querySelector(':scope > .content > .toolbar > button[data-move=down]');down.focus();down.click();
+  assert.equal(editor._config.items[1].name,'A');assert.equal(row(['items',1]).open,true);assert.equal(row(['items',0]).open,false);
+  assert.equal(row(['items',1,'badges',0]).open,true);assert.equal(row(['items',1,'badges',0]).querySelector('details.display').open,true);
+  assert.equal(editor.shadowRoot.activeElement,row(['items',1]).querySelector(':scope > .content > .toolbar > button[data-move=down]'));
+  editor.shadowRoot.activeElement.click();assert.equal(row(['items',2]).open,true);assert.equal(editor.shadowRoot.activeElement,row(['items',2]).querySelector('summary'));
+});
+
+test('nested list reordering keeps the moved comparison row open and focused at boundaries',async t=>{
+  const {editor}=await setup(t,'compact-home-panel',{items:[{type:'comparison',rows:[{name:'Electricity',entity:'sensor.a',previous:'sensor.b'},{name:'Water',entity:'sensor.c',previous:'sensor.d'}]}]});
+  const row=path=>[...editor.shadowRoot.querySelectorAll('details[data-path]')].find(node=>node.dataset.path===JSON.stringify(path));
+  row(['items',0,'rows',0]).querySelector('button[data-move=down]').click();
+  assert.equal(editor._config.items[0].rows[1].name,'Electricity');assert.equal(row(['items',0]).open,true);assert.equal(row(['items',0,'rows',1]).open,true);assert.equal(row(['items',0,'rows',0]).open,false);
+  assert.equal(editor.shadowRoot.activeElement,row(['items',0,'rows',1]).querySelector('summary'));
+});
+
+test('dedicated action controls follow typed entity domains without replacing the active input or YAML action',async t=>{
+  const action={action:'perform-action',perform_action:'script.turn_on',target:{area_id:'living_room'},future:{keep:[1,2]}};
+  const {window,editor}=await setup(t,'compact-home-panel',{items:[{entity:'script.night',tap_action:action}]},false);
+  const input=editor.shadowRoot.querySelector('input[data-field=entity]');input.focus();
+  for(const value of ['light.room','switch.room','select.mode','script.night']){
+    input.value=value;input.dispatchEvent(new window.Event('input'));
+    assert.equal(editor.shadowRoot.querySelector('input[data-field=entity]'),input);assert.equal(editor.shadowRoot.activeElement,input);
+    const dedicated=!value.startsWith('script.');assert.equal(Boolean(editor.shadowRoot.querySelector('input[aria-label="실행 버튼 사용"]')),!dedicated);
+    assert.deepEqual(plain(editor._config.items[0].tap_action),action);
+  }
+});
+
+test('HA entity selection updates action availability and uses the current entity for default service',async t=>{
+  const {editor,change,form}=await setup(t,'compact-home-panel',{items:[{entity:'light.room',future:'keep'}]});const entityForm=form(['items',0]);
+  assert.equal(editor.shadowRoot.querySelector('input[aria-label="실행 버튼 사용"]'),null);
+  change(['items',0],{entity:'button.doorbell'});assert.equal(form(['items',0]),entityForm);
+  const enabled=editor.shadowRoot.querySelector('input[aria-label="실행 버튼 사용"]');enabled.checked=true;enabled.onchange();
+  assert.equal(editor._config.items[0].tap_action.perform_action,'button.press');assert.equal(editor._config.items[0].future,'keep');
+});
+
+test('threshold summaries show unit direction and severity and refresh when HA supplies sensor metadata',async t=>{
+  const {editor,hass,change,form}=await setup(t,'compact-environment-panel',{items:[{entity:'sensor.room',thresholds:[{value:31,direction:'above',level:'warning'}]}]});
+  const row=()=>[...editor.shadowRoot.querySelectorAll('details[data-path]')].find(node=>node.dataset.path===JSON.stringify(['items',0,'thresholds',0]));
+  hass.states['sensor.room'].attributes.unit_of_measurement='°C';editor.hass=hass;
+  assert.equal(row().querySelector('summary').textContent,'1. 31°C 이상 · 주의');
+  change(['items',0,'thresholds',0],{value:-2.3,direction:'below',level:'critical'});assert.equal(row().querySelector('summary').textContent,'1. -2.3°C 이하 · 위험');
+  assert.equal(form(['items',0,'thresholds',0]).schema[0].type,'grid');
+  const native=await setup(t,'compact-environment-panel',{items:[{entity:'sensor.room',thresholds:[{value:31,direction:'above',level:'warning'}]}]},false);
+  assert.equal(native.editor.shadowRoot.querySelectorAll('.native-grid label').length,3);
+});
+
+test('display settings collapse optional fields without changing defaults or unknown values',async t=>{
+  const original={entity:'light.room',name:'Room',future:{enabled:false}};
+  const {window,editor,events}=await setup(t,'compact-light-row',original,false);
+  const display=editor.shadowRoot.querySelector('details.display');assert.equal(display.open,false);
+  assert.equal(display.querySelector('input[data-field=name]').value,'Room');assert.equal(events.length,0);
+  display.open=true;const name=display.querySelector('input[data-field=name]');name.value='';name.dispatchEvent(new window.Event('input'));
+  assert.equal(editor._config.name,undefined);assert.equal(editor._config.future.enabled,false);assert.equal(display.open,true);assert.equal(original.name,'Room');
+});
+
+test('native HA display expansion follows the moved item through schema state',async t=>{
+  const {window,editor,form}=await setup(t,'compact-scene-panel',{items:[{entity:'scene.a'},{entity:'scene.b'},{entity:'scene.c'}]});
+  const current=form(['items',0]),expansion=window.document.createElement('ha-form-expandable');current.append(expansion);
+  expansion.dispatchEvent(new window.CustomEvent('expanded-changed',{detail:{expanded:true},bubbles:true,composed:true}));
+  editor.shadowRoot.querySelector('button[data-move=down]').click();
+  assert.equal(form(['items',1]).schema.find(group=>group.type==='expandable').expanded,true);
+  assert.equal(form(['items',0]).schema.find(group=>group.type==='expandable').expanded,false);
 });
