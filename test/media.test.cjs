@@ -83,3 +83,8 @@ test('volume drag returning to its starting value resumes updates without change
   hass.states['media_player.room'].attributes.volume_level=.52;element.hass=hass;
   slider.dispatchEvent(new window.Event('pointerup'));assert.equal(element._editingVolume,false);assert.equal(slider.value,'52');
 });
+test('media embeds in home panels and preserves optional controls',t=>{
+  const {window,hass}=setup(t);
+  const panel=window.document.createElement('compact-home-panel');panel.setConfig({items:[{type:'media',entity:'media_player.room',show_volume:false,show_next:false}]});panel.hass=hass;
+  const child=panel._refs[0].child;assert.equal(child.hasAttribute('embedded'),true);assert.equal(child._config.show_volume,false);assert.equal(child._q('.volume').hidden,true);assert.equal(child._q('.next').hidden,true);
+});

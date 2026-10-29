@@ -51,7 +51,7 @@ url: /hacsfiles/hass-compact-cards/compact-cards.js
 type: module
 ```
 
-This path assumes the GitHub repository is named `hass-compact-cards`. Adjust the path if you publish under another name. Both cards are included in `compact-cards.js`.
+This path assumes the GitHub repository is named `hass-compact-cards`. Adjust the path if you publish under another name. All cards are included in `compact-cards.js`.
 
 ## Manual installation
 

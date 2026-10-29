@@ -233,10 +233,10 @@ class CompactHomePanel extends HTMLElement {
     for (const [index, item] of config.items.entries()) {
       const fail = message => { throw new Error(`items[${index}]: ${message}`); };
       if (!item || typeof item !== 'object' || Array.isArray(item)) fail('항목은 객체여야 합니다.');
-      if (item.type && !['heading','note','climate','light','cover','comparison','navigate'].includes(item.type)) fail('지원하지 않는 항목 유형입니다.');
+      if (item.type && !['heading','note','climate','light','cover','media','comparison','navigate'].includes(item.type)) fail('지원하지 않는 항목 유형입니다.');
       if (['heading','note','navigate'].includes(item.type) && typeof item.name !== 'string') fail('name이 필요합니다.');
       if (item.type === 'heading' && item.badges !== undefined && (!Array.isArray(item.badges) || item.badges.some(b => !b || typeof b.entity !== 'string'))) fail('badges에 entity 목록이 필요합니다.');
-      if (['climate','light','cover'].includes(item.type) && (typeof item.entity !== 'string' || !item.entity.startsWith(item.type+'.'))) fail(`${item.type} 엔티티가 필요합니다.`);
+      if (['climate','light','cover','media'].includes(item.type) && (typeof item.entity !== 'string' || !item.entity.startsWith((item.type==='media'?'media_player':item.type)+'.'))) fail(`${item.type} 엔티티가 필요합니다.`);
       if (item.type === 'comparison' && (!Array.isArray(item.rows) || item.rows.some(r => !r || typeof r.entity !== 'string' || typeof r.previous !== 'string'))) fail('rows에 entity와 previous가 필요합니다.');
       if (item.type === 'navigate' && (typeof item.navigation_path !== 'string' || !item.navigation_path.startsWith('/') || item.navigation_path.startsWith('//') || /[\\\\\s]/.test(item.navigation_path))) fail('navigation_path는 로컬 경로여야 합니다.');
       if (!item.type && typeof item.entity !== 'string' && typeof item.find_name !== 'string') fail('entity 또는 find_name이 필요합니다.');
@@ -264,7 +264,7 @@ class CompactHomePanel extends HTMLElement {
     let pairGroup=null;
     for (const item of this._config.items) {
       const rowDomain=(item.entity || '').split('.')[0];
-      const paired=!['heading','note','climate','light','cover','comparison','navigate'].includes(item.type) && rowDomain!=='select';
+      const paired=!['heading','note','climate','light','cover','media','comparison','navigate'].includes(item.type) && rowDomain!=='select';
       if (!paired) pairGroup=null;
       if (paired && !pairGroup) {pairGroup=this._make('div','pair-grid');body.append(pairGroup);}
       if (item.type === 'heading') {
@@ -273,7 +273,7 @@ class CompactHomePanel extends HTMLElement {
         body.append(h);continue;
       }
       if (item.type === 'note') { body.append(this._make('div','note',item.name));continue; }
-      if (['climate','light','cover'].includes(item.type)) {
+      if (['climate','light','cover','media'].includes(item.type)) {
         const child = document.createElement(`compact-${item.type}-row`);child.className='climate';body.append(child);
         customElements.whenDefined(`compact-${item.type}-row`).then(()=>this._render());
         this._refs.push({item,child,configured:false});continue;
@@ -322,7 +322,7 @@ class CompactHomePanel extends HTMLElement {
       const {item}=ref;
       if (ref.badge) {const state=this._hass.states[item.entity],name=item.name || state?.attributes.friendly_name || item.entity,value=this._format(state);compactText(ref.badgeName,name);compactText(ref.badgeValue,value);compactAttr(ref.badge,'aria-label',`${name}: ${value}`);compactProp(ref.badge,'title',`${name}: ${value}`);compactProp(ref.badge,'disabled',!state);continue;}
       if (ref.child) {
-        if (!ref.configured && ref.child.setConfig) {ref.child.setConfig({entity:item.entity,name:item.name,embedded:true});ref.configured=true;}
+        if (!ref.configured && ref.child.setConfig) {ref.child.setConfig({entity:item.entity,name:item.name,...(item.show_volume!==undefined?{show_volume:item.show_volume}:{}),...(item.show_next!==undefined?{show_next:item.show_next}:{}),embedded:true});ref.configured=true;}
         if (ref.configured) ref.child.hass=this._hass;
         continue;
       }

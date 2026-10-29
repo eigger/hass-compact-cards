@@ -44,6 +44,19 @@ show_next: false
 
 이 구성은 곡 정보와 재생 조작만 표시합니다. 긴 곡명은 말줄임하고 툴팁과 상세 정보에서 확인합니다. 터치 환경의 조작 영역과 키보드 포커스를 유지합니다.
 
+## 홈 패널 안에 넣기
+
+```yaml
+type: custom:compact-home-panel
+items:
+  - type: media
+    entity: media_player.living_room
+    name: 거실 스피커
+    show_next: false
+```
+
+`show_volume`, `show_next`도 동일하게 사용할 수 있습니다. 전체 너비 행으로 배치하고 외곽 테두리와 여백을 줄입니다.
+
 ## English
 
 Use a media_player entity and optional name, show_volume and show_next (both default true). Capability-aware play/pause/power, next, and volume controls use no album-art space. Missing volume disables the slider. Drafts survive state updates; volume commits once on release and waits briefly for acknowledgment. Pending requests disable duplicate controls and errors restore state with notification. Screenshot uses mocked data; live device behavior depends on HA support.
