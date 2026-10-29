@@ -14,9 +14,13 @@ This is a frontend card project. Use a single JavaScript file without a build st
 | `custom:compact-home-panel` | A panel combining controls, sensors, headings, notes, navigation and usage comparisons |
 | `custom:compact-light-row` | Direct power, brightness and color temperature controls |
 | `custom:compact-cover-row` | Open, stop, close and position controls |
+| `custom:compact-scene-panel` | One-tap scene and script shortcuts |
+| `custom:compact-environment-panel` | Compact sensor readings with explicit thresholds |
 
 See [direct light and cover controls](docs/light-cover.md) for configuration. These rows also work inside `compact-home-panel` using `type: light` or `type: cover`.
 
+
+See [scene and environment panels](docs/scene-environment.md) for options and examples.
 
 ## HACS installation
 

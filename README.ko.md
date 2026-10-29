@@ -14,9 +14,13 @@ Home Assistant를 위한 작고 정돈된 대시보드 커스텀 카드 모음�
 | `custom:compact-home-panel` | 제어, 센서, 제목, 메모, 탐색, 사용량 비교를 묶는 패널 |
 | `custom:compact-light-row` | 전원·밝기·색온도를 직접 제어하는 조명 행 |
 | `custom:compact-cover-row` | 열기·정지·닫기·위치를 직접 제어하는 커튼 행 |
+| `custom:compact-scene-panel` | 한 번에 실행하는 장면·스크립트 바로가기 |
+| `custom:compact-environment-panel` | 온도·습도·공기질과 사용자 지정 임계값 |
 
 [조명·커튼 설정 가이드](docs/light-cover.md). 홈 패널의 `items`에서도 `type: light`, `type: cover`로 사용할 수 있습니다.
 
+
+[장면·환경 패널 가이드](docs/scene-environment.md)에서 설정과 예제를 확인하세요.
 
 ## HACS 설치
 

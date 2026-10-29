@@ -56,3 +56,11 @@ items:
 | `items[].icon` | 선택. MDI 아이콘 |
 
 자동 배치는 카드 자체 너비를 기준으로 구성되며, 버튼 높이는 최소 44px입니다. 긴 이름은 말줄임하고 전체 이름을 툴팁과 접근성 이름에 제공합니다. 큰 글자나 좁은 카드에서 고정 열 수가 읽기 어렵다면 `auto` 또는 `1`을 사용하세요. 두 카드 모두 YAML 설정을 사용합니다.
+
+## English
+
+`custom:compact-scene-panel` accepts nonempty `items` with `scene.*` or `script.*` entities and optional `name`, `icon`, and `confirmation` text. Press a shortcut to call its domain's `turn_on`. Pending requests and running scripts cannot be activated again; never-activated scenes remain usable.
+
+`custom:compact-environment-panel` accepts `sensor.*` items with optional explicit `thresholds`: numeric `value`, `direction: above/below` (inclusive), and `level: warning/critical`. Critical takes precedence. No default health or safety thresholds are assumed and no units are converted. Press a reading to open more-info.
+
+Both panels accept optional title `name` and `columns: auto` (default) or 1–4. Automatic environment cells prioritize compact values; decorative icons are hidden below 360px to fit three common metrics without a spare row. Unavailable/non-numeric readings show a fallback.

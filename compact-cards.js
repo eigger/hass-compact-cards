@@ -653,7 +653,8 @@ for(const [type,constructor,name,description] of [
       style.textContent = `.reading{font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.3;overflow-wrap:anywhere}.unit{font-size:11px;font-weight:400;margin-left:3px;color:var(--secondary-text-color)}
         button{align-items:center}.label{font-size:12px;color:var(--secondary-text-color)}
         button[data-level=warning]{border-color:var(--warning-color,#ffa600)}button[data-level=critical]{border-color:var(--error-color,#db4437)}
-        button[data-level=warning] ha-icon{color:var(--warning-color,#ffa600)}button[data-level=critical] ha-icon{color:var(--error-color,#db4437)}`;
+        button[data-level=warning] ha-icon{color:var(--warning-color,#ffa600)}button[data-level=critical] ha-icon{color:var(--error-color,#db4437)}
+        @container(max-width:360px){ha-icon{display:none}}`;
       this.shadowRoot.append(style);
     }
     setConfig(config) {
@@ -663,6 +664,7 @@ for(const [type,constructor,name,description] of [
         if (item.thresholds !== undefined && (!Array.isArray(item.thresholds) || item.thresholds.some(t => !t || !Number.isFinite(t.value) || !['above','below'].includes(t.direction) || !['warning','critical'].includes(t.level)))) throw new Error(`items[${i}]: thresholds에는 숫자 value, above/below direction, warning/critical level이 필요합니다.`);
       });
       this._configure(config);
+      if(config.columns===undefined || config.columns==='auto')this.shadowRoot.querySelector('.grid').style.gridTemplateColumns='repeat(auto-fit,minmax(min(90px,100%),1fr))';
     }
     static getStubConfig(hass) {
       const state = Object.values(hass?.states || {}).find(s => s.entity_id.startsWith('sensor.') && ['temperature','humidity','carbon_dioxide'].includes(s.attributes.device_class));
