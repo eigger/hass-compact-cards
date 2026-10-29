@@ -56,7 +56,7 @@ test('released light and cover slider values remain until acknowledgment and res
     const {window,card,hass,entity}=setup(type,attrs,value);const ref=card[key];
     let done;hass.callService=()=>new Promise(resolve=>done=resolve);
     ref.input.value='51';ref.input.dispatchEvent(new window.Event('input'));ref.input.dispatchEvent(new window.Event('change'));
-    assert.equal(ref.input.value,'51');assert.equal(ref.input.disabled,true);
+    assert.equal(ref.input.value,'51');assert.equal(ref.input.disabled,false);assert.equal(ref.input.getAttribute('aria-busy'),'true');
     card.hass={...hass};assert.equal(ref.input.value,'51');
     done();await new Promise(resolve=>setImmediate(resolve));assert.equal(ref.input.value,'51');
     if(type==='compact-light-row')hass.states[entity].attributes.brightness=130;else hass.states[entity].attributes.current_position=51;
@@ -106,7 +106,7 @@ test('Kelvin shortcuts do not act during a request or for unsupported color temp
   let done;hass.callService=(...args)=>{calls.push(args);return new Promise(resolve=>done=resolve);};
   const input=card._kelvin.input;
   input.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowRight',cancelable:true}));
-  assert.equal(input.disabled,true);input.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowRight',cancelable:true}));assert.equal(calls.length,1);
+  assert.equal(input.disabled,false);assert.equal(input.getAttribute('aria-disabled'),'true');input.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowRight',cancelable:true}));assert.equal(calls.length,1);
   done();await new Promise(resolve=>setImmediate(resolve));
   hass.states[entity].attributes.supported_color_modes=['onoff'];card.hass=hass;
   input.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowRight',cancelable:true}));assert.equal(calls.length,1);
@@ -122,4 +122,28 @@ test('cover action labels preserve direct open stop close actions and capability
   hass.states[entity].attributes.supported_features=4;card.hass=hass;
   assert.equal(card._open.hidden,true);assert.equal(card._stop.hidden,true);assert.equal(card._close.hidden,true);
   window.happyDOM.abort();
+});
+
+test('focused ranges remain focusable pending requests, reject extra edits and never steal moved focus',async()=>{
+  for(const [type,key,attributes,value] of [
+    ['compact-light-row','_brightness',{supported_color_modes:['brightness'],brightness:128},'on'],
+    ['compact-light-row','_kelvin',{supported_color_modes:['color_temp'],min_color_temp_kelvin:2200,max_color_temp_kelvin:6500,color_temp_kelvin:3500},'on'],
+    ['compact-cover-row','_position',{supported_features:4,current_position:50},'open'],
+  ]){
+    const {window,card,hass,calls,entity}=setup(type,attributes,value);window.document.body.append(card);
+    const ref=card[key],input=ref.input,other=window.document.createElement('button');window.document.body.append(other);
+    let done;hass.callService=(...args)=>{calls.push(args);return new Promise(resolve=>done=resolve);};
+    const start=()=>{input.focus();input.value=key==='_kelvin'?'3600':'51';input.dispatchEvent(new window.Event('input'));input.dispatchEvent(new window.Event('change'));};
+    start();assert.equal(input.disabled,false);assert.equal(card.shadowRoot.activeElement,input);assert.equal(input.getAttribute('aria-busy'),'true');
+    const requested=input.value;
+    input.value=key==='_kelvin'?'4500':'90';input.dispatchEvent(new window.Event('input'));input.dispatchEvent(new window.Event('change'));
+    assert.equal(input.value,requested);assert.equal(calls.length,1);
+    const keyEvent=new window.KeyboardEvent('keydown',{key:'ArrowRight',cancelable:true});input.dispatchEvent(keyEvent);assert.equal(keyEvent.defaultPrevented,true);
+    const pointerEvent=new window.Event('pointerdown',{cancelable:true});input.dispatchEvent(pointerEvent);assert.equal(pointerEvent.defaultPrevented,true);
+    const tab=new window.KeyboardEvent('keydown',{key:'Tab',cancelable:true});input.dispatchEvent(tab);assert.equal(tab.defaultPrevented,false);
+    done();await new Promise(resolve=>setImmediate(resolve));assert.equal(card.shadowRoot.activeElement,input);assert.equal(input.getAttribute('aria-busy'),'false');
+    start();other.focus();done();await new Promise(resolve=>setImmediate(resolve));assert.equal(window.document.activeElement,other);
+    hass.states[entity].state='unavailable';card.hass=hass;assert.equal(input.disabled,true);
+    window.happyDOM.abort();
+  }
 });

@@ -427,6 +427,7 @@ class CompactControlRow extends HTMLElement {
       button:hover{background:var(--secondary-background-color)}
       button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}
+      input[aria-busy=true]{opacity:.65;cursor:progress}
       button[aria-busy=true]{background:color-mix(in srgb,var(--primary-color) 14%,transparent)}
       .info{display:block;justify-items:normal;align-items:normal;flex:1 1 84px;min-width:0;text-align:left;padding:2px 0}
       .name,.state{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
@@ -481,10 +482,10 @@ class CompactControlRow extends HTMLElement {
     const input=document.createElement('input');input.type='range';input.min=min;input.max=max;input.step=step;input.setAttribute('aria-label',label);
     const output=document.createElement('output');group.append(glyph,input,output);this._card.append(group);
     const format=value=>key==='kelvin'?`${value} K`:`${value}%`;
-    input.oninput=()=>{this._editing.add(key);compactText(output,format(input.value));input.setAttribute('aria-valuetext',format(input.value));};
+    input.oninput=()=>{if(input.disabled||ref.busy){this._editing.delete(key);this._render();return;}this._editing.add(key);compactText(output,format(input.value));input.setAttribute('aria-valuetext',format(input.value));};
     input.onchange=()=>{
       this._editing.delete(key);
-      if(input.disabled)return;
+      if(input.disabled||ref.busy){this._render();return;}
       const entity=this._config.entity,value=Number(input.value);
       if(!Number.isFinite(value))return;
       clearTimeout(ref.timer);ref.pending={entity,value};this._render();
@@ -495,11 +496,18 @@ class CompactControlRow extends HTMLElement {
     };
     input.onblur=()=>{this._editing.delete(key);this._render();};
     input.onpointercancel=()=>{this._editing.delete(key);this._render();};
+    input.onpointerdown=event=>{if(ref.busy)event.preventDefault();};
+    input.addEventListener('keydown',event=>{
+      if(ref.busy&&['ArrowRight','ArrowLeft','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();}
+    });
     const ref={group,input,output,key,format};return ref;
   }
-  _syncSlider(ref,value,visible,disabled) {
+  _syncSlider(ref,value,visible,disabled,busy=false) {
     ref.group.hidden=!visible;
-    ref.input.disabled=disabled;
+    // Native disabled blurs a focused range. Pending requests keep focus while
+    // event guards block edits; truly unavailable controls remain disabled.
+    ref.input.disabled=disabled||!visible;ref.busy=busy;
+    compactAttr(ref.input,'aria-disabled',ref.input.disabled||busy);compactAttr(ref.input,'aria-busy',busy);
     if(!this._editing.has(ref.key)) {
       if(ref.pending?.entity===this._config.entity) {
         if(value===ref.pending.value){clearTimeout(ref.timer);ref.pending=undefined;}
@@ -566,11 +574,11 @@ class CompactLightRow extends CompactControlRow {
     compactAttr(this._toggle,'aria-label',`${this._config.name||a.friendly_name||this._config.entity} ${state?.state==='on'?'끄기':'켜기'}`);
     const modes=Array.isArray(a.supported_color_modes)?a.supported_color_modes:[];
     const brightness=modes.some(mode=>['brightness','color_temp','hs','xy','rgb','rgbw','rgbww','white'].includes(mode));
-    this._syncSlider(this._brightness,state?.state==='off'?0:(Number.isFinite(a.brightness)?Math.round(a.brightness/255*100):NaN),brightness,offline||busy);
+    this._syncSlider(this._brightness,state?.state==='off'?0:(Number.isFinite(a.brightness)?Math.round(a.brightness/255*100):NaN),brightness,offline,busy);
     const validKelvin=Number.isFinite(a.min_color_temp_kelvin)&&Number.isFinite(a.max_color_temp_kelvin)&&a.min_color_temp_kelvin<a.max_color_temp_kelvin;
     const color=modes.includes('color_temp')&&validKelvin;
     if(color){this._kelvin.input.min=a.min_color_temp_kelvin;this._kelvin.input.max=a.max_color_temp_kelvin;}
-    this._syncSlider(this._kelvin,a.color_temp_kelvin,color,offline||busy);
+    this._syncSlider(this._kelvin,a.color_temp_kelvin,color,offline,busy);
   }
 }
 class CompactCoverRow extends CompactControlRow {
@@ -595,7 +603,7 @@ class CompactCoverRow extends CompactControlRow {
       compactAttr(button,'aria-busy',button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
     }
     this._open.classList.toggle('moving',!offline&&state.state==='opening');this._close.classList.toggle('moving',!offline&&state.state==='closing');
-    this._syncSlider(this._position,a.current_position,Boolean(features&4),offline||busy);
+    this._syncSlider(this._position,a.current_position,Boolean(features&4),offline,busy);
   }
 }
 for(const [type,constructor,name,description] of [
