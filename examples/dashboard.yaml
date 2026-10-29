@@ -1,0 +1,43 @@
+# 엔티티 ID를 실제 환경에 맞게 변경하세요.
+type: vertical-stack
+cards:
+  - type: custom:compact-climate-row
+    entity: climate.living_room
+    name: 거실 냉난방
+  - type: custom:compact-home-panel
+    items:
+      - type: heading
+        name: 거실
+      - entity: light.living_room
+        name: 조명
+      - entity: sensor.living_room_temperature
+        name: 온도
+      - entity: sensor.living_room_humidity
+        name: 습도
+      - type: note
+        name: 자주 사용하는 기기를 한곳에서 제어합니다.
+      - entity: select.living_room_preset
+        name: 프리셋
+      - type: climate
+        entity: climate.living_room
+        name: 냉난방
+      - type: heading
+        name: 에너지
+      - type: comparison
+        rows:
+          - name: 전기
+            entity: sensor.electricity_this_month
+            previous: sensor.electricity_last_month
+      - entity: script.good_night
+        name: 취침 모드
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          target:
+            entity_id: script.good_night
+          confirmation:
+            text: 취침 모드를 실행할까요?
+      - type: navigate
+        name: 에너지 대시보드
+        navigation_path: /energy
+        icon: mdi:lightning-bolt
