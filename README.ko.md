@@ -39,6 +39,8 @@ Home Assistant를 위한 작고 정돈된 대시보드 커스텀 카드 모음�
 
 [UI 설정 가이드](docs/visual-editor.md): 엔티티 선택, 항목 추가·정렬, 임계값과 실행 확인을 화면에서 설정합니다.
 
+[조작감과 상태 표시](docs/polish.md): 눌림·요청 피드백, 실제 동작에 따른 움직임, 동작 줄이기 지원.
+
 ## HACS 설치
 
 [이 저장소](https://github.com/eigger/hass-compact-cards)를 HACS의 **사용자 지정 저장소(Custom repositories)** 로 설치할 수 있습니다. 기본 HACS 목록에 등록된 프로젝트는 아닙니다.

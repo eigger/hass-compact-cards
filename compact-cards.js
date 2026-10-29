@@ -249,7 +249,7 @@ class CompactHomePanel extends HTMLElement {
       .climate{border-bottom:1px solid var(--divider-color)}.climate:last-child{border:0}
       table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}th,td{text-align:right;padding:9px 3px;border-bottom:1px solid var(--divider-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       th{font-weight:400;color:var(--secondary-text-color)}th:first-child,td:first-child{text-align:left;width:18%}td button{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:32px;padding:0}
-      td small{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;color:var(--secondary-text-color);margin-top:2px}.note{font-size:12px;color:var(--secondary-text-color);padding:8px 3px}
+      td small{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;color:var(--secondary-text-color);margin-top:2px}.note{font-size:12px;color:var(--secondary-text-color);padding:8px 3px;white-space:pre-wrap;overflow-wrap:anywhere}
       @container(max-width:380px){ha-card{padding:2px 8px}.pair-grid{column-gap:10px}.row{gap:4px}.label{gap:6px;padding-inline:2px}.switch{min-width:42px}.subheading{gap:4px}}
       :host([columns="1"]) .pair-grid{grid-template-columns:minmax(0,1fr)}
       @container(max-width:380px){:host([columns="auto"]) .pair-grid{grid-template-columns:minmax(0,1fr)}}
@@ -1057,3 +1057,11 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
     };
   }
 })();
+
+// Direct help from Home Assistant's card picker/editor to each illustrated guide.
+for(const card of window.customCards) {
+  if(['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row'].includes(card.type)) {
+    card.documentationURL=`https://github.com/eigger/hass-compact-cards/blob/main/docs/${card.type}.md`;
+    card.preview=true;
+  }
+}

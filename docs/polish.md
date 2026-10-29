@@ -19,3 +19,5 @@
 All seven cards receive subtle press feedback without new configuration or added layout space. Service requests use a thin pending/success/error line and a polite live status; transient completion feedback clears after about 1.8 seconds. Success means the service request returned, not that a physical device completed its action. Reported device states remain authoritative.
 
 Fan rotation and cover arrow movement follow actual active state only; cover Stop remains usable while an opening request is pending. Scene shortcuts briefly show request acceptance, and media playback uses a small static dot. Reconfiguration/disconnection clears feedback and prevents stale responses from labeling a different configuration. Reduced-motion preferences disable movement while retaining status feedback.
+
+[전체 카드 대표 화면](../images/overview.jpg) · [카드별 상세 가이드](../README.ko.md#카드-미리보기와-상세-가이드)

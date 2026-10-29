@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Polish press feedback, accessible request status, scene acceptance, true-state fan/cover motion, media playback indication and direct per-card help links.
+
 - Add visual configuration editors for all seven cards, including nested items, ordering, actions, confirmations and thresholds while preserving YAML settings.
 
 - Add capability-aware media playback and volume controls, per-card guides and representative browser screenshots for all seven cards.
