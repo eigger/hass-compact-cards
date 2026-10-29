@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add one-tap scene/script shortcuts and compact environment readings with explicit warning thresholds.
+
 - Add direct light and cover rows with capability-aware controls, committed sliders and shared home-panel embedding.
 
 - Improve compact climate touch targets and responsive mode placement, automatic home-panel columns, mobile comparisons, named heading badges and pending-service feedback.
