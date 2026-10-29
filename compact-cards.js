@@ -375,3 +375,166 @@ class CompactHomePanel extends HTMLElement {
 if (!customElements.get('compact-home-panel')) customElements.define('compact-home-panel',CompactHomePanel);
 window.customCards=window.customCards || [];
 if (!window.customCards.some(c=>c.type==='compact-home-panel')) window.customCards.push({type:'compact-home-panel',name:'Compact home panel',description:'작은 행으로 묶은 홈 제어·센서·사용량 비교'});
+
+// Compact direct controls. Shared structure keeps standalone and embedded rows identical.
+class CompactControlRow extends HTMLElement {
+  constructor(domain) {
+    super();
+    this._domain = domain;
+    this._busy = new Set();
+    this._editing = new Set();
+    this.attachShadow({mode:'open'});
+    this.shadowRoot.innerHTML = `<style>
+      :host{display:block;container-type:inline-size}
+      ha-card{box-sizing:border-box;padding:6px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:56px}
+      button,input{font:inherit;color:var(--primary-text-color)}
+      button{border:0;background:transparent;cursor:pointer;border-radius:8px;min-width:36px;min-height:36px;padding:6px;display:grid;place-items:center}
+      button:hover{background:var(--secondary-background-color)}
+      button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
+      button:disabled,input:disabled{opacity:.4;cursor:default}
+      button[aria-busy=true]{background:color-mix(in srgb,var(--primary-color) 14%,transparent)}
+      .info{display:block;flex:1 1 84px;min-width:0;text-align:left;padding:2px 0}
+      .name,.state{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+      .name{font-size:14px}.state{font-size:12px;color:var(--secondary-text-color);margin-top:2px}
+      .controls{display:flex;align-items:center;gap:2px;flex:none}
+      .controls:empty{display:none}
+      ha-icon{--mdc-icon-size:20px;width:20px;height:20px}
+      button[aria-pressed=true]{color:var(--state-light-active-color,var(--primary-color));background:color-mix(in srgb,var(--primary-color) 12%,transparent)}
+      .slider{display:flex;align-items:center;gap:8px;flex:1 1 138px;min-width:0;max-width:220px}
+      .slider[hidden],button[hidden]{display:none}
+      input{accent-color:var(--primary-color);width:100%;min-width:40px;min-height:36px;margin:0;cursor:pointer}
+      output{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:36px;text-align:right}
+      .slider ha-icon{--mdc-icon-size:16px;width:16px;height:16px;color:var(--secondary-text-color)}
+      @container(max-width:360px){ha-card{gap:4px 8px}.slider{flex-basis:calc(100% - 24px);max-width:none}.info{flex-basis:100px}}
+      @media(pointer:coarse){button,input{min-height:44px}.controls button{min-width:44px}}
+      :host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding:4px 0}
+    </style><ha-card><button class="info"><span class="name"></span><span class="state"></span></button><div class="controls"></div></ha-card>`;
+    this._card = this.shadowRoot.querySelector('ha-card');
+    this.shadowRoot.querySelector('.info').onclick = () => {
+      if(this._config)this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:this._config.entity},bubbles:true,composed:true}));
+    };
+  }
+  setConfig(config) {
+    if(typeof config?.entity !== 'string' || !new RegExp(`^${this._domain}\\.[a-z0-9_]+$`).test(config.entity)) throw new Error(`${this._domain} 엔티티가 필요합니다.`);
+    if(config.name !== undefined && typeof config.name !== 'string') throw new Error('name은 문자열이어야 합니다.');
+    if(this._config?.entity !== config.entity)this._editing.clear();
+    this._config = {...config};
+    this.toggleAttribute('embedded',Boolean(config.embedded));
+    this._render();
+  }
+  set hass(hass) {this._hass=hass;this._render();}
+  getCardSize() {return 2;}
+  getGridOptions() {return {columns:12,min_columns:6};}
+  _button(key,label,icon,action) {
+    const button=document.createElement('button');button.className=key;button.title=label;button.setAttribute('aria-label',label);
+    const glyph=document.createElement('ha-icon');glyph.setAttribute('icon',icon);button.append(glyph);button.onclick=action;
+    this.shadowRoot.querySelector('.controls').append(button);return button;
+  }
+  _slider(key,label,icon,min,max,step,commit) {
+    const group=document.createElement('label');group.className=`slider ${key}`;
+    const glyph=document.createElement('ha-icon');glyph.setAttribute('icon',icon);glyph.setAttribute('aria-hidden','true');
+    const input=document.createElement('input');input.type='range';input.min=min;input.max=max;input.step=step;input.setAttribute('aria-label',label);
+    const output=document.createElement('output');group.append(glyph,input,output);this._card.append(group);
+    const format=value=>key==='kelvin'?`${value} K`:`${value}%`;
+    input.oninput=()=>{this._editing.add(key);compactText(output,format(input.value));input.setAttribute('aria-valuetext',format(input.value));};
+    input.onchange=()=>{
+      this._editing.delete(key);
+      if(input.disabled)return;
+      const entity=this._config.entity,value=Number(input.value);
+      if(!Number.isFinite(value))return;
+      clearTimeout(ref.timer);ref.pending={entity,value};this._render();
+      Promise.resolve(commit(value)).then(()=>{
+        if(ref.pending?.entity!==entity)return;
+        ref.timer=setTimeout(()=>{ref.pending=undefined;this._render();},3000);
+      });
+    };
+    input.onblur=()=>{this._editing.delete(key);this._render();};
+    input.onpointercancel=()=>{this._editing.delete(key);this._render();};
+    const ref={group,input,output,key,format};return ref;
+  }
+  _syncSlider(ref,value,visible,disabled) {
+    ref.group.hidden=!visible;
+    ref.input.disabled=disabled;
+    if(!this._editing.has(ref.key)) {
+      if(ref.pending?.entity===this._config.entity) {
+        if(value===ref.pending.value){clearTimeout(ref.timer);ref.pending=undefined;}
+        else value=ref.pending.value;
+      }
+      const valid=Number.isFinite(value);
+      if(valid)compactProp(ref.input,'value',String(value));
+      compactText(ref.output,valid?ref.format(value):'—');
+      compactAttr(ref.input,'aria-valuetext',valid?ref.format(value):'확인 불가');
+    }
+  }
+  _state() {return this._hass?.states[this._config?.entity];}
+  _offline(state) {return !state || ['unknown','unavailable'].includes(state.state);}
+  _renderInfo(state) {
+    compactText(this.shadowRoot.querySelector('.name'),this._config.name || state?.attributes.friendly_name || this._config.entity);
+    compactText(this.shadowRoot.querySelector('.state'),this._offline(state)?'확인 불가':(this._hass.formatEntityState?.(state) || state.state));
+    this.shadowRoot.querySelector('.info').title=this.shadowRoot.querySelector('.name').textContent;
+    compactAttr(this._card,'aria-busy',this._busy.has(this._config.entity));
+  }
+  async _call(service,data={},interrupt=false) {
+    const entity=this._config?.entity;
+    if(!entity || this._offline(this._state()) || (this._busy.has(entity)&&!interrupt))return;
+    const token=interrupt?`${entity}:stop`:entity;
+    if(this._busy.has(token))return;
+    const hass=this._hass;this._busy.add(token);this._render();
+    try {await hass.callService(this._domain,service,{entity_id:entity,...data});}
+    catch(error) {
+      for(const ref of [this._brightness,this._kelvin,this._position])if(ref?.pending?.entity===entity){clearTimeout(ref.timer);ref.pending=undefined;}
+      this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'변경 실패: '+(error?.message || error)},bubbles:true,composed:true}));
+    }
+    finally {this._busy.delete(token);this._render();}
+  }
+}
+class CompactLightRow extends CompactControlRow {
+  constructor() {
+    super('light');
+    this._toggle=this._button('toggle','조명 켜기/끄기','mdi:power',()=>this._call('toggle'));
+    this._brightness=this._slider('brightness','밝기','mdi:brightness-6',0,100,1,value=>this._call(value===0?'turn_off':'turn_on',value===0?{}:{brightness_pct:value}));
+    this._kelvin=this._slider('kelvin','색온도','mdi:thermometer',2000,6500,1,value=>this._call('turn_on',{color_temp_kelvin:value}));
+  }
+  static getStubConfig(hass) {return {entity:Object.keys(hass?.states || {}).find(id=>id.startsWith('light.')) || 'light.living_room'};}
+  _render() {
+    if(!this._config || !this._hass || !this._toggle)return;
+    const state=this._state(),a=state?.attributes || {},offline=this._offline(state),busy=this._busy.has(this._config.entity);
+    this._renderInfo(state);
+    compactProp(this._toggle,'disabled',offline||busy);compactAttr(this._toggle,'aria-busy',busy);compactAttr(this._toggle,'aria-pressed',state?.state==='on');
+    const modes=Array.isArray(a.supported_color_modes)?a.supported_color_modes:[];
+    const brightness=modes.some(mode=>['brightness','color_temp','hs','xy','rgb','rgbw','rgbww','white'].includes(mode));
+    this._syncSlider(this._brightness,state?.state==='off'?0:(Number.isFinite(a.brightness)?Math.round(a.brightness/255*100):NaN),brightness,offline||busy);
+    const validKelvin=Number.isFinite(a.min_color_temp_kelvin)&&Number.isFinite(a.max_color_temp_kelvin)&&a.min_color_temp_kelvin<a.max_color_temp_kelvin;
+    const color=modes.includes('color_temp')&&validKelvin;
+    if(color){this._kelvin.input.min=a.min_color_temp_kelvin;this._kelvin.input.max=a.max_color_temp_kelvin;}
+    this._syncSlider(this._kelvin,a.color_temp_kelvin,color,offline||busy);
+  }
+}
+class CompactCoverRow extends CompactControlRow {
+  constructor() {
+    super('cover');
+    this._open=this._button('open','열기','mdi:chevron-up',()=>this._call('open_cover'));
+    this._stop=this._button('stop','정지','mdi:stop',()=>this._call('stop_cover',{},true));
+    this._close=this._button('close','닫기','mdi:chevron-down',()=>this._call('close_cover'));
+    this._position=this._slider('position','열림 위치','mdi:blinds-horizontal',0,100,1,value=>this._call('set_cover_position',{position:value}));
+  }
+  static getStubConfig(hass) {return {entity:Object.keys(hass?.states || {}).find(id=>id.startsWith('cover.')) || 'cover.living_room'};}
+  _render() {
+    if(!this._config || !this._hass || !this._position)return;
+    const state=this._state(),a=state?.attributes || {},features=Number(a.supported_features)||0,offline=this._offline(state),busy=this._busy.has(this._config.entity);
+    this._renderInfo(state);
+    for(const [button,bit] of [[this._open,1],[this._stop,8],[this._close,2]]) {
+      button.hidden=!(features&bit);
+      button.disabled=offline || (button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
+      compactAttr(button,'aria-busy',button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
+    }
+    this._syncSlider(this._position,a.current_position,Boolean(features&4),offline||busy);
+  }
+}
+for(const [type,constructor,name,description] of [
+  ['compact-light-row',CompactLightRow,'Compact light row','조명 전원·밝기·색온도를 바로 제어'],
+  ['compact-cover-row',CompactCoverRow,'Compact cover row','커튼 열기·정지·닫기와 위치 제어']
+]) {
+  if(!customElements.get(type))customElements.define(type,constructor);
+  if(!window.customCards.some(card=>card.type===type))window.customCards.push({type,name,description});
+}
