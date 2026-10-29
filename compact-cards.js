@@ -538,3 +538,170 @@ for(const [type,constructor,name,description] of [
   if(!customElements.get(type))customElements.define(type,constructor);
   if(!window.customCards.some(card=>card.type===type))window.customCards.push({type,name,description});
 }
+
+// Small quick-action and environment panels share presentation, not service state.
+(() => {
+  const styles = `
+    :host{display:block;container-type:inline-size}
+    ha-card{padding:8px;box-sizing:border-box}
+    h2{font-size:14px;font-weight:500;margin:2px 4px 8px;color:var(--primary-text-color)}
+    h2[hidden]{display:none}
+    .grid{display:grid;grid-template-columns:repeat(var(--columns,auto-fit),minmax(min(112px,100%),1fr));gap:6px}
+    button{display:flex;align-items:center;gap:8px;min-width:0;min-height:44px;padding:6px 8px;
+      border:1px solid var(--divider-color);border-radius:var(--ha-card-border-radius,10px);
+      background:transparent;color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer;
+      transition:background-color 120ms ease,transform 120ms ease}
+    button:hover:not(:disabled){background:var(--secondary-background-color)}
+    button:active:not(:disabled){transform:scale(.98)}
+    button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px}
+    button:disabled{cursor:default;opacity:.55}
+    button[aria-busy=true]{cursor:progress}
+    ha-icon{--mdc-icon-size:20px;flex:none;width:20px;height:20px;color:var(--primary-color)}
+    .copy{flex:1;min-width:0}.label{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .detail{display:block;font-size:11px;color:var(--secondary-text-color);margin-top:2px}
+    @media(prefers-reduced-motion:reduce){button{transition:none}button:active:not(:disabled){transform:none}}
+  `;
+  const make = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const validate = config => {
+    if (!Array.isArray(config?.items) || !config.items.length) throw new Error('items에 하나 이상의 항목이 필요합니다.');
+    if (config.name !== undefined && typeof config.name !== 'string') throw new Error('name은 문자열이어야 합니다.');
+    if (config.columns !== undefined && config.columns !== 'auto' && ![1,2,3,4].includes(config.columns)) throw new Error('columns는 auto 또는 1~4입니다.');
+    config.items.forEach((item, i) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item) || typeof item.entity !== 'string') throw new Error(`items[${i}]: entity가 필요합니다.`);
+      for (const key of ['name','icon']) if (item[key] !== undefined && typeof item[key] !== 'string') throw new Error(`items[${i}]: ${key}은 문자열이어야 합니다.`);
+    });
+  };
+  class CompactSmallPanel extends HTMLElement {
+    constructor() {
+      super(); this.attachShadow({mode:'open'});
+      this.shadowRoot.innerHTML = `<style>${styles}</style><ha-card><h2 hidden></h2><div class="grid"></div></ha-card>`;
+      this._refs = []; this._busy = new Set();
+    }
+    set hass(value) { this._hass = value; this._render(); }
+    getCardSize() { return Math.max(1, Math.ceil((this._config?.items.length || 1) / (Number(this._config?.columns) || 3)) + (this._config?.name ? 1 : 0)); }
+    getGridOptions() { return {columns:12}; }
+    _configure(config) {
+      // Own configuration so later caller mutations do not bypass validation.
+      this._config = JSON.parse(JSON.stringify(config));
+      const heading = this.shadowRoot.querySelector('h2');
+      compactText(heading, config.name || ''); heading.hidden = !config.name;
+      const grid = this.shadowRoot.querySelector('.grid');
+      grid.style.gridTemplateColumns = config.columns === undefined || config.columns === 'auto'
+        ? 'repeat(auto-fit,minmax(min(112px,100%),1fr))' : `repeat(${config.columns},minmax(0,1fr))`;
+      grid.replaceChildren(); this._refs = [];
+      for (const item of this._config.items) {
+        const button = make('button'), icon = make('ha-icon'), copy = make('span','copy'), label = make('span','label'), detail = make('span','detail');
+        button.type = 'button'; copy.append(label,detail); button.append(icon,copy); grid.append(button);
+        const ref = {item,button,icon,label,detail}; this._refs.push(ref); this._bind(ref);
+      }
+      this._render();
+    }
+    _name(ref,state) { return ref.item.name || state?.attributes.friendly_name || ref.item.entity; }
+    _notify(message) { this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message},bubbles:true,composed:true})); }
+  }
+  class CompactScenePanel extends CompactSmallPanel {
+    setConfig(config) {
+      validate(config);
+      config.items.forEach((item,i) => {
+        if (!/^(scene|script)\.[a-z0-9_]+$/.test(item.entity)) throw new Error(`items[${i}]: scene 또는 script 엔티티가 필요합니다.`);
+        if (item.confirmation !== undefined && typeof item.confirmation !== 'string') throw new Error(`items[${i}]: confirmation은 문자열이어야 합니다.`);
+      });
+      this._configure(config);
+    }
+    static getStubConfig(hass) {
+      return {items:[{entity:Object.keys(hass?.states || {}).find(id => /^(scene|script)\./.test(id)) || 'scene.relax',name:'휴식'}]};
+    }
+    _bind(ref) { ref.button.onclick = () => this._activate(ref); }
+    _available(state) {
+      // A scene that has never been activated legitimately has an unknown timestamp.
+      return state && state.state !== 'unavailable' && (state.entity_id.startsWith('scene.') || state.state !== 'unknown');
+    }
+    _render() {
+      if (!this._hass || !this._config) return;
+      for (const ref of this._refs) {
+        const state = this._hass.states[ref.item.entity], name = this._name(ref,state);
+        const busy = this._busy.has(ref.item.entity), running = state?.entity_id.startsWith('script.') && state.state === 'on';
+        const available = this._available(state);
+        compactText(ref.label,name);
+        compactText(ref.detail,busy ? '실행 요청 중…' : !available ? '확인 불가' : running ? '실행 중' : '실행');
+        compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || (ref.item.entity.startsWith('scene.') ? 'mdi:palette-outline' : 'mdi:play'));
+        compactProp(ref.button,'disabled',!available || busy || running);
+        compactAttr(ref.button,'aria-busy',busy);
+        compactAttr(ref.button,'aria-label',`${name} · ${ref.detail.textContent}`);
+        compactProp(ref.button,'title',`${name} · ${ref.detail.textContent}`);
+      }
+    }
+    async _activate(ref) {
+      const id = ref.item.entity, state = this._hass?.states[id];
+      if (!this._available(state) || this._busy.has(id) || (id.startsWith('script.') && state.state === 'on')) return;
+      if (ref.item.confirmation && !window.confirm(ref.item.confirmation)) return;
+      this._busy.add(id); this._render();
+      try { await this._hass.callService(id.split('.')[0],'turn_on',{entity_id:id}); }
+      catch(error) { this._notify('실행 실패: ' + (error?.message || error)); }
+      finally { this._busy.delete(id); this._render(); }
+    }
+  }
+  class CompactEnvironmentPanel extends CompactSmallPanel {
+    constructor() {
+      super();
+      const style = make('style');
+      style.textContent = `.reading{font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.3;overflow-wrap:anywhere}.unit{font-size:11px;font-weight:400;margin-left:3px;color:var(--secondary-text-color)}
+        button{align-items:center}.label{font-size:12px;color:var(--secondary-text-color)}
+        button[data-level=warning]{border-color:var(--warning-color,#ffa600)}button[data-level=critical]{border-color:var(--error-color,#db4437)}
+        button[data-level=warning] ha-icon{color:var(--warning-color,#ffa600)}button[data-level=critical] ha-icon{color:var(--error-color,#db4437)}`;
+      this.shadowRoot.append(style);
+    }
+    setConfig(config) {
+      validate(config);
+      config.items.forEach((item,i) => {
+        if (!/^sensor\.[a-z0-9_]+$/.test(item.entity)) throw new Error(`items[${i}]: sensor 엔티티가 필요합니다.`);
+        if (item.thresholds !== undefined && (!Array.isArray(item.thresholds) || item.thresholds.some(t => !t || !Number.isFinite(t.value) || !['above','below'].includes(t.direction) || !['warning','critical'].includes(t.level)))) throw new Error(`items[${i}]: thresholds에는 숫자 value, above/below direction, warning/critical level이 필요합니다.`);
+      });
+      this._configure(config);
+    }
+    static getStubConfig(hass) {
+      const state = Object.values(hass?.states || {}).find(s => s.entity_id.startsWith('sensor.') && ['temperature','humidity','carbon_dioxide'].includes(s.attributes.device_class));
+      return {items:[{entity:state?.entity_id || 'sensor.room_temperature',name:'온도'}]};
+    }
+    _bind(ref) {
+      ref.reading = make('span','reading'); ref.number = make('span'); ref.unit = make('span','unit');
+      ref.reading.append(ref.number,ref.unit); ref.label.after(ref.reading);
+      ref.button.onclick = () => {
+        if (this._hass?.states[ref.item.entity]) this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:ref.item.entity},bubbles:true,composed:true}));
+      };
+    }
+    _render() {
+      if (!this._hass || !this._config) return;
+      const icons = {temperature:'mdi:thermometer',humidity:'mdi:water-percent',carbon_dioxide:'mdi:molecule-co2'};
+      for (const ref of this._refs) {
+        const state = this._hass.states[ref.item.entity], name = this._name(ref,state);
+        const available = state && !['unknown','unavailable'].includes(state.state) && state.state.trim() !== '' && Number.isFinite(Number(state.state));
+        const reading = available ? this._hass.formatEntityState?.(state) || `${state.state} ${state.attributes.unit_of_measurement || ''}`.trim() : '확인 불가';
+        const levels = available ? (ref.item.thresholds || []).filter(t => t.direction === 'above' ? Number(state.state) >= t.value : Number(state.state) <= t.value).map(t => t.level) : [];
+        const level = levels.includes('critical') ? 'critical' : levels.includes('warning') ? 'warning' : '';
+        const status = level === 'critical' ? '위험' : level === 'warning' ? '주의' : '';
+        compactText(ref.label,name);
+        // Use HA's localized formatting when available; never append its unit twice.
+        compactText(ref.number,available ? this._hass.formatEntityState ? reading : state.state : '—');
+        compactText(ref.unit,available && !this._hass.formatEntityState ? state.attributes.unit_of_measurement || '' : '');
+        compactText(ref.detail,available ? status : '확인 불가'); ref.detail.hidden = available && !status;
+        compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || icons[state?.attributes.device_class] || 'mdi:gauge');
+        compactAttr(ref.button,'data-level',level); compactProp(ref.button,'disabled',!state);
+        compactAttr(ref.button,'aria-label',`${name} · ${reading}${status ? ' · ' + status : ''}`);
+        compactProp(ref.button,'title',`${name} · ${reading}${status ? ' · ' + status : ''}`);
+      }
+    }
+  }
+  for (const [type,Constructor,name,description] of [
+    ['compact-scene-panel',CompactScenePanel,'Compact scene panel','장면과 스크립트를 한 번에 실행'],
+    ['compact-environment-panel',CompactEnvironmentPanel,'Compact environment panel','온도·습도·공기질과 사용자 지정 임계값'],
+  ]) {
+    if (!customElements.get(type)) customElements.define(type,Constructor);
+    if (!window.customCards.some(c => c.type === type)) window.customCards.push({type,name,description});
+  }
+})();
