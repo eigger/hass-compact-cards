@@ -79,17 +79,17 @@ Built-in control labels and notifications currently use Korean.
 | `entity` | Required. A `climate.*` entity |
 | `name` | Display name; defaults to the entity's name |
 
-Only modes provided by the entity are displayed. For devices supporting a single target temperature, −/+ respects the device's temperature step and minimum/maximum limits. Temperature buttons are disabled for devices that only support a high/low target range. Tap the name to open Home Assistant's entity details.
+Only modes provided by the entity are displayed. Narrow cards move modes below the name and temperature instead of shrinking the buttons. Devices with more than three modes do so below 540px (640px with a coarse pointer), and touch controls use 44px targets. For devices supporting a single target temperature, −/+ respects the device's temperature step and minimum/maximum limits. Temperature buttons are disabled for devices that only support a high/low target range. Tap the name to open Home Assistant's entity details.
 
 ### `custom:compact-home-panel`
 
-Combine the following entries in `items`. Ordinary entity entries use two columns; headings, notes, climate controls, comparisons, navigation and select entries use the full width.
+Set optional `columns` to `auto` (default), `1`, or `2` to control the ordinary entity layout. Combine the following entries in `items`. Ordinary entity entries use two columns and switch to one column at widths up to 380px; headings, notes, climate controls, comparisons, navigation and select entries use the full width.
 
 | Entry | Fields and behavior |
 | --- | --- |
 | Entity | `entity`, optional `name`, `icon`. `light`/`switch` provide toggles, `select` provides option selection, and other domains display state |
 | Sensor lookup by name | `find_name`, optional `domain` (defaults to `sensor`). Duplicate names within a domain are shown as unavailable. For state display |
-| `type: heading` | `name`, optional `badges: [{entity: sensor.example}]` |
+| `type: heading` | `name`, optional `badges: [{entity: sensor.example, name: Temperature}]` |
 | `type: note` | Note text in `name` |
 | `type: climate` | `entity: climate.*`, optional `name` |
 | `type: navigate` | `name`, `navigation_path: /dashboard-name/view`, optional `icon` |

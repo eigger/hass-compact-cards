@@ -12,11 +12,11 @@ class CompactClimateRow extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>
         :host{display:block;height:100%;container-type:inline-size;--row-color:var(--primary-text-color)}
-        ha-card{height:100%;min-height:56px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:6px 10px;overflow:hidden}
-        button{font:inherit;color:var(--row-color);background:transparent;border:0;border-radius:7px;min-height:34px;padding:4px;cursor:pointer;flex:none}
+        ha-card{height:100%;min-height:56px;box-sizing:border-box;display:grid;grid-template-columns:minmax(90px,1fr) auto auto;align-items:center;gap:6px;padding:6px 10px;overflow:hidden}
+        button{font:inherit;color:var(--row-color);background:transparent;border:0;border-radius:7px;min-height:36px;padding:4px;cursor:pointer;flex:none;touch-action:manipulation;position:relative}
         button:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
         button:disabled{opacity:.35;cursor:default}
-        button[aria-busy=true]{cursor:progress}
+        button[aria-busy=true]{cursor:progress;opacity:.65;outline:2px dotted var(--primary-color);outline-offset:-3px}
         .modes button{transition:color 180ms ease,background-color 180ms ease}
         output{transition:color 180ms ease}
         .modes button.just-changed{animation:compact-mode-press 180ms ease-out}
@@ -28,19 +28,20 @@ class CompactClimateRow extends HTMLElement {
         @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
         @keyframes compact-dry{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
         @media(prefers-reduced-motion:reduce){button,output{transition:none!important}.just-changed,ha-icon.running{animation:none!important}}
-        .info{flex:1;min-width:42px;text-align:left;overflow:hidden}
+        .info{flex:1;min-width:0;text-align:left;overflow:hidden}
         .name,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .name{font-size:14px}.state{font-size:12px;color:var(--secondary-text-color);margin-top:2px}
         .modes,.temperature{display:flex;align-items:center;gap:2px;flex:none}
-        .modes button{width:29px;color:var(--secondary-text-color)}
+        .modes button{width:32px;color:var(--secondary-text-color)}
         .modes button[aria-pressed=true]{color:var(--mode-color);background:color-mix(in srgb,var(--mode-color) 18%,transparent)}
         output{color:var(--climate-color,var(--primary-text-color))}
         ha-icon{--mdc-icon-size:18px;width:18px;height:18px}
         .temperature{border-left:1px solid var(--divider-color);padding-left:5px}
-        .temperature button{width:28px;font-size:18px}
+        .temperature button{width:32px;font-size:18px}
         output{font-size:14px;font-variant-numeric:tabular-nums;min-width:39px;text-align:center;white-space:nowrap}
-        @container(max-width:380px){ha-card{gap:3px;padding:6px}.modes button{width:26px}.temperature{padding-left:2px}.temperature button{width:25px}}
-        @container(max-width:340px){.info{min-width:30px}.modes button{width:24px;padding-inline:2px}.temperature button{width:24px}.temperature{gap:1px}output{min-width:37px}}
+        @container(max-width:380px){ha-card{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px;gap:2px 6px}.modes{grid-row:2;grid-column:1/-1;flex-wrap:wrap}.temperature{grid-column:2;grid-row:1;border:0;padding:0}}
+        @container(max-width:540px){ha-card.many-modes{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.many-modes .modes{grid-row:2;grid-column:1/-1;flex-wrap:wrap}.many-modes .temperature{grid-column:2;grid-row:1;border:0;padding:0}}
+        @media(pointer:coarse){button{min-height:44px}.modes button,.temperature button{width:44px}.modes{flex-wrap:wrap;max-width:100%}@container(max-width:640px){ha-card.many-modes{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.many-modes .modes{grid-row:2;grid-column:1/-1}.many-modes .temperature{grid-column:2;grid-row:1;border:0;padding:0}}@container(max-width:440px){ha-card{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.modes{grid-row:2;grid-column:1/-1}.temperature{grid-column:2;grid-row:1;border:0;padding:0}}}
         :host([embedded]) ha-card{min-height:48px;border:0;box-shadow:none;background:transparent;padding:4px 0}
       </style>
       <ha-card>
@@ -62,11 +63,11 @@ class CompactClimateRow extends HTMLElement {
     this._render();
   }
   set hass(value) { this._hass = value; this._render(); }
-  getCardSize() { return 1; }
+  getCardSize() { return (this._hass?.states[this._config?.entity]?.attributes.hvac_modes?.length || 0) > 3 ? 2 : 1; }
   static getStubConfig(hass) {
     return { entity: Object.keys(hass?.states || {}).find(id => id.startsWith('climate.')) || 'climate.living_room' };
   }
-  getGridOptions() { return { columns: 12, rows: 1, min_rows: 1 }; }
+  getGridOptions() { return { columns: 12, min_rows: 1 }; }
   _modeColor(mode) {
     // Mirror HA stateColorCss: mode -> domain active/inactive -> global state.
     if (['unknown','unavailable'].includes(mode)) return 'var(--state-unavailable-color)';
@@ -87,6 +88,7 @@ class CompactClimateRow extends HTMLElement {
     compactText(this.shadowRoot.querySelector('.state'),offline ? '확인 불가' : `${this._hass.formatEntityState?.(s) || s.state}${a.current_temperature != null ? ' · 현재 ' + a.current_temperature + '°' : ''}`);
     const defs = { off:['mdi:power','끄기'], heat:['mdi:fire','난방'], cool:['mdi:snowflake','냉방'], dry:['mdi:water-percent','제습'], fan_only:['mdi:fan','송풍'], auto:['mdi:alpha-a-circle','자동'], heat_cool:['mdi:thermostat-auto','냉난방 자동'] };
     const modes = Array.isArray(a.hvac_modes) ? a.hvac_modes : [];
+    this.shadowRoot.querySelector('ha-card').classList.toggle('many-modes',modes.length>3);
     const container = this.shadowRoot.querySelector('.modes');
     const key = JSON.stringify(modes);
     if (this._modesKey !== key) {
@@ -106,7 +108,7 @@ class CompactClimateRow extends HTMLElement {
     for (const b of container.children) {
       const pressed=!offline && b.dataset.mode === s?.state;
       if(this._hasRendered && pressed && b.getAttribute('aria-pressed')==='false')b.classList.add('just-changed');
-      compactProp(b,'disabled',offline);
+      compactProp(b,'disabled',offline || this._busy);
       compactAttr(b,'aria-busy',this._busy);
       compactAttr(b,'aria-disabled',offline || this._busy);
       compactAttr(b,'aria-pressed',pressed);
@@ -121,8 +123,8 @@ class CompactClimateRow extends HTMLElement {
     const supported = (Number(a.supported_features) & 1) !== 0;
     compactText(this.shadowRoot.querySelector('output'),valid ? `${t}°` : '—');
     const minus=this.shadowRoot.querySelector('.minus'),plus=this.shadowRoot.querySelector('.plus');
-    compactProp(minus,'disabled',offline || !valid || !supported || (a.min_temp != null && t <= a.min_temp));
-    compactProp(plus,'disabled',offline || !valid || !supported || (a.max_temp != null && t >= a.max_temp));
+    compactProp(minus,'disabled',offline || this._busy || !valid || !supported || (a.min_temp != null && t <= a.min_temp));
+    compactProp(plus,'disabled',offline || this._busy || !valid || !supported || (a.max_temp != null && t >= a.max_temp));
     for(const button of [minus,plus]){compactAttr(button,'aria-busy',this._busy);compactAttr(button,'aria-disabled',button.disabled || this._busy);}
     this._hasRendered=true;
   }
@@ -201,8 +203,8 @@ class CompactHomePanel extends HTMLElement {
       .row:last-child{border-bottom:0}button,select{font:inherit;color:var(--primary-text-color)}
       button{border:0;background:transparent;border-radius:6px;padding:4px;cursor:pointer;min-height:36px}
       button:focus-visible,select:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
-      button:disabled,select:disabled{opacity:.45;cursor:default}.label{display:flex;align-items:center;gap:9px;text-align:left;flex:1;min-width:0}
-      button[aria-busy=true],select[aria-busy=true]{cursor:progress}
+      button,select{touch-action:manipulation}button:disabled,select:disabled{opacity:.45;cursor:default}.label{display:flex;align-items:center;gap:9px;text-align:left;flex:1;min-width:0}
+      button[aria-busy=true],select[aria-busy=true]{cursor:progress;opacity:.65;outline:2px dotted var(--primary-color);outline-offset:-3px}
       .label span{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       ha-icon{--mdc-icon-size:18px;width:18px;height:18px;flex:none;color:var(--entity-color,var(--secondary-text-color))}
       .value{font-size:14px;min-width:0;max-width:68%;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--entity-color,var(--primary-text-color));transition:color 180ms ease}
@@ -210,20 +212,24 @@ class CompactHomePanel extends HTMLElement {
       .track:after{content:'';position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--card-background-color);transform:translateX(0);transition:transform 180ms cubic-bezier(.2,.8,.2,1)}
       .switch[aria-checked=true] .track{background:var(--entity-color)}.switch[aria-checked=true] .track:after{transform:translateX(12px)}
       ha-icon{transition:color 180ms ease}
-      .subheading{display:flex;align-items:center;gap:8px}.subheading>span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.subheading button{font-size:12px;min-height:30px;color:var(--secondary-text-color)}
+      .subheading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.badge{display:flex;align-items:center;gap:3px;max-width:100%}.badge .badge-name{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.subheading>span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.subheading button{font-size:12px;min-height:30px;color:var(--secondary-text-color)}
       .command{font-size:13px;color:var(--primary-color);padding-inline:10px}.subheading{font-size:13px;font-weight:500;color:var(--secondary-text-color);padding:12px 4px 4px}
       select{max-width:48%;min-width:0;font-size:13px;border:1px solid var(--divider-color);border-radius:5px;background:var(--card-background-color);min-height:36px}
       .climate{border-bottom:1px solid var(--divider-color)}.climate:last-child{border:0}
       table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}th,td{text-align:right;padding:9px 3px;border-bottom:1px solid var(--divider-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       th{font-weight:400;color:var(--secondary-text-color)}th:first-child,td:first-child{text-align:left;width:18%}td button{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:32px;padding:0}
       td small{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;color:var(--secondary-text-color);margin-top:2px}.note{font-size:12px;color:var(--secondary-text-color);padding:8px 3px}
-      @container(max-width:380px){ha-card{padding:2px 8px}.pair-grid{column-gap:10px}.row{gap:4px}.label{gap:6px;padding-inline:2px}.switch{min-width:36px}.subheading{gap:4px}}
-      @media(pointer:coarse){.label,.switch,.command{min-height:44px}}
+      @container(max-width:380px){ha-card{padding:2px 8px}.pair-grid{column-gap:10px}.row{gap:4px}.label{gap:6px;padding-inline:2px}.switch{min-width:42px}.subheading{gap:4px}}
+      :host([columns="1"]) .pair-grid{grid-template-columns:minmax(0,1fr)}
+      @container(max-width:380px){:host([columns="auto"]) .pair-grid{grid-template-columns:minmax(0,1fr)}}
+      @container(max-width:420px){thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}table,tbody{display:block}tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--divider-color);padding-block:4px}td{display:block;border:0;padding:3px;text-align:left;min-width:0}td:first-child{grid-column:1/-1;width:auto;font-weight:500}td:not(:first-child)::before{content:attr(data-label);display:block;font-size:11px;color:var(--secondary-text-color);margin-bottom:2px}td button{min-height:36px;width:100%;text-align:left}}
+      @media(pointer:coarse){button,select,.subheading button,td button{min-height:44px}.switch{min-width:44px}}
       @media(prefers-reduced-motion:reduce){.track,.track:after,ha-icon,.value{transition:none!important}}
     </style><ha-card><div class="items"></div></ha-card>`;
   }
   setConfig(config) {
     if (!Array.isArray(config?.items)) throw new Error('items 목록이 필요합니다.');
+    if (config.columns !== undefined && !['auto',1,2].includes(config.columns)) throw new Error('columns는 auto, 1, 2 중 하나여야 합니다.');
     for (const [index, item] of config.items.entries()) {
       const fail = message => { throw new Error(`items[${index}]: ${message}`); };
       if (!item || typeof item !== 'object' || Array.isArray(item)) fail('항목은 객체여야 합니다.');
@@ -237,7 +243,7 @@ class CompactHomePanel extends HTMLElement {
       if (item.tap_action && (item.tap_action.action !== 'perform-action' || typeof item.tap_action.perform_action !== 'string' || !/^[a-z_]+\.[a-z0-9_]+$/.test(item.tap_action.perform_action))) fail('tap_action에 perform-action과 domain.service 형식의 perform_action이 필요합니다.');
     }
     const key=JSON.stringify(config);if(this._configKey===key)return;this._configKey=key;
-    this._config = config; this._build(); this._render();
+    this._config = config; this.setAttribute('columns',config.columns ?? 'auto'); this._build(); this._render();
   }
   set hass(hass) { this._hass = hass; this._render(); }
   getCardSize() { return Math.max(1, Math.ceil((this._config?.items.length || 1) * 40 / 50)); }
@@ -263,7 +269,7 @@ class CompactHomePanel extends HTMLElement {
       if (paired && !pairGroup) {pairGroup=this._make('div','pair-grid');body.append(pairGroup);}
       if (item.type === 'heading') {
         const h=this._make('div','subheading');h.append(this._make('span',null,item.name));
-        for (const badge of item.badges || []) {const value=this._make('button');value.onclick=()=>this._more(this._hass?.states[badge.entity]);h.append(value);this._refs.push({item:badge,badge:value});}
+        for (const badge of item.badges || []) {const value=this._make('button','badge'),name=this._make('span','badge-name'),reading=this._make('span');value.append(name,reading);value.onclick=()=>this._more(this._hass?.states[badge.entity]);h.append(value);this._refs.push({item:badge,badge:value,badgeName:name,badgeValue:reading});}
         body.append(h);continue;
       }
       if (item.type === 'note') { body.append(this._make('div','note',item.name));continue; }
@@ -273,14 +279,16 @@ class CompactHomePanel extends HTMLElement {
         this._refs.push({item,child,configured:false});continue;
       }
       if (item.type === 'comparison') {
-        const table=this._make('table'),thead=this._make('thead'),head=this._make('tr');thead.append(head);table.append(thead);
-        for (const label of ['항목','이번 달','지난달','차이']) { const th=this._make('th',null,label);th.scope='col';head.append(th); }
-        const tbody=this._make('tbody');table.append(tbody);
+        const table=this._make('table'),thead=this._make('thead'),head=this._make('tr');table.setAttribute('role','table');thead.setAttribute('role','rowgroup');head.setAttribute('role','row');thead.append(head);table.append(thead);
+        for (const label of ['항목','이번 달','지난달','차이']) { const th=this._make('th',null,label);th.scope='col';th.setAttribute('role','columnheader');head.append(th); }
+        const tbody=this._make('tbody');tbody.setAttribute('role','rowgroup');table.append(tbody);
         for (const comparison of item.rows) {
           const row=this._make('tr');tbody.append(row);row.append(this._make('td',null,comparison.name));
           const now=this._make('button'),prev=this._make('button'),nowCell=this._make('td'),prevCell=this._make('td');nowCell.append(now);prevCell.append(prev);row.append(nowCell,prevCell);
           now.onclick=()=>this._more(this._hass?.states[comparison.entity]);prev.onclick=()=>this._more(this._hass?.states[comparison.previous]);
           const delta=this._make('span'),percent=this._make('small'),deltaCell=this._make('td');deltaCell.append(delta,percent);row.append(deltaCell);
+          row.setAttribute('role','row');
+          [...row.children].forEach((cell,index)=>{cell.setAttribute('role','cell');cell.dataset.label=['항목','이번 달','지난달','차이'][index];});
           this._refs.push({item:comparison,now,prev,delta,percent});
         }
         body.append(table,this._make('div','note','이번 달 누적 / 지난달 전체'));continue;
@@ -312,7 +320,7 @@ class CompactHomePanel extends HTMLElement {
     if (!this._hass || !this._config) return;
     for (const ref of this._refs) {
       const {item}=ref;
-      if (ref.badge) {const state=this._hass.states[item.entity];compactText(ref.badge,this._format(state));continue;}
+      if (ref.badge) {const state=this._hass.states[item.entity],name=item.name || state?.attributes.friendly_name || item.entity,value=this._format(state);compactText(ref.badgeName,name);compactText(ref.badgeValue,value);compactAttr(ref.badge,'aria-label',`${name}: ${value}`);compactProp(ref.badge,'title',`${name}: ${value}`);compactProp(ref.badge,'disabled',!state);continue;}
       if (ref.child) {
         if (!ref.configured && ref.child.setConfig) {ref.child.setConfig({entity:item.entity,name:item.name,embedded:true});ref.configured=true;}
         if (ref.configured) ref.child.hass=this._hass;
@@ -320,7 +328,7 @@ class CompactHomePanel extends HTMLElement {
       }
       if (ref.now) {
         const now=this._hass.states[item.entity],prev=this._hass.states[item.previous];
-        compactText(ref.now,this._format(now));compactText(ref.prev,this._format(prev));
+        compactText(ref.now,this._format(now));compactText(ref.prev,this._format(prev));compactProp(ref.now,'title',ref.now.textContent);compactProp(ref.prev,'title',ref.prev.textContent);
         const delta=compactCompare(now,prev);compactText(ref.delta,delta.text);compactText(ref.percent,delta.reason);continue;
       }
       if (item.type === 'navigate') continue;
@@ -335,7 +343,7 @@ class CompactHomePanel extends HTMLElement {
       compactAttr(ref.icon,'icon',item.icon || state?.attributes.icon || sensorIcons[state?.attributes.device_class] || icons[domain] || 'mdi:circle-small');
       if (ref.value){compactText(ref.value,this._format(state));compactProp(ref.value,'title',ref.value.textContent);}
       if (ref.control) {
-        compactProp(ref.control,'disabled',offline);
+        compactProp(ref.control,'disabled',offline || this._busy.has(item.entity));
         compactAttr(ref.control,'aria-busy',this._busy.has(item.entity));
         compactAttr(ref.control,'aria-disabled',offline || this._busy.has(item.entity));
         compactAttr(ref.control,'aria-label',`${ref.name.textContent} ${['light','switch'].includes(domain)?'켜기/끄기':'실행'}`);
@@ -345,7 +353,7 @@ class CompactHomePanel extends HTMLElement {
         const options=state?.attributes.options || [];
         if (ref.optionsKey!==JSON.stringify(options)) {ref.optionsKey=JSON.stringify(options);ref.select.replaceChildren(...options.map(value=>{const o=this._make('option',null,value);o.value=value;return o;}));}
         if(!this._busy.has(item.entity))compactProp(ref.select,'value',state?.state || '');
-        compactProp(ref.select,'disabled',offline);compactAttr(ref.select,'aria-busy',this._busy.has(item.entity));compactAttr(ref.select,'aria-label',ref.name.textContent);
+        compactProp(ref.select,'disabled',offline || this._busy.has(item.entity));compactAttr(ref.select,'aria-busy',this._busy.has(item.entity));compactAttr(ref.select,'aria-label',ref.name.textContent);
       }
     }
   }
