@@ -833,6 +833,7 @@ class CompactMediaRow extends HTMLElement {
       button{font:inherit;color:var(--primary-text-color);background:transparent;border:0;border-radius:8px;cursor:pointer;min-height:40px;min-width:40px;transition:background-color 150ms ease}
       button:hover:not(:disabled){background:var(--secondary-background-color)}button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}button[aria-busy=true]{cursor:progress;background:var(--secondary-background-color)}
+      input[aria-busy=true]{opacity:.65;cursor:progress}
       .name,.title,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.name{font-size:12px;color:var(--secondary-text-color)}.title{font-size:14px;line-height:20px}.state{font-size:12px;color:var(--secondary-text-color)}
       ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:after{content:'';position:absolute;width:4px;height:4px;border-radius:50%;background:currentColor;bottom:4px;left:calc(50% - 2px)}
       .volume{display:flex;align-items:center;gap:4px;min-height:32px;padding-inline:4px}.volume .mute{flex:none;min-width:32px;width:32px;min-height:32px;padding:0}.volume .mute:disabled{opacity:1}.volume .mute[aria-pressed=true]{color:var(--primary-color)}.volume .mute:disabled:hover{background:transparent}.volume ha-icon{color:inherit;width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
@@ -846,9 +847,10 @@ class CompactMediaRow extends HTMLElement {
     this._q('.next').onclick=()=>this._call('media_next_track');
     this._q('.mute').onclick=()=>{const muted=this._state()?.attributes.is_volume_muted;if(typeof muted==='boolean')this._call('volume_mute',{is_volume_muted:!muted});};
     const volume=this._q('input');
-    volume.onpointerdown=()=>{this._editingVolume=true;this._volumeGestureChanged=false;this._volumeGestureStart=Number(volume.value);};
-    volume.oninput=()=>{this._editingVolume=true;this._volumeGestureChanged=true;this._showVolume(volume.value);};
-    volume.onchange=()=>{const value=Number(volume.value);this._editingVolume=false;this._volumeGestureChanged=false;this._commitVolume(value);};
+    volume.onpointerdown=event=>{if(this._isBusy('audio')){event.preventDefault();return;}this._editingVolume=true;this._volumeGestureChanged=false;this._volumeGestureStart=Number(volume.value);};
+    volume.onkeydown=event=>{if(this._isBusy('audio')&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key))event.preventDefault();};
+    volume.oninput=()=>{if(this._isBusy('audio')){this._editingVolume=false;this._render();return;}this._editingVolume=true;this._volumeGestureChanged=true;this._showVolume(volume.value);};
+    volume.onchange=()=>{const value=Number(volume.value);this._editingVolume=false;this._volumeGestureChanged=false;if(this._isBusy('audio')){this._render();return;}this._commitVolume(value);};
     const release=()=>{if(!this._volumeGestureChanged||Number(volume.value)===this._volumeGestureStart){this._editingVolume=false;this._render();}};
     volume.onpointerup=release;volume.onlostpointercapture=release;
     volume.onpointercancel=()=>{this._editingVolume=false;this._render();};
@@ -899,7 +901,11 @@ class CompactMediaRow extends HTMLElement {
     compactProp(mute,'disabled',this._isBusy('audio')||!this._allowed('volume_mute')||typeof a.is_volume_muted!=='boolean');
     const slider=this._q('input'),level=a.volume_level,valid=typeof level==='number'&&Number.isFinite(level)&&level>=0&&level<=1;
     this._q('.volume').hidden=this._config.show_volume===false||!this._supports(4);
-    compactProp(slider,'disabled',this._isBusy('audio')||!this._allowed('volume_set')||!valid);compactAttr(slider,'aria-label',`${name} 음량${muted?' (음소거 중)':''}`);
+    const audioBusy=this._isBusy('audio'),unusable=!this._allowed('volume_set')||!valid;
+    // Native disabled ranges lose focus. Pending requests keep the normal tab
+    // flow, while input guards prevent duplicate edits; offline still disables.
+    compactProp(slider,'disabled',unusable);
+    compactAttr(slider,'aria-disabled',unusable||audioBusy);compactAttr(slider,'aria-busy',audioBusy);compactAttr(slider,'aria-label',`${name} 음량${muted?' (음소거 중)':''}`);
     if(this._pendingVolume!==undefined&&valid&&Math.round(level*100)===this._pendingVolume){this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
     if(!this._editingVolume){compactProp(slider,'value',String(this._pendingVolume??(valid?Math.round(level*100):0)));this._showVolume(slider.value);if(!valid)compactText(this._q('output'),'—');}
   }

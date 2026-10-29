@@ -12,10 +12,10 @@ test('muted media reports silence and unmutes in existing volume icon slot',asyn
 test('audio and transport commands stay independently usable with duplicate suppression',async t=>{
  const {card,hass,calls,q}=setup(t,'compact-media-row',{entity:'media_player.room'},{'media_player.room':state('media_player.room','playing',{supported_features:mediaFeatures,is_volume_muted:false,volume_level:.35})});
  const pending={};hass.callService=(...args)=>{calls.push(args);return new Promise(resolve=>pending[args[1]]=resolve);};
- const audio=card._call('volume_set',{volume_level:.5});assert.equal(q('.play').disabled,false);assert.equal(q('.next').disabled,false);assert.equal(q('input').disabled,true);assert.equal(q('.mute').disabled,true);
+ const audio=card._call('volume_set',{volume_level:.5});assert.equal(q('.play').disabled,false);assert.equal(q('.next').disabled,false);assert.equal(q('input').disabled,false);assert.equal(q('input').getAttribute('aria-disabled'),'true');assert.equal(q('.mute').disabled,true);
  await card._call('volume_mute',{is_volume_muted:true});assert.equal(calls.length,1);
  const transport=card._call('media_pause');assert.equal(calls.length,2);await card._call('media_next_track');assert.equal(calls.length,2);
- pending.media_pause();await transport;assert.equal(q('.play').disabled,false);assert.equal(q('input').disabled,true);pending.volume_set();await audio;assert.equal(card._busy.size,0);
+ pending.media_pause();await transport;assert.equal(q('.play').disabled,false);assert.equal(q('input').getAttribute('aria-disabled'),'true');pending.volume_set();await audio;assert.equal(card._busy.size,0);
 });
 test('old audio failures cannot clear a different entity draft or label its state',async t=>{
  const {card,hass,q}=setup(t,'compact-media-row',{entity:'media_player.a'},{'media_player.a':state('media_player.a','playing',{supported_features:mediaFeatures,volume_level:.2}),'media_player.b':state('media_player.b','playing',{supported_features:mediaFeatures,volume_level:.3})});
@@ -35,4 +35,19 @@ test('localized environmental numbers preserve grouping while units keep separat
  hass.formatEntityState=()=> '12\u202f345,6\u00a0µg/m³';card.hass=hass;assert.equal(ref.number.textContent,'12\u202f345,6');assert.equal(ref.unit.textContent,'µg/m³');assert.match(ref.button.getAttribute('aria-label'),/12\u202f345,6\u00a0µg\/m³/);
  hass.states['sensor.air'].attributes.unit_of_measurement='$';hass.formatEntityState=()=>'$12,345.60';card.hass=hass;assert.equal(ref.number.textContent,'12,345.60');assert.equal(ref.unit.textContent,'$');assert.equal(ref.reading.classList.contains('unit-first'),true);
  hass.formatEntityState=()=> 'custom localized reading';card.hass=hass;assert.equal(ref.number.textContent,'custom localized reading');assert.equal(ref.unit.textContent,'');
+});
+
+test('pending volume retains an already focused range without allowing duplicate edits',async t=>{
+ const {window,card,hass,calls,q}=setup(t,'compact-media-row',{entity:'media_player.room'},{'media_player.room':state('media_player.room','playing',{supported_features:mediaFeatures,volume_level:.35})});
+ let resolve;hass.callService=(...args)=>{calls.push(args);return new Promise(done=>resolve=done);};const slider=q('input');slider.focus();
+ const pending=card._commitVolume(40);assert.equal(slider.disabled,false);assert.equal(slider.getAttribute('aria-disabled'),'true');assert.equal(slider.getAttribute('aria-busy'),'true');assert.equal(card.shadowRoot.activeElement,slider);
+ const key=new window.KeyboardEvent('keydown',{key:'ArrowRight',cancelable:true});slider.dispatchEvent(key);assert.equal(key.defaultPrevented,true);
+ slider.value='41';slider.dispatchEvent(new window.Event('input'));slider.dispatchEvent(new window.Event('change'));assert.equal(slider.value,'40');assert.equal(calls.length,1);
+ resolve();await pending;assert.equal(card.shadowRoot.activeElement,slider);assert.equal(slider.disabled,false);assert.equal(slider.getAttribute('aria-disabled'),'false');
+});
+test('pending volume never restores focus after the user moves to transport control',async t=>{
+ const {card,hass,q}=setup(t,'compact-media-row',{entity:'media_player.room'},{'media_player.room':state('media_player.room','playing',{supported_features:mediaFeatures,volume_level:.35})});
+ let resolve;hass.callService=()=>new Promise(done=>resolve=done);const slider=q('input');slider.focus();const pending=card._commitVolume(40);
+ q('.play').focus();assert.equal(card.shadowRoot.activeElement,q('.play'));resolve();await pending;assert.equal(card.shadowRoot.activeElement,q('.play'));
+ hass.states['media_player.room'].state='unavailable';slider.focus();card.hass=hass;assert.equal(slider.disabled,true);
 });
