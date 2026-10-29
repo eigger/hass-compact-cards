@@ -124,3 +124,62 @@ test('comparison shows unit mismatches and embedded climate receives hass', () =
   element.hass = hass;
   assert.equal(element._refs[0].percent.textContent, '단위 불일치');
 });
+
+
+test('panel validates column overrides and gives heading badges readable names', () => {
+  const { hass, card } = setup();
+  hass.states['sensor.temperature'] = state('sensor.temperature', '23', { friendly_name: 'Room temperature', unit_of_measurement: '°C' });
+  const element = card('compact-home-panel', { columns: 1, items: [
+    { type: 'heading', name: 'Room', badges: [{ entity: 'sensor.temperature', name: 'Temperature' }, { entity: 'sensor.missing' }] },
+  ] });
+  assert.equal(element.getAttribute('columns'), '1');
+  const badges = element.shadowRoot.querySelectorAll('.badge');
+  assert.equal(badges[0].textContent, 'Temperature23 °C');
+  assert.equal(badges[0].getAttribute('aria-label'), 'Temperature: 23 °C');
+  assert.equal(badges[1].disabled, true);
+  for (const columns of ['2', 0, 3, null]) assert.throws(() => card('compact-home-panel', { columns, items: [] }), /columns/);
+  element.setConfig({ items: [] });
+  assert.equal(element.getAttribute('columns'), 'auto');
+});
+
+test('climate controls disable during pending commands and recover after rejection', async () => {
+  const { hass, card } = setup();
+  hass.states['climate.room'] = state('climate.room', 'heat', {
+    temperature: 22, supported_features: 1, hvac_modes: ['off', 'heat', 'cool', 'dry'],
+  });
+  let reject;
+  hass.callService = () => new Promise((resolve, failure) => { reject = failure; });
+  const element = card('compact-climate-row', { entity: 'climate.room' });
+  const request = element._step(1);
+  assert.equal(element.shadowRoot.querySelector('ha-card').classList.contains('many-modes'), true);
+  for (const button of element.shadowRoot.querySelectorAll('.modes button,.temperature button')) {
+    assert.equal(button.disabled, true);
+    assert.equal(button.getAttribute('aria-busy'), 'true');
+  }
+  reject(new Error('Disconnected'));
+  await request;
+  for (const button of element.shadowRoot.querySelectorAll('.modes button,.temperature button')) {
+    assert.equal(button.disabled, false);
+    assert.equal(button.getAttribute('aria-busy'), 'false');
+  }
+});
+
+test('panel disables toggles and selects only while their own service is pending', async () => {
+  const { hass, card } = setup();
+  hass.states['switch.room'] = state('switch.room', 'off');
+  hass.states['select.mode'] = state('select.mode', 'Home', { options: ['Home', 'Away'] });
+  const pending = [];
+  hass.callService = () => new Promise(resolve => pending.push(resolve));
+  const element = card('compact-home-panel', { items: [{ entity: 'switch.room' }, { entity: 'select.mode' }] });
+  const [toggle, select] = element._refs;
+  const first = element._call(toggle, 'homeassistant', 'toggle', {});
+  assert.equal(toggle.control.disabled, true);
+  assert.equal(select.select.disabled, false);
+  const second = element._call(select, 'select', 'select_option', { option: 'Away' });
+  assert.equal(select.select.disabled, true);
+  pending[0](); await first;
+  assert.equal(toggle.control.disabled, false);
+  assert.equal(select.select.disabled, true);
+  pending[1](); await second;
+  assert.equal(select.select.disabled, false);
+});

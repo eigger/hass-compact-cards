@@ -79,17 +79,17 @@ items:
 | `entity` | 필수. `climate.*` 엔티티 |
 | `name` | 표시 이름. 생략 시 엔티티의 이름 사용 |
 
-엔티티가 제공하는 운전 모드만 표시합니다. 단일 목표 온도를 지원하는 기기에서 −/+로 온도를 변경하며, 기기의 온도 간격과 최솟값·최댓값을 적용합니다. 상한/하한 온도 범위만 지원하는 기기는 온도 버튼이 비활성화됩니다. 이름을 누르면 Home Assistant 상세 정보가 열립니다.
+엔티티가 제공하는 운전 모드만 표시합니다. 좁은 카드에서는 모드 버튼을 이름과 온도 아래에 배치하며, 모드가 4개 이상이면 540px 이하에서 두 줄로 표시합니다. 터치 환경의 버튼 조작 영역은 44px입니다. 단일 목표 온도를 지원하는 기기에서 −/+로 온도를 변경하며, 기기의 온도 간격과 최솟값·최댓값을 적용합니다. 상한/하한 온도 범위만 지원하는 기기는 온도 버튼이 비활성화됩니다. 이름을 누르면 Home Assistant 상세 정보가 열립니다.
 
 ### `custom:compact-home-panel`
 
-`items`에 아래 항목을 조합합니다. 일반 엔티티 항목은 두 열로 표시하고, 제목·메모·냉난방·비교·탐색과 select 항목은 전체 너비를 사용합니다.
+`items`에 아래 항목을 조합합니다. 일반 엔티티 항목은 두 열로 표시하고 380px 이하에서는 한 열로 전환합니다. `columns`는 `auto`(기본), `1`, `2`로 설정할 수 있습니다. 제목·메모·냉난방·비교·탐색과 select 항목은 전체 너비를 사용합니다.
 
 | 항목 | 필드와 동작 |
 | --- | --- |
 | 일반 엔티티 | `entity`, 선택적 `name`, `icon`. `light`/`switch`는 토글, `select`는 옵션 선택, 나머지는 상태 표시 |
 | 이름으로 센서 찾기 | `find_name`, 선택적 `domain`(기본 `sensor`). 같은 도메인에 동일 이름이 여러 개면 확인 불가로 표시. 상태 표시용 |
-| `type: heading` | `name`, 선택적 `badges: [{entity: sensor.example}]` |
+| `type: heading` | `name`, 선택적 `badges: [{entity: sensor.example, name: 온도}]` |
 | `type: note` | `name`에 메모 내용 |
 | `type: climate` | `entity: climate.*`, 선택적 `name` |
 | `type: navigate` | `name`, `navigation_path: /dashboard-name/view`, 선택적 `icon` |
