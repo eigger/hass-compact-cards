@@ -41,6 +41,8 @@ Screenshots use mocked states; each guide includes options and detailed YAML exa
 
 [Interaction details](docs/polish.md) cover request feedback, state-driven motion and reduced-motion support.
 
+[UX refinements](docs/ux-refinements.md): compact icon-first climate, clearer controls, persistent keyboard focus and editing context.
+
 ## HACS installation
 
 Install [this repository](https://github.com/eigger/hass-compact-cards) through HACS **Custom repositories**. This project is not in the default HACS catalog.

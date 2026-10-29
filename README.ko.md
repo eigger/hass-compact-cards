@@ -41,6 +41,8 @@ Home Assistant를 위한 작고 정돈된 대시보드 커스텀 카드 모음�
 
 [조작감과 상태 표시](docs/polish.md): 눌림·요청 피드백, 실제 동작에 따른 움직임, 동작 줄이기 지원.
 
+[UX 리뷰 반영 내용](docs/ux-refinements.md): 냉난방 아이콘 유지, 조작 의미 개선, 키보드 포커스·편집 흐름 유지.
+
 ## HACS 설치
 
 [이 저장소](https://github.com/eigger/hass-compact-cards)를 HACS의 **사용자 지정 저장소(Custom repositories)** 로 설치할 수 있습니다. 기본 HACS 목록에 등록된 프로젝트는 아닙니다.
