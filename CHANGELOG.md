@@ -2,7 +2,10 @@
 
 ## Unreleased
 
+## 0.2.3 — 2026-10-30
+
 - Record the originating view when home-panel navigation opens a subview, so Home Assistant's back button returns to the view it was opened from instead of the dashboard home.
+- Remove trailing comparison-row borders.
 
 ## 0.2.2 — 2026-10-30
 
