@@ -22,6 +22,38 @@ function setup() {
 }
 const state = (entity_id, value, attributes = {}) => ({ entity_id, state: value, attributes });
 
+test('home entity icons delegate device classes and live state to Home Assistant', () => {
+  const { hass, card } = setup();
+  hass.states['binary_sensor.fridge'] = state('binary_sensor.fridge', 'off', { device_class: 'door' });
+  hass.states['sensor.energy'] = state('sensor.energy', '12', { device_class: 'energy' });
+  const element = card('compact-home-panel', { items: [
+    { entity: 'binary_sensor.fridge' }, { entity: 'sensor.energy' },
+    { entity: 'binary_sensor.fridge', icon: 'mdi:fridge-outline' },
+    { entity: 'sensor.missing' }, { type: 'navigate', name: 'Energy', navigation_path: '/energy' },
+  ] });
+  const [contact, energy, custom, missing, navigation] = element._refs;
+  for (const ref of [contact, energy, custom, missing]) {
+    assert.equal(ref.icon.localName, 'ha-state-icon');
+    assert.equal(ref.icon.hass, hass);
+    assert.equal(ref.icon.stateObj, hass.states[ref.item.entity]);
+  }
+  assert.equal(contact.icon.icon, undefined);
+  assert.equal(energy.icon.icon, undefined);
+  assert.equal(custom.icon.icon, 'mdi:fridge-outline');
+  assert.equal(missing.icon.icon, 'mdi:help-circle-outline');
+  assert.equal(navigation.icon.getAttribute('icon'), 'mdi:chevron-right');
+  const icon = contact.icon;
+  hass.states['binary_sensor.fridge'] = state('binary_sensor.fridge', 'on', { device_class: 'door', icon: 'mdi:door-open' });
+  hass.states['sensor.missing'] = state('sensor.missing', '40', { device_class: 'humidity' });
+  element.hass = { ...hass };
+  assert.equal(contact.icon, icon);
+  assert.equal(icon.stateObj, hass.states['binary_sensor.fridge']);
+  assert.equal(icon.hass, element._hass);
+  assert.equal(icon.icon, undefined);
+  assert.equal(missing.icon.icon, undefined);
+  assert.equal(missing.icon.stateObj, hass.states['sensor.missing']);
+});
+
 test('HACS points to a self-contained bundle registering all cards', () => {
   const manifest = JSON.parse(readFileSync('hacs.json', 'utf8'));
   assert.equal(manifest.filename, 'compact-cards.js');

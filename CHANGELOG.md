@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Use Home Assistant state icons in home-panel entity rows so device classes, current states and customized entity icons display correctly instead of a dot. Preserve explicit item icons and navigation icons.
+
 ## 0.2.0 — 2026-10-30
 
 - Add standalone compact image and camera thumbnail rows with visual editors, fit controls, accessible image descriptions, load/retry feedback and tap-to-open native details (native picture card dialog for static URLs). No inline live playback. Cover entity recovery and lifecycle races with tests; document that live HA playback still needs verification.
