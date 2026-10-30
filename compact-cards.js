@@ -168,11 +168,13 @@ class CompactClimateRow extends HTMLElement {
     const roomy=nameWidth+count*max+Math.max(0,buttons.length-1)*2+Math.max(39,outputText)+11+2*rowGap<=available;
     const fit=Math.floor((available-nameWidth-2*rowGap-Math.max(30,outputText)-1)/count);
     const own=roomy?max:Math.min(max,Math.max(32,fit));
-    if(this._fit!==own||this._roomy!==roomy){this._fit=own;this._roomy=roomy;this.dispatchEvent(new CustomEvent('compact-climate-fit',{bubbles:true}));}
+    // Flush packing is touch-only and only worth it when it keeps the modes on one line.
+    const tight=max===44&&!roomy&&fit>=32;
+    if(this._fit!==own||this._tight!==tight){this._fit=own;this._tight=tight;this.dispatchEvent(new CustomEvent('compact-climate-fit',{bubbles:true}));}
     if(own<max)compactStyle(card,'--own-btn-w',`${own}px`);else card.style.removeProperty('--own-btn-w');
     // A home panel may impose the smallest width among its climate rows so every row shares one button size.
-    const shared=parseFloat(getComputedStyle(this).getPropertyValue('--compact-btn-w'))||own;
-    card.classList.toggle('tight',shared<max||!roomy||this.hasAttribute('data-shared-tight'));
+    const shared=parseFloat(getComputedStyle(this).getPropertyValue('--compact-btn-w'));
+    card.classList.toggle('tight',shared<max||tight||this.hasAttribute('data-shared-tight'));
     const gap=parseFloat(getComputedStyle(modes).columnGap)||0;
     const modesWidth=buttons.reduce((width,button)=>width+button.getBoundingClientRect().width,0)+Math.max(0,buttons.length-1)*gap;
     const required=nameWidth+modesWidth+this.shadowRoot.querySelector('.temperature').getBoundingClientRect().width+2*rowGap;
@@ -458,7 +460,7 @@ class CompactHomePanel extends HTMLElement {
       const max=matchMedia('(pointer:coarse)').matches?44:32,width=Math.min(max,...rows.map(row=>row._fit));
       if(width<max)compactStyle(body,'--compact-btn-w',`${width}px`);else body.style.removeProperty('--compact-btn-w');
       // Any row that needs flush buttons makes every row use them, so all rows keep the same geometry.
-      const tight=rows.some(row=>!row._roomy);
+      const tight=rows.some(row=>row._tight);
       for(const row of rows){row.toggleAttribute('data-shared-tight',tight);row._layout();}
     });
   }
