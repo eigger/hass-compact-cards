@@ -1,6 +1,6 @@
 {
   "name": "Compact Cards",
-  "content_in_root": true,
+  "content_in_root": false,
   "filename": "compact-cards.js",
   "render_readme": true
 }
