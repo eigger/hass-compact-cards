@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 — 2026-10-30
 
 - Support explicit home-panel name-tap `toggle` and `more-info` actions in YAML and the visual editor while preserving default/legacy service-button behavior, dedicated right-hand controls, toggle confirmations, and unavailable/duplicate-request guards. Toggle requires the item's own explicit entity; this does not add the full Home Assistant action schema or hold/double-tap support.
 
