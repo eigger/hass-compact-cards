@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Animate climate icons for entities that do not report `hvac_action` by falling back to the selected mode (idle/off still stop motion). Home panel icons now spin for running fans, sway for cleaning vacuums and pulse for active humidifiers and running scripts; scene panel scripts pulse while running. Motion is disabled under reduced-motion.
+
 ## 0.2.4 — 2026-10-30
 
 - Fit climate rows on one line on narrow touch screens by sizing mode and temperature buttons to the available width (32–44px wide, 44px tall). Climate rows in a home panel share one button size, and the target temperature text is smaller.
