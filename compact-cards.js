@@ -326,12 +326,13 @@ class CompactHomePanel extends HTMLElement {
       select{max-width:48%;min-width:0;font-size:13px;border:1px solid var(--divider-color);border-radius:5px;background:var(--card-background-color);min-height:36px}
       .climate{border-bottom:1px solid var(--divider-color)}.climate:last-child{border:0}
       table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}th,td{text-align:right;padding:9px 3px;border-bottom:1px solid var(--divider-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      tbody tr:last-child>td{border-bottom:0}
       th{font-weight:400;color:var(--secondary-text-color)}th:first-child,td:first-child{text-align:left;width:18%}td button{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:32px;padding:0}
       td small{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;color:var(--secondary-text-color);margin-top:2px}.note{font-size:12px;color:var(--secondary-text-color);padding:8px 3px;white-space:pre-wrap;overflow-wrap:anywhere}
       @container(max-width:380px){ha-card{padding:2px 8px}.pair-grid{column-gap:10px}.row{gap:4px}.label{gap:6px;padding-inline:2px}.switch{min-width:42px}.subheading{gap:4px}}
       :host([columns="1"]) .pair-grid{grid-template-columns:minmax(0,1fr)}
       @container(max-width:380px){:host([columns="auto"]) .pair-grid{grid-template-columns:minmax(0,1fr)}}
-      @container(max-width:420px){thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}table,tbody{display:block}tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--divider-color);padding-block:4px}td{display:block;border:0;padding:3px;text-align:left;min-width:0}td:first-child{grid-column:1/-1;width:auto;font-weight:500}td:not(:first-child)::before{content:attr(data-label);display:block;font-size:11px;color:var(--secondary-text-color);margin-bottom:2px}td button{min-height:36px;width:100%;text-align:left}}
+      @container(max-width:420px){thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}table,tbody{display:block}tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--divider-color);padding-block:4px}tbody tr:last-child{border-bottom:0}td{display:block;border:0;padding:3px;text-align:left;min-width:0}td:first-child{grid-column:1/-1;width:auto;font-weight:500}td:not(:first-child)::before{content:attr(data-label);display:block;font-size:11px;color:var(--secondary-text-color);margin-bottom:2px}td button{min-height:36px;width:100%;text-align:left}}
       @media(pointer:coarse){button,select,.subheading button,td button{min-height:44px}.switch{min-width:44px}}
       @media(prefers-reduced-motion:reduce){.track,.track:after,ha-icon,ha-state-icon,.value{transition:none!important}}
     </style><ha-card><div class="items"></div></ha-card>`;
