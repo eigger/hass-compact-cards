@@ -14,6 +14,8 @@
 
 다른 항목으로 재설정하거나 카드가 화면에서 제거되면 피드백과 타이머를 정리합니다. 늦게 반환된 이전 요청이 새 설정에 성공 표시를 덮어쓰지 않습니다. `prefers-reduced-motion: reduce`에서는 아이콘 반복 움직임과 전환을 줄입니다. 요청 상태 표시와 접근성 안내는 유지됩니다.
 
+[전체 카드 대표 화면](../images/overview-ko.jpg) · [카드별 상세 가이드](../README.ko.md#카드와-사용-가이드)
+
 ## English
 
 [Overview of all cards](../images/overview.jpg) · [Per-card guides](../README.md#cards-and-guides)
@@ -21,5 +23,3 @@
 All seven cards receive subtle press feedback without new configuration or added layout space. Pending controls dim subtly and block duplicate requests, with a polite live status. Only failures show a thin error line; transient completion feedback clears after about 1.8 seconds. Success means the service request returned, not that a physical device completed its action. Reported device states remain authoritative.
 
 Fan rotation and cover arrow movement follow actual active state only; cover Stop remains usable while an opening request is pending. Scene shortcuts briefly show request acceptance, and media playback uses a small static dot. Reconfiguration/disconnection clears feedback and prevents stale responses from labeling a different configuration. Reduced-motion preferences disable movement while retaining status feedback.
-
-[전체 카드 대표 화면](../images/overview-ko.jpg) · [카드별 상세 가이드](../README.ko.md#카드와-사용-가이드)

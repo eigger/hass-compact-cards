@@ -98,7 +98,7 @@ items:
 
 ![Climate card](../images/compact-climate-row.jpg)
 
-![Boiler and air conditioner on one line in a 390px panel](../images/compact-climate-inline.jpg)
+![Boiler and air conditioner rows in a 390px panel](../images/compact-climate-inline.jpg)
 
 ![Standalone card using only its content height in a 320px-tall parent](../images/compact-climate-picker.jpg)
 
