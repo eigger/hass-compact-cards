@@ -110,6 +110,7 @@ class CompactClimateRow extends HTMLElement {
         .name,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .name{font-size:14px}.state{font-size:12px;color:var(--secondary-text-color);margin-top:2px}
         .modes,.temperature{display:flex;align-items:center;gap:2px;flex:none}
+        .modes{justify-content:flex-end}
         .modes button{width:32px;color:var(--secondary-text-color)}
         .modes button[aria-pressed=true]{color:var(--mode-color);background:color-mix(in srgb,var(--mode-color) 18%,transparent)}
         output{color:var(--climate-color,var(--primary-text-color))}
@@ -191,7 +192,10 @@ class CompactClimateRow extends HTMLElement {
     compactProp(this.shadowRoot.querySelector('.info'),'title',description);
     compactAttr(this.shadowRoot.querySelector('.info'),'aria-label',description);
     const defs = { off:['mdi:power','끄기'], heat:['mdi:fire','난방'], cool:['mdi:snowflake','냉방'], dry:['mdi:water-percent','제습'], fan_only:['mdi:fan','송풍'], auto:['mdi:alpha-a-circle','자동'], heat_cool:['mdi:thermostat-auto','냉난방 자동'] };
-    const modes = Array.isArray(a.hvac_modes) ? a.hvac_modes : [];
+    // Keep primary modes nearest the fixed right-hand power/temperature controls.
+    // Unknown modes remain visible, in device order, before the standard modes.
+    const modeOrder = ['auto','heat_cool','fan_only','dry','heat','cool','off'];
+    const modes = Array.isArray(a.hvac_modes) ? [...a.hvac_modes].sort((left,right)=>modeOrder.indexOf(left)-modeOrder.indexOf(right)) : [];
     this.shadowRoot.querySelector('ha-card').classList.toggle('many-modes',modes.length>3);
     const container = this.shadowRoot.querySelector('.modes');
     const key = JSON.stringify(modes);

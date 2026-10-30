@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Right-align climate mode controls with power last, cooling beside power, and a consistent automatic/fan/dry/heat/cool/off order across devices, including wrapped rows.
+
+
 - Use Home Assistant state icons in home-panel entity rows so device classes, current states and customized entity icons display correctly instead of a dot. Preserve explicit item icons and navigation icons.
 
 ## 0.2.0 — 2026-10-30
