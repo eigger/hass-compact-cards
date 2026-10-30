@@ -8,8 +8,10 @@ Run `python -m http.server 8129 --bind 127.0.0.1` in the repository root and ope
 
 ## Room dashboard captures
 
-`showcase-light.jpg` and `showcase-dark.jpg` are actual Chromium captures of `examples/showcase.html?capture=true` (add `&theme=dark` for dark mode), at a 1200 × 640 viewport. `showcase-mobile.jpg` uses a 390 × 1480 viewport. Capture source: `49c1a5e`; all runtime styling and configuration changes are included. The seven individual card captures, overview and editor were also regenerated from that source.
+`showcase-light.jpg` and `showcase-dark.jpg` are actual Chromium captures of `examples/showcase.html?capture=true` (add `&theme=dark` for dark mode), at a 1200 × 640 viewport. `showcase-mobile.jpg` uses a 390 × 1377 viewport. These room images, `compact-climate-row.jpg` (422 × 180), and `overview.jpg` (422 × 946) were regenerated from source `a889174` for the climate fit update, using the isolated worktree server on port 8130. Other individual card images retain their original `49c1a5e` captures; their card implementations did not change in this update.
 
 These demonstrate three room groups with ten real card instances, seven card types, mocked states, and local HA visual primitives. No image generation, screenshot-only card CSS, or real device connection is involved. The exact card configurations are in `examples/showcase.yaml`; reproduction details are in `docs/showcase.md`.
 
 `compact-home-editor.jpg` demonstrates explicit name-tap configuration in the home-panel editor. It was captured from source `d6e19a8` at a 422 × 1104 viewport using `/examples/preview.html?card=compact-home-panel&editor=true&capture=true`, with the first heading collapsed and the second item expanded. The shown switch and sensor use mocked states; keyboard Enter toggling and UI switching to more-info were also checked in Chromium.
+
+`compact-climate-inline.jpg` (422 × 180) and `compact-climate-picker.jpg` (320 × 390) were captured from source `a889174` using `/examples/climate-fit.html?target=panel&theme=dark&capture=true` and `target=picker`, respectively. The former shows a 390px home panel; the latter exposes the fixed 280 × 320 parent boundary while the actual card keeps its content height. Only external fixture layout and local HA primitives are mocked; card CSS comes from the bundle.

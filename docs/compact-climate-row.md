@@ -48,11 +48,28 @@ name: 거실 냉난방
 
 ## 좁은 카드와 터치 환경
 
-카드 너비가 380px 이하이면 모드 버튼을 이름·온도 아래로 옮깁니다. 모드가 네 개 이상인 기기는 540px 이하에서 아래로 옮기고, 터치 환경에서는 이 기준을 640px로 넓힙니다. 터치 환경에서는 일반적인 모드 수에서도 440px 이하에서 아래로 배치합니다. 모드가 많으면 추가로 감싸며 버튼을 작게 압축하지 않습니다.
+![390px 패널에서 한 줄로 배치한 보일러와 에어컨](../images/compact-climate-inline.jpg)
+
+위 예시는 실제 카드 코드와 모의 상태를 사용하는 390px 홈 패널입니다. 보일러의 두 모드와 에어컨의 다섯 모드가 각각 한 줄로 배치됩니다. 현재 온도를 보조 텍스트 앞에 표시해 좁은 이름 영역에서도 숫자를 먼저 읽을 수 있으며, 전체 상태는 툴팁과 접근성 이름으로 제공합니다.
+
+이름 공간과 실제 모드 버튼·온도 조작부의 너비를 확인하여, 공간이 충분하면 한 줄로 표시합니다. 고정된 화면 너비나 모드 개수만으로 두 줄을 만들지 않습니다. 한 줄에 들어가지 않을 때만 모드 버튼을 이름·온도 아래로 옮기며, 아래 줄에서도 공간이 부족하면 버튼을 감쌉니다.
+
+기기가 제공하는 모든 모드 버튼을 아이콘 중심으로 유지합니다. 줄을 줄이기 위해 모드를 숨기거나 드롭다운으로 바꾸지 않으며, 터치 환경의 44px 모드·온도 조작 영역도 유지합니다. 같은 너비라도 기기의 모드 수와 실제 조작부 너비에 따라 한 줄 또는 여러 줄로 배치될 수 있습니다.
+
+카드 본문은 내용에 필요한 높이를 사용하며, 편집 미리보기의 빈 높이를 채우기 위해 늘어나지 않습니다. 대시보드에서 카드 바깥에 별도로 지정한 그리드 행 높이나 여백은 대시보드 배치 설정에 따라 남을 수 있습니다.
 
 터치 환경의 모드·온도 버튼은 44px 조작 영역을 사용합니다. 지원하는 기기에서는 실제 운전 동작에 따라 아이콘이 움직이고, 운영체제의 동작 줄이기 설정에서는 애니메이션을 중지합니다.
 
 서비스 요청 중에는 모드·온도 제어를 비활성화하고 조작부를 살짝 흐리게 표시하여 처리 중임을 알립니다. 요청이 끝나면 다시 조작할 수 있습니다. 서비스 응답과 기기의 실제 상태 갱신 시점은 통합에 따라 다르며, 화면 상태는 Home Assistant가 보고한 값으로 표시합니다. 요청 실패 시 알림을 표시하고 버튼을 복구합니다.
+
+<details>
+<summary>고정 높이 부모 안의 카드 미리보기</summary>
+
+![320px 높이 부모 안에서 내용 높이만 사용하는 단독 카드](../images/compact-climate-picker.jpg)
+
+점선은 280 × 320px 모의 미리보기 부모이며, 내부 카드의 CSS는 실제 구현 그대로입니다. 카드가 부모 높이를 채우지 않고 내용 높이만 사용합니다. `examples/climate-fit.html`에서 재현할 수 있으며 실제 HA 연결 화면은 아닙니다.
+
+</details>
 
 ## 홈 패널에 넣기
 
@@ -79,4 +96,4 @@ items:
 
 Use `custom:compact-climate-row` with a required `climate.*` `entity` and optional `name`. Tap the name to open more-info; mode buttons request supported HVAC modes, and −/+ follows the device step and limits. A single target-temperature feature and a numeric temperature are required for temperature controls. Range-only thermostats need more-info for range adjustment.
 
-Modes wrap below the name and temperature on narrow cards; coarse-pointer devices get 44px targets. Controls disable and dim subtly during service requests, then recover after success or failure. Reported state comes from Home Assistant. Embed the same card using `type: climate` in a home panel. The representative image uses mocked local preview data.
+The card keeps the name, modes and temperature on one line whenever their measured widths fit. Modes move below the name and temperature only when needed, then wrap if necessary. All supported mode buttons remain visible and icon-centered; coarse-pointer controls retain 44px targets. The card uses its content height instead of stretching to fill editor preview space; dashboard grid settings may still reserve external space. Controls disable and dim subtly during service requests, then recover after success or failure. Reported state comes from Home Assistant. Embed the same card using `type: climate` in a home panel. The representative image uses mocked local preview data.

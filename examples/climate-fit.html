@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Compact Cards · 냉난방 너비·높이 확인</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light;--primary-color:#237d92;--primary-text-color:#24333e;--secondary-text-color:#74818b;--divider-color:#e2e8ed;--disabled-color:#b4bec6;--card-background-color:#fff;--secondary-background-color:#f0f4f6;--state-active-color:#237d92;--state-inactive-color:#8a97a0;--state-unavailable-color:#8a97a0;--state-climate-heat-color:#d98346;--state-climate-cool-color:#388ebc;--state-climate-fan_only-color:#398f85;--ha-card-border-radius:14px;color:var(--primary-text-color);background:#f3f6f8}
+:root[data-theme=dark]{color-scheme:dark;--primary-color:#78b9c8;--primary-text-color:#e5edf1;--secondary-text-color:#9aaab5;--divider-color:#34434c;--disabled-color:#61737d;--card-background-color:#1d2931;--secondary-background-color:#273740;--state-active-color:#78b9c8;--state-inactive-color:#7a8c97;--state-climate-heat-color:#e4a16d;--state-climate-cool-color:#79bddd;--state-climate-fan_only-color:#81bdb1;background:#121d25}
+*{box-sizing:border-box}body{margin:0;padding:24px}h1{font-size:19px;margin:0 0 8px}p,footer{font-size:12px;line-height:1.5;color:var(--secondary-text-color)}nav{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0 22px}nav label{font-size:12px}nav button,nav select{font:inherit;font-size:12px;min-height:36px;padding:6px 10px;border:1px solid var(--divider-color);border-radius:8px;color:var(--primary-text-color);background:var(--card-background-color)}nav button{cursor:pointer}nav button:focus-visible,nav select:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}.fixtures{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}.fixture{min-width:0;max-width:100%}.panel-fixture{width:var(--panel-width,390px)}.picker-fixture{width:280px}.fixture-title{font-size:13px;font-weight:500;margin:0 0 10px}.picker-slot{width:280px;max-width:100%;height:320px;display:grid;align-items:stretch;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);outline:1px dashed var(--divider-color);outline-offset:4px}footer{margin-top:20px;max-width:600px}#feedback:empty{display:none}body.capture{padding:8px}.capture header,.capture nav,.capture .fixture-title{display:none}@media(max-width:480px){body{padding:16px}.fixtures{gap:20px}}
+</style>
+<script>
+const fitParams=new URLSearchParams(location.search);
+document.documentElement.dataset.theme=fitParams.get('theme')==='dark'?'dark':'light';
+</script>
+</head>
+<body>
+<header><h1>냉난방 카드의 너비·높이</h1><p>같은 실제 카드 구현을 패널과 고정 높이 미리보기 부모 안에서 비교합니다.</p></header>
+<nav><label>패널 너비 <select id="width" aria-label="패널 너비"><option value="320">320px</option><option value="390" selected>390px</option><option value="480">480px</option></select></label><button id="theme" type="button">테마 변경</button></nav>
+<main class="fixtures" aria-label="냉난방 크기 검증용 모의 화면"></main>
+<footer>실제 카드 코드 · 모의 상태 · 실제 기기 제어 없음</footer>
+<p id="feedback" role="status" aria-live="polite"></p>
+<script src="preview-icons.js"></script>
+<script>
+// Only HA's visual primitives are substituted; card content/layout comes from compact-cards.js.
+customElements.define('ha-card',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:var(--ha-card-border-radius,14px);color:var(--primary-text-color)}</style><slot></slot>';}});
+customElements.define('ha-icon',class extends HTMLElement{
+ constructor(){super();this.attachShadow({mode:'open'});this._observer=new MutationObserver(()=>this.update());}
+ connectedCallback(){this.update();this._observer.observe(this,{attributes:true,attributeFilter:['icon']});}
+ disconnectedCallback(){this._observer.disconnect();}
+ update(){const path=window.compactPreviewIcons?.[(this.getAttribute('icon')||'').replace('mdi:','')];this.shadowRoot.innerHTML='<style>:host{display:inline-flex;align-items:center;justify-content:center}</style>';if(!path)return;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),glyph=document.createElementNS('http://www.w3.org/2000/svg','path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','100%');svg.setAttribute('height','100%');svg.setAttribute('fill','currentColor');glyph.setAttribute('d',path);svg.append(glyph);this.shadowRoot.append(svg);}
+});
+if(fitParams.get('capture')==='true')document.body.classList.add('capture');
+const requestedWidth=Number(fitParams.get('width')),panelWidth=[320,390,480].includes(requestedWidth)?requestedWidth:390;
+document.documentElement.style.setProperty('--panel-width',panelWidth+'px');document.querySelector('#width').value=String(panelWidth);
+</script>
+<script src="../compact-cards.js"></script>
+<script>
+const fitStates={
+ 'climate.demo_boiler':{entity_id:'climate.demo_boiler',state:'heat',attributes:{friendly_name:'보일러',temperature:25,current_temperature:25,min_temp:16,max_temp:30,target_temp_step:1,supported_features:1,hvac_modes:['off','heat'],hvac_action:'idle'}},
+ 'climate.demo_ac':{entity_id:'climate.demo_ac',state:'cool',attributes:{friendly_name:'에어컨',temperature:24,current_temperature:27.5,min_temp:16,max_temp:30,target_temp_step:1,supported_features:1,hvac_modes:['off','cool','fan_only','dry','auto'],hvac_action:'cooling'}},
+};
+const fitCards=[];
+const fitHass={states:fitStates,config:{unit_system:{temperature:'°C'}},formatEntityState:state=>({off:'꺼짐',heat:'난방',cool:'냉방',fan_only:'송풍',dry:'제습',auto:'자동'}[state.state]||state.state),callService:async(domain,service,data)=>{
+ if(domain!=='climate')throw new Error('모의 냉난방 서비스만 지원합니다.');
+ await new Promise(resolve=>setTimeout(resolve,250));const state=fitStates[data.entity_id];if(!state)throw new Error('모의 엔티티를 찾을 수 없습니다.');
+ if(service==='set_temperature')state.attributes.temperature=data.temperature;
+ if(service==='set_hvac_mode'){state.state=data.hvac_mode;state.attributes.hvac_action=({off:'off',heat:'heating',cool:'cooling',fan_only:'fan',dry:'drying',auto:'idle'}[data.hvac_mode]||'idle');}
+ for(const card of fitCards)card.hass={...fitHass};
+}};
+function addFitTarget(kind,title,config){const section=document.createElement('section');section.className=`fixture ${kind}-fixture`;section.dataset.target=kind;const heading=document.createElement('h2');heading.className='fixture-title';heading.textContent=title;section.append(heading);const card=document.createElement(config.type.replace('custom:',''));card.id=kind==='panel'?'panel-card':'picker-card';card.setConfig(config);card.hass=fitHass;if(kind==='picker'){const slot=document.createElement('div');slot.className='picker-slot';slot.id='picker-slot';slot.append(card);section.append(slot);}else section.append(card);document.querySelector('main').append(section);fitCards.push(card);}
+const target=fitParams.get('target');
+if(!target||target==='panel')addFitTarget('panel','홈 패널 · 보일러 2모드 / 에어컨 5모드',{type:'custom:compact-home-panel',items:[{type:'climate',entity:'climate.demo_boiler',name:'보일러'},{type:'climate',entity:'climate.demo_ac',name:'에어컨'}]});
+if(!target||target==='picker')addFitTarget('picker','단독 카드 · 280 × 320px 그리드 부모',{type:'custom:compact-climate-row',entity:'climate.demo_ac',name:'에어컨'});
+if(target&&!['panel','picker'].includes(target))document.querySelector('#feedback').textContent='target은 panel 또는 picker로 지정하세요.';
+document.querySelector('#width').onchange=event=>document.documentElement.style.setProperty('--panel-width',event.target.value+'px');
+document.querySelector('#theme').onclick=()=>document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';
+document.addEventListener('hass-more-info',event=>{const state=fitStates[event.detail.entityId];document.querySelector('#feedback').textContent=`${state.attributes.friendly_name} · ${fitHass.formatEntityState(state)} · 설정 ${state.attributes.temperature}°C (모의 정보)`;});
+document.addEventListener('hass-notification',event=>document.querySelector('#feedback').textContent=event.detail.message);
+</script>
+</body>
+</html>

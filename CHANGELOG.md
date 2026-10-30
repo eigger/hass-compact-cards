@@ -4,6 +4,8 @@
 
 - Replace dotted request outlines and pending/success card-edge flashes with subtle control dimming across cards. Remove button shrink/rebound effects while retaining keyboard focus, duplicate-request guards, actual-state colors and error feedback.
 
+- Keep climate rows at their content height, including editor previews, and wrap mode controls only when their measured widths need another line. Preserve all icon-only modes and 44px coarse-pointer targets instead of forcing extra rows at fixed breakpoints.
+
 ## 0.1.1 — 2026-10-30
 
 - Support explicit home-panel name-tap `toggle` and `more-info` actions in YAML and the visual editor while preserving default/legacy service-button behavior, dedicated right-hand controls, toggle confirmations, and unavailable/duplicate-request guards. Toggle requires the item's own explicit entity; this does not add the full Home Assistant action schema or hold/double-tap support.

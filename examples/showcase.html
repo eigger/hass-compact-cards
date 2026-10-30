@@ -34,8 +34,8 @@ if(showcaseParams.get('capture')==='true')document.body.classList.add('capture')
 <script>
 const entity=(id,state,attributes)=>({entity_id:id,state,attributes});
 const initial={
- 'climate.living_room':entity('climate.living_room','heat',{friendly_name:'거실 냉난방',current_temperature:22.4,temperature:23,min_temp:16,max_temp:30,target_temp_step:.5,supported_features:1,hvac_modes:['off','heat','cool','fan_only'],hvac_action:'heating'}),
- 'climate.bedroom':entity('climate.bedroom','off',{friendly_name:'침실 냉난방',current_temperature:21.8,temperature:22,min_temp:16,max_temp:30,target_temp_step:.5,supported_features:1,hvac_modes:['off','heat','cool'],hvac_action:'off'}),
+ 'climate.living_room':entity('climate.living_room','heat',{friendly_name:'냉난방',current_temperature:22.4,temperature:23,min_temp:16,max_temp:30,target_temp_step:.5,supported_features:1,hvac_modes:['off','heat','cool','fan_only'],hvac_action:'heating'}),
+ 'climate.bedroom':entity('climate.bedroom','off',{friendly_name:'냉난방',current_temperature:21.8,temperature:22,min_temp:16,max_temp:30,target_temp_step:.5,supported_features:1,hvac_modes:['off','heat','cool'],hvac_action:'off'}),
  'light.living_room':entity('light.living_room','on',{friendly_name:'거실 조명',brightness:166,supported_color_modes:['color_temp'],color_temp_kelvin:3200,min_color_temp_kelvin:2200,max_color_temp_kelvin:6500}),
  'light.bedroom':entity('light.bedroom','on',{friendly_name:'침실 조명',brightness:89,supported_color_modes:['brightness']}),
  'light.kitchen':entity('light.kitchen','on',{friendly_name:'주방 조명',supported_color_modes:['onoff']}),
@@ -60,13 +60,13 @@ const initial={
 const rooms=[
  {name:'거실',icon:'mdi:sofa-outline',cards:[
   {type:'custom:compact-environment-panel',items:[{entity:'sensor.living_temperature',name:'온도'},{entity:'sensor.living_humidity',name:'습도'},{entity:'sensor.living_co2',name:'CO₂'}]},
-  {type:'custom:compact-climate-row',entity:'climate.living_room',name:'거실 냉난방'},
+  {type:'custom:compact-climate-row',entity:'climate.living_room',name:'냉난방'},
   {type:'custom:compact-light-row',entity:'light.living_room',name:'거실 조명'},
   {type:'custom:compact-media-row',entity:'media_player.living_room',name:'거실 스피커'},
  ]},
  {name:'침실',icon:'mdi:weather-night',cards:[
   {type:'custom:compact-environment-panel',items:[{entity:'sensor.bedroom_temperature',name:'온도'},{entity:'sensor.bedroom_humidity',name:'습도'}]},
-  {type:'custom:compact-climate-row',entity:'climate.bedroom',name:'침실 냉난방'},
+  {type:'custom:compact-climate-row',entity:'climate.bedroom',name:'냉난방'},
   {type:'custom:compact-cover-row',entity:'cover.bedroom',name:'침실 커튼'},
   {type:'custom:compact-light-row',entity:'light.bedroom',name:'침실 조명'},
  ]},
