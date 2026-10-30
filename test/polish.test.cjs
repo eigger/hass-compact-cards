@@ -60,6 +60,14 @@ test('home panel icons move only while a fan, vacuum or humidifier is actually a
   assert.deepEqual(motions(),['','','','']);
   assert.equal(card.shadowRoot.querySelector('.label>ha-state-icon').classList.contains('motion'),false);
 });
+test('home panel climate and water heater follow the same rules as the climate row',t=>{
+  const {card,hass}=setup(t,'compact-home-panel',{items:[{entity:'climate.a'},{entity:'climate.b'},{entity:'climate.c'},{entity:'water_heater.d'},{entity:'water_heater.e'}]},{'climate.a':state('climate.a','fan_only'),'climate.b':state('climate.b','cool',{hvac_action:'idle'}),'climate.c':state('climate.c','heat',{hvac_action:'heating'}),'water_heater.d':state('water_heater.d','eco'),'water_heater.e':state('water_heater.e','off')});
+  assert.deepEqual([...card.shadowRoot.querySelectorAll('.label>ha-state-icon')].map(i=>i.dataset.motion||''),['fan','','pulse','pulse','']);
+});
+test('scene items never get icon motion unless they are running scripts',t=>{
+  const {card}=setup(t,'compact-scene-panel',{items:[{entity:'scene.a'}]},{'scene.a':state('scene.a','2026-01-01T00:00:00Z')});
+  assert.equal(card.shadowRoot.querySelector('ha-icon').classList.contains('motion'),false);
+});
 test('scene script icon pulses only while the script runs',t=>{
   const {card,hass}=setup(t,'compact-scene-panel',{items:[{entity:'script.go'}]},{'script.go':state('script.go','on')});
   const icon=card.shadowRoot.querySelector('ha-icon');assert.equal(icon.dataset.motion,'pulse');

@@ -6,14 +6,17 @@ function compactProp(el, key, value) { if(el[key]!==value)el[key]=value; }
 function compactStyle(el, key, value) { if(el.style.getPropertyValue(key)!==value)el.style.setProperty(key,value); }
 // Icons animate only while the device reports activity; reduced-motion users get a static icon.
 function compactMotion(el, motion) { compactAttr(el,'data-motion',motion||'');if(el.classList.contains('motion')!==Boolean(motion))el.classList.toggle('motion',Boolean(motion)); }
+// Devices without hvac_action fall back to the selected mode; a reported action always wins.
+function compactClimateAction(state) { return state.attributes.hvac_action ?? {heat:'heating',cool:'cooling',fan_only:'fan',dry:'drying'}[state.state]; }
 function compactMotionOf(state) {
   if(!state)return '';
   const domain=state.entity_id.split('.')[0],value=state.state;
   if(domain==='fan'&&value==='on')return 'fan';
   if(domain==='vacuum'&&value==='cleaning')return 'sweep';
-  if((domain==='humidifier'||domain==='water_heater')&&value==='on')return 'pulse';
+  if(domain==='humidifier'&&value==='on')return 'pulse';
+  if(domain==='water_heater'&&value!=='off')return 'pulse';
   if(domain==='script'&&value==='on')return 'pulse';
-  if(domain==='climate'&&value!=='off'){const a=state.attributes.hvac_action;return a==='fan'?'fan':a==='drying'?'sweep':a==='heating'||a==='cooling'?'pulse':'';}
+  if(domain==='climate'&&value!=='off'){const action=compactClimateAction(state);return action==='fan'&&value!=='fan_only'?'pulse':action==='fan'?'fan':action==='drying'?'sweep':action==='heating'||action==='cooling'?'pulse':'';}
   return '';
 }
 // Feedback describes a service request, never an assumed physical device state.
@@ -122,9 +125,6 @@ class CompactClimateRow extends HTMLElement {
         ha-icon.running[data-motion=fan]{animation:compact-fan 2.6s linear infinite}
         ha-icon.running[data-motion=heating],ha-icon.running[data-motion=cooling]{animation:compact-breathe 2s ease-in-out infinite}
         ha-icon.running[data-motion=drying]{animation:compact-dry 2.2s ease-in-out infinite}
-        @keyframes compact-fan{to{transform:rotate(360deg)}}
-        @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
-        @keyframes compact-dry{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
         @media(prefers-reduced-motion:reduce){button,output{transition:none!important}ha-icon.running{animation:none!important}}
         .info{flex:1;min-width:0;text-align:left;overflow:hidden}
         .name,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -255,7 +255,7 @@ class CompactClimateRow extends HTMLElement {
       compactAttr(b,'aria-disabled',offline || this._busy);
       compactAttr(b,'aria-pressed',pressed);
       const i=b.querySelector('ha-icon');
-      const action=pressed && s.state!=='off' ? (a.hvac_action ?? {heat:'heating',cool:'cooling',fan_only:'fan',dry:'drying'}[s.state]) : undefined;
+      const action=pressed && s.state!=='off' ? compactClimateAction(s) : undefined;
       const motion=action==='fan' && b.dataset.mode!=='fan_only' ? 'cooling' : ['fan','heating','cooling','drying'].includes(action)?action:'';
       if(i.classList.contains('running')!==Boolean(motion))i.classList.toggle('running',Boolean(motion));
       compactAttr(i,'data-motion',motion);
