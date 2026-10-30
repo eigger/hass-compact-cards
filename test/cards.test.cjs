@@ -22,6 +22,41 @@ function setup() {
 }
 const state = (entity_id, value, attributes = {}) => ({ entity_id, state: value, attributes });
 
+test('navigation records the originating view for Home Assistant subview back navigation', async () => {
+  for (const [origin, destination] of [
+    ['/lovelace/manage', '/lovelace/proxmox'],
+    ['/lovelace/manage', '/lovelace/environment'],
+    ['/lovelace/rooms?example=1#section', '/lovelace/environment'],
+  ]) {
+    for (const trigger of ['label', 'control']) {
+      const { window, card } = setup();
+      window.history.replaceState({ root: true }, '', origin);
+      const originPath = window.location.pathname;
+      const element = card('compact-home-panel', { items: [
+        { type: 'navigate', name: 'Details', navigation_path: destination },
+      ] });
+      const changes = [];
+      window.addEventListener('location-changed', event => {
+        changes.push({ path: window.location.pathname, from: window.history.state?.from, replace: event.detail?.replace });
+      });
+
+      element._refs[0][trigger].click();
+
+      assert.equal(window.location.pathname, destination);
+      assert.equal(window.history.state.from, originPath);
+      assert.equal(window.history.state.root, undefined);
+      assert.deepEqual(changes, [{ path: destination, from: originPath, replace: false }]);
+      // Home Assistant uses the `from` marker to choose history.back() over its dashboard fallback.
+      const popped = new Promise(resolve => window.addEventListener('popstate', resolve, { once: true }));
+      window.history.back();
+      await popped;
+      assert.equal(window.location.pathname + window.location.search + window.location.hash, origin);
+      assert.equal(window.history.state.root, true);
+      await window.happyDOM.close();
+    }
+  }
+});
+
 test('home entity icons delegate device classes and live state to Home Assistant', () => {
   const { hass, card } = setup();
   hass.states['binary_sensor.fridge'] = state('binary_sensor.fridge', 'off', { device_class: 'door' });

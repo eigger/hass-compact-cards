@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Record the originating view when home-panel navigation opens a subview, so Home Assistant's back button returns to the view it was opened from instead of the dashboard home.
+
 ## 0.2.2 — 2026-10-30
 
 - Center Home Assistant icon glyphs inside their background surfaces and align them with row labels and switches across cards.
