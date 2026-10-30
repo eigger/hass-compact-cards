@@ -2,7 +2,7 @@
 
 [UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
 
-![온도·습도·CO₂를 작은 셀로 표시하는 Compact environment panel](../images/compact-environment-panel.jpg)
+![온도·습도·CO₂를 작은 셀로 표시하는 Compact environment panel](../images/compact-environment-panel-ko.jpg)
 
 온도·습도·CO₂ 등 숫자 센서를 작은 셀로 모아 표시합니다. 각 셀에서 이름·값·단위를 읽고, 누르면 해당 엔티티의 Home Assistant 상세 정보를 엽니다. 필요한 센서에만 임계값을 지정하여 색상과 `주의`·`위험` 문구를 함께 표시할 수 있습니다.
 
@@ -82,9 +82,13 @@ items:
 - 임계값은 표시 상태에만 사용됩니다. 자동화·알림 전송·기기 제어를 실행하거나 과거 데이터를 조회하지 않습니다.
 - 버튼 높이는 최소 44px이며 키보드 포커스와 동작 줄이기 설정을 지원합니다.
 
-![320px에서 긴 숫자를 유지하는 예시](../images/compact-environment-long.jpg)
+![320px에서 긴 숫자를 유지하는 예시](../images/compact-environment-long-ko.jpg)
 
 ## English
+
+![Compact environment panel with temperature, humidity and CO₂ cells](../images/compact-environment-panel.jpg)
+
+![Long numeric reading kept at 320px](../images/compact-environment-long.jpg)
 
 Use `custom:compact-environment-panel` with a nonempty `items` list of numeric `sensor.*` entities. Items accept optional `name`, `icon`, and `thresholds`. The panel accepts optional title `name` and `columns: auto` (default) or 1–4. Automatic cells favor compact readings and hide decorative icons at widths of 360px or less.
 

@@ -2,7 +2,7 @@
 
 [UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
 
-![미디어 대표 화면](../images/compact-media-row.jpg)
+![미디어 대표 화면](../images/compact-media-row-ko.jpg)
 
 모의 상태로 렌더링한 대표 이미지입니다. 곡명·아티스트와 재생·다음 곡·음량을 표시하며, 큰 앨범 아트 없이 자주 쓰는 조작에 공간을 집중합니다.
 
@@ -37,7 +37,7 @@ show_next: true
 
 음량 드래그와 키보드 조절 중에는 외부 상태 갱신이 편집 값을 덮어쓰지 않습니다. 전송 후 요청 값은 최대 3초 동안 유지되어 기기 보고 지연에 따른 튀는 현상을 줄입니다. 실패하면 알림과 실제 상태로 돌아옵니다. 음량·음소거와 재생 조작은 각각 중복 요청을 막습니다. 음량 요청을 기다리는 중에도 일시정지·다음 곡을 조작할 수 있습니다. 음소거 중에는 상태 문구와 아이콘으로 알리며 음소거 제어를 지원하지 않아도 상태를 표시합니다. `show_volume: false`는 음량 행 전체를 숨기지만 상태 문구의 음소거 표시는 유지합니다.
 
-![음소거 상태 예시](../images/compact-media-muted.jpg)
+![음소거 상태 예시](../images/compact-media-muted-ko.jpg)
 
 ## 더 작은 구성
 
@@ -65,5 +65,9 @@ items:
 `show_volume`, `show_next`도 동일하게 사용할 수 있습니다. 전체 너비 행으로 배치하고 외곽 테두리와 여백을 줄입니다.
 
 ## English
+
+![Media row](../images/compact-media-row.jpg)
+
+![Muted playback state](../images/compact-media-muted.jpg)
 
 Use a media_player entity and optional name, show_volume and show_next (both default true). Capability-aware play/pause/power, next, and volume controls use no album-art space. Missing volume disables the slider. Drafts survive state updates; volume commits once on release and waits briefly for acknowledgment. Audio and transport requests suppress duplicates independently, so pending volume changes do not block Pause. Mute-only devices use a transport-row button without an empty volume row; show_volume false hides it too. The volume icon indicates mute and offers one-tap mute/unmute when supported and its state is known; muted status remains visible even without mute control. Errors restore state with notification. Screenshot uses mocked data; live device behavior depends on HA support.

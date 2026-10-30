@@ -20,6 +20,7 @@ document.documentElement.dataset.theme=fitParams.get('theme')==='dark'?'dark':'l
 <footer>실제 카드 코드 · 모의 상태 · 실제 기기 제어 없음</footer>
 <p id="feedback" role="status" aria-live="polite"></p>
 <script src="preview-icons.js"></script>
+<script src="preview-locale.js"></script>
 <script>
 // Only HA's visual primitives are substituted; card content/layout comes from compact-cards.js.
 customElements.define('ha-card',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:var(--ha-card-border-radius,14px);color:var(--primary-text-color)}</style><slot></slot>';}});
@@ -35,12 +36,13 @@ document.documentElement.style.setProperty('--panel-width',panelWidth+'px');docu
 </script>
 <script src="../compact-cards.js"></script>
 <script>
-const fitStates={
+const {translate:fitTranslate}=compactPreviewLocale;
+const fitStates=fitTranslate({
  'climate.demo_boiler':{entity_id:'climate.demo_boiler',state:'heat',attributes:{friendly_name:'보일러',temperature:25,current_temperature:25,min_temp:16,max_temp:30,target_temp_step:1,supported_features:1,hvac_modes:['off','heat'],hvac_action:'idle'}},
  'climate.demo_ac':{entity_id:'climate.demo_ac',state:'cool',attributes:{friendly_name:'에어컨',temperature:24,current_temperature:27.5,min_temp:16,max_temp:30,target_temp_step:1,supported_features:1,hvac_modes:['off','cool','fan_only','dry','auto'],hvac_action:'cooling'}},
-};
+});
 const fitCards=[];
-const fitHass={states:fitStates,config:{unit_system:{temperature:'°C'}},formatEntityState:state=>({off:'꺼짐',heat:'난방',cool:'냉방',fan_only:'송풍',dry:'제습',auto:'자동'}[state.state]||state.state),callService:async(domain,service,data)=>{
+const fitHass={states:fitStates,config:{unit_system:{temperature:'°C'}},formatEntityState:state=>fitTranslate({off:'꺼짐',heat:'난방',cool:'냉방',fan_only:'송풍',dry:'제습',auto:'자동'}[state.state]||state.state),callService:async(domain,service,data)=>{
  if(domain!=='climate')throw new Error('모의 냉난방 서비스만 지원합니다.');
  await new Promise(resolve=>setTimeout(resolve,250));const state=fitStates[data.entity_id];if(!state)throw new Error('모의 엔티티를 찾을 수 없습니다.');
  if(service==='set_temperature')state.attributes.temperature=data.temperature;
@@ -49,9 +51,10 @@ const fitHass={states:fitStates,config:{unit_system:{temperature:'°C'}},formatE
 }};
 function addFitTarget(kind,title,config){const section=document.createElement('section');section.className=`fixture ${kind}-fixture`;section.dataset.target=kind;const heading=document.createElement('h2');heading.className='fixture-title';heading.textContent=title;section.append(heading);const card=document.createElement(config.type.replace('custom:',''));card.id=kind==='panel'?'panel-card':'picker-card';card.setConfig(config);card.hass=fitHass;if(kind==='picker'){const slot=document.createElement('div');slot.className='picker-slot';slot.id='picker-slot';slot.append(card);section.append(slot);}else section.append(card);document.querySelector('main').append(section);fitCards.push(card);}
 const target=fitParams.get('target');
-if(!target||target==='panel')addFitTarget('panel','홈 패널 · 보일러 2모드 / 에어컨 5모드',{type:'custom:compact-home-panel',items:[{type:'climate',entity:'climate.demo_boiler',name:'보일러'},{type:'climate',entity:'climate.demo_ac',name:'에어컨'}]});
-if(!target||target==='picker')addFitTarget('picker','단독 카드 · 280 × 320px 그리드 부모',{type:'custom:compact-climate-row',entity:'climate.demo_ac',name:'에어컨'});
+if(!target||target==='panel')addFitTarget('panel',fitTranslate('홈 패널 · 보일러 2모드 / 에어컨 5모드'),{type:'custom:compact-home-panel',items:[{type:'climate',entity:'climate.demo_boiler',name:fitTranslate('보일러')},{type:'climate',entity:'climate.demo_ac',name:fitTranslate('에어컨')}]});
+if(!target||target==='picker')addFitTarget('picker',fitTranslate('단독 카드 · 280 × 320px 그리드 부모'),{type:'custom:compact-climate-row',entity:'climate.demo_ac',name:fitTranslate('에어컨')});
 if(target&&!['panel','picker'].includes(target))document.querySelector('#feedback').textContent='target은 panel 또는 picker로 지정하세요.';
+compactPreviewLocale.start();
 document.querySelector('#width').onchange=event=>document.documentElement.style.setProperty('--panel-width',event.target.value+'px');
 document.querySelector('#theme').onclick=()=>document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';
 document.addEventListener('hass-more-info',event=>{const state=fitStates[event.detail.entityId];document.querySelector('#feedback').textContent=`${state.attributes.friendly_name} · ${fitHass.formatEntityState(state)} · 설정 ${state.attributes.temperature}°C (모의 정보)`;});

@@ -2,7 +2,7 @@
 
 [UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
 
-![커튼 대표 화면](../images/compact-cover-row.jpg)
+![커튼 대표 화면](../images/compact-cover-row-ko.jpg)
 
 모의 상태로 렌더링한 대표 이미지입니다. 열기·정지·닫기와 열림 위치를 직접 조작하는 커튼·블라인드 행입니다.
 
@@ -46,5 +46,7 @@ items:
 좁은 카드에서는 위치 슬라이더가 다음 줄로 이동하고 터치 환경에서도 버튼 조작 영역을 유지합니다.
 
 ## English
+
+![Cover row](../images/compact-cover-row.jpg)
 
 Use `custom:compact-cover-row` with required cover entity and optional name. Open/stop/close/position controls are capability-aware. Position means 0 closed, 100 open. Stop remains usable during an in-flight motion request; request completion does not imply movement completion. Sliders commit once on release and preserve requested values while awaiting device state. Embed using `type: cover` in a home panel. The representative screenshot uses mocked state.

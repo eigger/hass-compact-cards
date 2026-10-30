@@ -2,7 +2,7 @@
 
 [UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
 
-![냉난방 카드 대표 화면](../images/compact-climate-row.jpg)
+![냉난방 카드 대표 화면](../images/compact-climate-row-ko.jpg)
 
 운전 모드와 설정 온도를 바로 조작하는 냉난방 카드입니다. 이름 아래에 현재 상태와 현재 온도를 표시하고, 지원 모드만 버튼으로 제공합니다. 이미지는 모의 상태를 사용하는 로컬 미리보기입니다. 기기의 지원 모드·속성과 카드 너비에 따라 실제 화면은 달라집니다.
 
@@ -50,7 +50,7 @@ name: 거실 냉난방
 
 ## 좁은 카드와 터치 환경
 
-![390px 패널에서 한 줄로 배치한 보일러와 에어컨](../images/compact-climate-inline.jpg)
+![390px 패널에서 한 줄로 배치한 보일러와 에어컨](../images/compact-climate-inline-ko.jpg)
 
 위 예시는 실제 카드 코드와 모의 상태를 사용하는 390px 홈 패널입니다. 보일러의 두 모드와 에어컨의 다섯 모드가 각각 한 줄로 배치됩니다. 현재 온도를 보조 텍스트 앞에 표시해 좁은 이름 영역에서도 숫자를 먼저 읽을 수 있으며, 전체 상태는 툴팁과 접근성 이름으로 제공합니다.
 
@@ -67,7 +67,7 @@ name: 거실 냉난방
 <details>
 <summary>고정 높이 부모 안의 카드 미리보기</summary>
 
-![320px 높이 부모 안에서 내용 높이만 사용하는 단독 카드](../images/compact-climate-picker.jpg)
+![320px 높이 부모 안에서 내용 높이만 사용하는 단독 카드](../images/compact-climate-picker-ko.jpg)
 
 점선은 280 × 320px 모의 미리보기 부모이며, 내부 카드의 CSS는 실제 구현 그대로입니다. 카드가 부모 높이를 채우지 않고 내용 높이만 사용합니다. `examples/climate-fit.html`에서 재현할 수 있으며 실제 HA 연결 화면은 아닙니다.
 
@@ -95,6 +95,12 @@ items:
 - 명령 실패: Home Assistant 개발자 도구에서 같은 기기의 냉난방 서비스를 실행할 수 있는지 확인합니다.
 
 ## English
+
+![Climate card](../images/compact-climate-row.jpg)
+
+![Boiler and air conditioner on one line in a 390px panel](../images/compact-climate-inline.jpg)
+
+![Standalone card using only its content height in a 320px-tall parent](../images/compact-climate-picker.jpg)
 
 Use `custom:compact-climate-row` with a required `climate.*` `entity` and optional `name`. Tap the name to open more-info; mode buttons request supported HVAC modes, and −/+ follows the device step and limits. A single target-temperature feature and a numeric temperature are required for temperature controls. Range-only thermostats need more-info for range adjustment.
 

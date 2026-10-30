@@ -42,6 +42,13 @@ The showcase renders the real seven custom-card elements in coherent living-room
 
 `examples/showcase.yaml` contains the same custom-card configurations for an HA Sections dashboard. Replace entity IDs with your own; it does not create mock entities. Representative images should be actual browser captures of this page, with capture context recorded. This is a demonstration, not live-device compatibility evidence.
 
+<details>
+<summary>View the 390px mobile layout</summary>
+
+![Mobile room dashboard reflowed into one column](../images/showcase-mobile.jpg)
+
+</details>
+
 ## 실제 카드의 시각 개선
 
 주요 값과 제목의 굵기를 정리하고, 선택한 조작과 색온도·밝기·음량 레일을 일관되게 표현했습니다. 환경·장면의 내부 칸은 반복 테두리를 줄였습니다. 이 스타일은 쇼케이스 전용이 아니라 실제 카드와 홈 패널에 적용됩니다. 냉난방은 아이콘 중심 구성을 유지합니다.
@@ -51,6 +58,6 @@ The showcase renders the real seven custom-card elements in coherent living-room
 <details>
 <summary>390px 모바일 구성 보기</summary>
 
-![한 열로 재배치한 모바일 방별 대시보드](../images/showcase-mobile.jpg)
+![한 열로 재배치한 모바일 방별 대시보드](../images/showcase-mobile-ko.jpg)
 
 </details>

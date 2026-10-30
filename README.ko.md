@@ -4,14 +4,14 @@
 
 [English](README.md) | **한국어**
 
-![조명·냉난방·커튼·미디어를 함께 배치한 컴팩트 방별 대시보드](images/showcase-light.jpg)
+![조명·냉난방·커튼·미디어를 함께 배치한 컴팩트 방별 대시보드](images/showcase-light-ko.jpg)
 
 *실제 카드 JavaScript와 모의 상태로 렌더링한 로컬 미리보기입니다. 실제 기기 연결 검증 화면은 아닙니다.*
 
 <details>
 <summary>다크 테마 보기</summary>
 
-![같은 방별 대시보드의 다크 테마](images/showcase-dark.jpg)
+![같은 방별 대시보드의 다크 테마](images/showcase-dark-ko.jpg)
 
 </details>
 

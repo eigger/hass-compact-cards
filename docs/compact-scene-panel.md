@@ -2,7 +2,7 @@
 
 [UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
 
-![장면·스크립트를 작은 버튼으로 모은 Compact scene panel](../images/compact-scene-panel.jpg)
+![장면·스크립트를 작은 버튼으로 모은 Compact scene panel](../images/compact-scene-panel-ko.jpg)
 
 휴식·외출·취침처럼 자주 사용하는 장면과 스크립트를 작은 버튼으로 모읍니다. 버튼 한 번으로 실행하고, 확인이 필요한 항목만 확인 문구를 추가할 수 있습니다. 실행 요청 중에는 해당 엔티티의 버튼이 비활성화되어 중복 명령을 막습니다.
 
@@ -67,6 +67,8 @@ items:
 이 카드는 장면·스크립트를 실행하는 바로가기입니다. 임의 서비스, 별도 `target` 또는 서비스 데이터를 구성하는 옵션은 제공하지 않습니다. 키보드 포커스와 동작 줄이기 설정을 지원합니다.
 
 ## English
+
+![Compact scene panel with scene and script buttons](../images/compact-scene-panel.jpg)
 
 Use `custom:compact-scene-panel` with a nonempty `items` list of `scene.*` or `script.*` entities. Each shortcut accepts optional `name`, `icon`, and a `confirmation` string. The panel accepts optional title `name` and `columns: auto` (default) or a fixed count from 1 to 4. Omit the title to save space.
 
