@@ -31,6 +31,7 @@ test('navigation records the originating view for Home Assistant subview back na
     for (const trigger of ['label', 'control']) {
       const { window, card } = setup();
       window.history.replaceState({ root: true }, '', origin);
+      const originPath = window.location.pathname;
       const element = card('compact-home-panel', { items: [
         { type: 'navigate', name: 'Details', navigation_path: destination },
       ] });
@@ -42,9 +43,9 @@ test('navigation records the originating view for Home Assistant subview back na
       element._refs[0][trigger].click();
 
       assert.equal(window.location.pathname, destination);
-      assert.equal(window.history.state.from, origin);
+      assert.equal(window.history.state.from, originPath);
       assert.equal(window.history.state.root, undefined);
-      assert.deepEqual(changes, [{ path: destination, from: origin, replace: false }]);
+      assert.deepEqual(changes, [{ path: destination, from: originPath, replace: false }]);
       // Home Assistant uses the `from` marker to choose history.back() over its dashboard fallback.
       const popped = new Promise(resolve => window.addEventListener('popstate', resolve, { once: true }));
       window.history.back();
