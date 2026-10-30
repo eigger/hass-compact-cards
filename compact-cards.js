@@ -11,7 +11,7 @@ function compactFlash(el, cls) {
   if(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)return;
   el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);
   if(!el._flashEnd){
-    el._flashEnd=event=>{if(event.target===el)el.classList.remove('changed','pop','shake');};
+    el._flashEnd=event=>{if(event.target===el)el.classList.remove('pop','shake');};
     el.addEventListener('animationend',el._flashEnd);
   }
 }
@@ -118,15 +118,13 @@ function compactInteractions(host) {
     ha-icon.motion[data-motion=pulse],ha-state-icon.motion[data-motion=pulse]{animation:compact-breathe 2s ease-in-out infinite}
     ha-icon.motion[data-motion=sweep],ha-state-icon.motion[data-motion=sweep]{animation:compact-dry 2.2s ease-in-out infinite}
     ha-icon.motion[data-motion=glow],ha-state-icon.motion[data-motion=glow]{filter:drop-shadow(0 0 4px var(--entity-color,currentColor))}
-    .row.changed{animation:compact-flash .8s ease-out}
     .pop{animation:compact-pop .5s cubic-bezier(.3,1.6,.5,1)}.shake{animation:compact-shake .5s ease-in-out}
-    @keyframes compact-flash{from{background:color-mix(in srgb,var(--entity-color,var(--primary-color)) 22%,transparent)}to{background:transparent}}
     @keyframes compact-pop{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
     @keyframes compact-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-2px)}40%,80%{transform:translateX(2px)}}
     @keyframes compact-fan{to{transform:rotate(360deg)}}
     @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
     @keyframes compact-dry{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
-    @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}.motion,.changed,.pop,.shake{animation:none!important}}`;
+    @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}.motion,.pop,.shake{animation:none!important}}`;
   const status=document.createElement('span');status.className='compact-feedback';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   host.shadowRoot.append(style,status);host._feedbackText=status;
 }
@@ -535,7 +533,7 @@ class CompactHomePanel extends HTMLElement {
       compactProp(ref.icon,'stateObj',state);
       compactProp(ref.icon,'icon',item.icon || (!state?'mdi:help-circle-outline':undefined));
       compactMotion(ref.icon,offline?'':compactMotionOf(state));
-      if(state&&ref.lastEntity===state.entity_id&&ref.lastState!==state.state&&!offline&&!['unknown','unavailable'].includes(ref.lastState)){compactFlash(ref.row,'changed');const effect=compactEffectOf(state);if(effect)compactFlash(ref.icon,effect);}
+      if(state&&ref.lastEntity===state.entity_id&&ref.lastState!==state.state&&!offline&&!['unknown','unavailable'].includes(ref.lastState)){const effect=compactEffectOf(state);if(effect)compactFlash(ref.icon,effect);}
       ref.lastEntity=state?.entity_id;ref.lastState=state?.state;
       if (ref.value){compactText(ref.value,this._format(state));compactProp(ref.value,'title',ref.value.textContent);}
       if (ref.control) {
