@@ -25,7 +25,7 @@ const state = (entity_id, value, attributes = {}) => ({ entity_id, state: value,
 test('HACS points to a self-contained bundle registering all cards', () => {
   const manifest = JSON.parse(readFileSync('hacs.json', 'utf8'));
   assert.equal(manifest.filename, 'compact-cards.js');
-  assert.equal(manifest.content_in_root, true);
+  assert.equal(manifest.content_in_root, false);
   const { window, hass } = setup();
   assert.equal(window.customCards.length, 9);
   for (const { type } of window.customCards) {
