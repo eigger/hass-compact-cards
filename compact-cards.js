@@ -273,7 +273,7 @@ class CompactClimateRow extends HTMLElement {
     for (const b of container.children) {
       const pressed=!offline && b.dataset.mode === s?.state;
       compactProp(b,'disabled',offline || this._busy);
-      compactAttr(b,'aria-busy',this._busy);
+      compactAttr(b,'aria-busy',this._busy && !offline);
       compactAttr(b,'aria-disabled',offline || this._busy);
       compactAttr(b,'aria-pressed',pressed);
       const i=b.querySelector('ha-icon');
@@ -287,9 +287,9 @@ class CompactClimateRow extends HTMLElement {
     const supported = (Number(a.supported_features) & 1) !== 0;
     compactText(this.shadowRoot.querySelector('output'),valid ? `${t}°` : '—');
     const minus=this.shadowRoot.querySelector('.minus'),plus=this.shadowRoot.querySelector('.plus');
-    compactProp(minus,'disabled',offline || this._busy || !valid || !supported || (a.min_temp != null && t <= a.min_temp));
-    compactProp(plus,'disabled',offline || this._busy || !valid || !supported || (a.max_temp != null && t >= a.max_temp));
-    for(const button of [minus,plus]){compactAttr(button,'aria-busy',this._busy);compactAttr(button,'aria-disabled',button.disabled || this._busy);}
+    const limits=[[minus,offline || !valid || !supported || (a.min_temp != null && t <= a.min_temp)],[plus,offline || !valid || !supported || (a.max_temp != null && t >= a.max_temp)]];
+    // Only controls that are otherwise usable show the pending state, so unusable ones never flicker.
+    for(const [button,limited] of limits){compactProp(button,'disabled',limited || this._busy);compactAttr(button,'aria-busy',this._busy && !limited);compactAttr(button,'aria-disabled',limited || this._busy);}
     this._layout();
   }
   _step(direction) {
@@ -600,7 +600,7 @@ class CompactControlRow extends HTMLElement {
       ha-card{box-sizing:border-box;padding:6px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:56px}
       button,input{font:inherit;color:var(--primary-text-color)}
       button{border:0;background:transparent;cursor:pointer;border-radius:8px;min-width:36px;min-height:36px;padding:6px;display:grid;place-items:center}
-      @media(hover:hover){button:hover{background:var(--secondary-background-color)}}
+      @media(hover:hover){button:hover:not(:disabled){background:var(--secondary-background-color)}}
       button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}
       input[aria-busy=true]{cursor:progress}
@@ -809,7 +809,7 @@ for(const [type,constructor,name,description] of [
     button[aria-busy=true]{cursor:progress}
     ha-icon{--mdc-icon-size:20px;flex:none;width:20px;height:20px;color:var(--primary-color)}
     .copy{flex:1;min-width:0}.label{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .detail{display:block;font-size:11px;color:var(--secondary-text-color);margin-top:2px}
+    .detail{display:block;font-size:11px;color:var(--secondary-text-color);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     @media(prefers-reduced-motion:reduce){button{transition:none}}
   `;
   const make = (tag, cls, text) => {
@@ -1071,13 +1071,13 @@ class CompactMediaRow extends HTMLElement {
     play.hidden=!offline&&!this._supports(actionBit);compactAttr(play,'aria-label',`${name} ${label}`);compactProp(play,'title',label);
     compactAttr(play.querySelector('ha-icon'),'icon',{turn_on:'mdi:power',media_pause:'mdi:pause',media_play:'mdi:play'}[action]);
     const next=this._q('.next');next.hidden=this._config.show_next===false||!this._supports(32);
-    for(const [button,service] of [[play,action],[next,'media_next_track']]){compactProp(button,'disabled',this._isBusy('transport')||!this._allowed(service));compactAttr(button,'aria-busy',this._isBusy('transport'));}
+    for(const [button,service] of [[play,action],[next,'media_next_track']]){compactProp(button,'disabled',this._isBusy('transport')||!this._allowed(service));compactAttr(button,'aria-busy',this._isBusy('transport')&&this._allowed(service));}
     const mute=this._q('.mute'),muted=a.is_volume_muted===true,muteLabel=muted?'음소거 해제':'음소거',volumeSupported=this._supports(4),muteSupported=this._supports(8);
     const muteParent=this._q(!volumeSupported&&muteSupported?'.main':'.volume');
     if(mute.parentElement!==muteParent){if(muteParent===this._q('.volume'))muteParent.prepend(mute);else muteParent.append(mute);}
     mute.hidden=this._config.show_volume===false||(!volumeSupported&&!muteSupported);
     compactAttr(mute.querySelector('ha-icon'),'icon',muted?'mdi:volume-off':'mdi:volume-medium');
-    compactAttr(mute,'aria-label',`${name} ${muteLabel}`);compactProp(mute,'title',muteLabel);compactAttr(mute,'aria-pressed',muted);compactAttr(mute,'aria-busy',this._isBusy('audio'));
+    compactAttr(mute,'aria-label',`${name} ${muteLabel}`);compactProp(mute,'title',muteLabel);compactAttr(mute,'aria-pressed',muted);compactAttr(mute,'aria-busy',this._isBusy('audio')&&this._allowed('volume_mute')&&typeof a.is_volume_muted==='boolean');
     compactProp(mute,'disabled',this._isBusy('audio')||!this._allowed('volume_mute')||typeof a.is_volume_muted!=='boolean');
     const slider=this._q('input'),level=a.volume_level,valid=typeof level==='number'&&Number.isFinite(level)&&level>=0&&level<=1;
     this._q('.volume').hidden=this._config.show_volume===false||!volumeSupported;

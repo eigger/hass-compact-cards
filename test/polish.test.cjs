@@ -103,6 +103,14 @@ test('pending controls do not dim while a request is in flight',t=>{
   assert.equal(/aria-busy=true\][^{]*\{[^}]*opacity:\.65/.test(src),false);
   assert.equal(src.includes('button[aria-busy=true]:disabled,select[aria-busy=true]:disabled,input[aria-busy=true]:disabled{opacity:1}'),true);
 });
+test('climate +/- buttons that are limited keep their dimming while a mode request is pending',async t=>{
+  const {card,hass}=setup(t,'compact-climate-row',{entity:'climate.room'},{'climate.room':state('climate.room','cool',{hvac_modes:['off','cool'],temperature:30,max_temp:30,min_temp:16,supported_features:1})});
+  let resolve;hass.callService=()=>new Promise(done=>resolve=done);
+  const pending=card._perform('set_hvac_mode',{hvac_mode:'off'});
+  assert.equal(card.shadowRoot.querySelector('.plus').getAttribute('aria-busy'),'false');
+  assert.equal(card.shadowRoot.querySelector('.minus').getAttribute('aria-busy'),'true');
+  resolve();await pending;
+});
 test('scene script icon pulses only while the script runs',t=>{
   const {card,hass}=setup(t,'compact-scene-panel',{items:[{entity:'script.go'}]},{'script.go':state('script.go','on')});
   const icon=card.shadowRoot.querySelector('ha-icon');assert.equal(icon.dataset.motion,'pulse');
