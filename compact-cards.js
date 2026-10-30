@@ -1047,9 +1047,9 @@ class CompactPictureCard extends HTMLElement {
     this.shadowRoot.innerHTML=`<style>
       :host{display:block;container-type:inline-size}ha-card{display:flex;align-items:center;gap:8px;padding:6px;overflow:hidden;color:var(--primary-text-color);box-sizing:border-box}
       .surface{position:relative;flex:0 0 96px;width:96px;aspect-ratio:16 / 9;background:var(--secondary-background-color);overflow:hidden;border-radius:8px;cursor:pointer}.surface:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
-      .surface>img{width:100%;height:100%;object-fit:var(--picture-fit,cover);display:block}
+      .surface>img{position:absolute;inset:0;width:100%;height:100%;object-fit:var(--picture-fit,cover);object-position:center;display:block;background:#000}
       .surface>img[hidden],.message[hidden],.native[hidden],button[hidden]{display:none}
-      .native{width:100%;height:100%;--ha-card-border-width:0;--ha-card-border-radius:0;--ha-card-box-shadow:none;--ha-card-background:transparent}
+      .native{position:absolute;inset:0;width:100%;height:100%;background:#000;--ha-card-border-width:0;--ha-card-border-radius:0;--ha-card-box-shadow:none;--ha-card-background:transparent}.native>*{display:block;width:100%;height:100%}
       .message{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:4px;color:var(--secondary-text-color);font-size:11px;line-height:1.3}
       footer{display:flex;align-items:center;gap:4px;min-height:44px;flex:1;min-width:0;padding:0 2px}.retry{padding:4px}.state:empty{display:none}dialog{width:min(900px,90vw);max-height:90vh;box-sizing:border-box;border:1px solid var(--divider-color);border-radius:14px;background:var(--card-background-color);color:var(--primary-text-color);padding:12px}dialog::backdrop{background:#0008}dialog header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}dialog .full{overflow:auto;max-height:75vh}
       button{font:inherit;color:inherit;background:transparent;border:0;border-radius:6px;min-height:36px;cursor:pointer;touch-action:manipulation}
@@ -1081,11 +1081,11 @@ class CompactPictureCard extends HTMLElement {
     if(config.fit_mode!==undefined&&!['cover','contain'].includes(config.fit_mode))throw new Error('fit_mode는 cover 또는 contain이어야 합니다.');
     const ratio='16:9';
     if(config.camera_view!==undefined&&config.camera_view!=='auto')throw new Error('컴팩트 카드는 미리보기만 지원합니다. camera_view를 생략하세요.');
-    this._config={...config,aspect_ratio:ratio,fit_mode:config.fit_mode??(this._camera?'cover':'contain')};this._reset();this._render();
+    this._config={...config,aspect_ratio:ratio,fit_mode:config.fit_mode??'cover'};this._reset();this._render();
   }
   set hass(value){this._hass=value;this._render();}
   getCardSize(){return 1;}
-  getGridOptions(){return {columns:12,min_columns:6,min_rows:1};}
+  getGridOptions(){return {columns:6,min_columns:6,min_rows:1};}
   connectedCallback(){this._render();}
   disconnectedCallback(){this._reset();}
   _reset(){this._info?.removeAttribute('aria-busy');if(this._dialog?.open)this._dialog.close();this._opening=false;this._epoch++;this._loading=false;this._failed=false;this._url=undefined;this._child=undefined;this._native.replaceChildren();this._img?.remove();this._img=undefined;}
@@ -1437,7 +1437,7 @@ for(const [type,Constructor,name,description] of [
       if(['compact-image-card','compact-camera-card'].includes(this._kind)){
         const camera=this._kind==='compact-camera-card';
         const schema=camera?[entity('entity','카메라 엔티티','camera')]:[text('image','이미지 URL (/local/ 또는 HTTP(S))'),entity('entity','이미지 엔티티 (URL과 택일)','image',false),text('alt_text','대체 텍스트')];
-        schema.push(display([text('name','표시 이름'),select('fit_mode','이미지 맞춤',[['cover',camera?'영역 채우기 (기본)':'영역 채우기'],['contain',camera?'전체 보기':'전체 보기 (기본)']])]));
+        schema.push(display([text('name','표시 이름'),select('fit_mode','이미지 맞춤',[['cover','영역 채우기 (기본)'],['contain','전체 보기']])]));
         this._form(root,[],schema);return;
       }
       if(['compact-climate-row','compact-light-row','compact-cover-row','compact-media-row'].includes(this._kind)){

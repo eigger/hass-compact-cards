@@ -9,6 +9,18 @@ function setup(t,type,config){
   t.after(()=>{card.remove();window.happyDOM.abort();});return {window,hass,card,q:s=>card.shadowRoot.querySelector(s)};
 }
 const tick=()=>new Promise(setImmediate);
+
+test('picture cards default to paired half-width Sections rows and preserve explicit contain mode',t=>{
+  for(const type of ['compact-image-card','compact-camera-card']){
+    const config=type.includes('image')?{image:'/local/photo.jpg'}:{entity:'camera.door'};
+    const {card}=setup(t,type,config);
+    assert.deepEqual({...card.getGridOptions()},{columns:6,min_columns:6,min_rows:1});
+    assert.equal(card.getCardSize(),1);
+    assert.equal(card._config.fit_mode,'cover');
+    card.setConfig({...config,fit_mode:'contain'});
+    assert.equal(card._config.fit_mode,'contain');
+  }
+});
 test('image validates sources; loading, error, retry and alt text',t=>{
   const {window,card,q}=setup(t,'compact-image-card',{image:'/local/room.jpg',alt_text:'거실 사진'});
   for(const image of ['javascript:alert(1)','data:image/svg+xml,hi','//example.com/x','/\\example.com/x'])assert.throws(()=>card.setConfig({image}));

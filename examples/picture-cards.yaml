@@ -7,6 +7,7 @@ cards:
     image: /local/floor-plan.png
     name: 우리 집
     alt_text: 방과 출입구를 보여주는 집 평면도
+    fit_mode: contain
   - type: custom:compact-camera-card
     entity: camera.front_door
     name: 현관
