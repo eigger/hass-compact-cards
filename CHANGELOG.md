@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.4 — 2026-10-30
+
 - Fit climate rows on one line on narrow touch screens by sizing mode and temperature buttons to the available width (32–44px wide, 44px tall). Climate rows in a home panel share one button size, and the target temperature text is smaller.
 
 ## 0.2.3 — 2026-10-30
