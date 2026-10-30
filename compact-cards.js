@@ -416,7 +416,7 @@ class CompactHomePanel extends HTMLElement {
       const ref={item,row,label,icon,name};
       if (item.type === 'navigate') {
         const value=this._make('button','command','열기');ref.control=value;row.append(value);
-        const go=()=>{const p=item.navigation_path;if (p?.startsWith('/')&&!p.startsWith('//')) {history.pushState(null,'',p);window.dispatchEvent(new Event('location-changed'));}};
+        const go=()=>{const p=item.navigation_path;if (p?.startsWith('/')&&!p.startsWith('//')) {history.pushState({from:location.pathname+location.search+location.hash},'',p);window.dispatchEvent(new CustomEvent('location-changed',{detail:{replace:false}}));}};
         label.onclick=go;value.onclick=go;icon.setAttribute('icon',item.icon || 'mdi:chevron-right');
       } else {
         label.onclick=()=>this._tap(ref);
