@@ -29,7 +29,7 @@ function compactInteractions(host) {
       .modes button[aria-pressed=true]{background:color-mix(in srgb,var(--mode-color) 17%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--mode-color) 22%,transparent)}
     `,
     'compact-home-panel':`
-      .label span{font-weight:500}.label>ha-icon{border-radius:6px;background:color-mix(in srgb,var(--entity-color,var(--primary-color)) 10%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,var(--entity-color,var(--primary-color)) 10%,transparent)}
+      .label span{font-weight:500}.label>ha-icon,.label>ha-state-icon{border-radius:6px;background:color-mix(in srgb,var(--entity-color,var(--primary-color)) 10%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,var(--entity-color,var(--primary-color)) 10%,transparent)}
       .subheading{font-weight:600;color:var(--primary-text-color);letter-spacing:-.1px}
       .subheading .badge{border-radius:999px;background:var(--compact-control-surface);padding-inline:7px}
       .value{font-weight:550}.row,.pair-grid,th,td{border-color:var(--compact-divider)}
@@ -309,12 +309,12 @@ class CompactHomePanel extends HTMLElement {
       button:focus-visible,select:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
       button,select{touch-action:manipulation}button:disabled,select:disabled{opacity:.45;cursor:default}.label{display:flex;align-items:center;gap:9px;text-align:left;flex:1;min-width:0}
       .label span{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      ha-icon{--mdc-icon-size:18px;width:18px;height:18px;flex:none;color:var(--entity-color,var(--secondary-text-color))}
+      ha-icon,ha-state-icon{--mdc-icon-size:18px;width:18px;height:18px;flex:none;color:var(--entity-color,var(--secondary-text-color))}
       .value{font-size:14px;min-width:0;max-width:68%;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--entity-color,var(--primary-text-color));transition:color 180ms ease}
       .switch{min-width:42px;display:grid;place-items:center}.track{display:block;width:28px;height:16px;background:var(--disabled-color);border-radius:10px;position:relative;transition:background-color 180ms ease}
       .track:after{content:'';position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--card-background-color);transform:translateX(0);transition:transform 180ms cubic-bezier(.2,.8,.2,1)}
       .switch[aria-checked=true] .track{background:var(--entity-color)}.switch[aria-checked=true] .track:after{transform:translateX(12px)}
-      ha-icon{transition:color 180ms ease}
+      ha-icon,ha-state-icon{transition:color 180ms ease}
       .subheading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.badge{display:flex;align-items:center;gap:3px;max-width:100%}.badge .badge-name{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.subheading>span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.subheading button{font-size:12px;min-height:30px;color:var(--secondary-text-color)}
       .command{font-size:13px;color:var(--primary-color);padding-inline:10px}.subheading{font-size:13px;font-weight:500;color:var(--secondary-text-color);padding:12px 4px 4px}
       select{max-width:48%;min-width:0;font-size:13px;border:1px solid var(--divider-color);border-radius:5px;background:var(--card-background-color);min-height:36px}
@@ -327,7 +327,7 @@ class CompactHomePanel extends HTMLElement {
       @container(max-width:380px){:host([columns="auto"]) .pair-grid{grid-template-columns:minmax(0,1fr)}}
       @container(max-width:420px){thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}table,tbody{display:block}tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--divider-color);padding-block:4px}td{display:block;border:0;padding:3px;text-align:left;min-width:0}td:first-child{grid-column:1/-1;width:auto;font-weight:500}td:not(:first-child)::before{content:attr(data-label);display:block;font-size:11px;color:var(--secondary-text-color);margin-bottom:2px}td button{min-height:36px;width:100%;text-align:left}}
       @media(pointer:coarse){button,select,.subheading button,td button{min-height:44px}.switch{min-width:44px}}
-      @media(prefers-reduced-motion:reduce){.track,.track:after,ha-icon,.value{transition:none!important}}
+      @media(prefers-reduced-motion:reduce){.track,.track:after,ha-icon,ha-state-icon,.value{transition:none!important}}
     </style><ha-card><div class="items"></div></ha-card>`;
     compactInteractions(this);
   }
@@ -404,7 +404,7 @@ class CompactHomePanel extends HTMLElement {
         }
         body.append(table);continue;
       }
-      const row=this._make('div','row'),label=this._make('button','label'),icon=this._make('ha-icon'),name=this._make('span',null,item.name || '');
+      const row=this._make('div','row'),label=this._make('button','label'),icon=this._make(item.type==='navigate'?'ha-icon':'ha-state-icon'),name=this._make('span',null,item.name || '');
       label.append(icon,name);row.append(label);
       const ref={item,row,label,icon,name};
       if (item.type === 'navigate') {
@@ -453,9 +453,10 @@ class CompactHomePanel extends HTMLElement {
       compactAttr(ref.label,'aria-label',`${ref.name.textContent}${tapToggle?' 켜기/끄기':''}`);
       compactStyle(ref.row,'--entity-color',compactStateColor(state));
       const domain=state?.entity_id.split('.')[0];
-      const icons={light:'mdi:lightbulb-outline',switch:'mdi:power',lock:'mdi:lock-outline',select:'mdi:tune',button:'mdi:gesture-tap-button',script:'mdi:play',input_button:'mdi:gesture-tap-button'};
-      const sensorIcons={temperature:'mdi:thermometer',humidity:'mdi:water-percent',power:'mdi:flash',moisture:'mdi:water-alert',carbon_dioxide:'mdi:molecule-co2'};
-      compactAttr(ref.icon,'icon',item.icon || state?.attributes.icon || sensorIcons[state?.attributes.device_class] || icons[domain] || 'mdi:circle-small');
+      // HA resolves registry overrides, device classes and state-dependent icons.
+      compactProp(ref.icon,'hass',this._hass);
+      compactProp(ref.icon,'stateObj',state);
+      compactProp(ref.icon,'icon',item.icon || (!state?'mdi:help-circle-outline':undefined));
       if (ref.value){compactText(ref.value,this._format(state));compactProp(ref.value,'title',ref.value.textContent);}
       if (ref.control) {
         compactProp(ref.control,'disabled',offline || this._busy.has(item.entity));
