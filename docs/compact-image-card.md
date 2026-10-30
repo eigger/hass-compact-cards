@@ -2,7 +2,7 @@
 
 작은 썸네일과 이름만 한 줄에 표시합니다. 썸네일 또는 이름을 누르면 `image.*` 엔티티는 **HA 기본 상세 화면**, 고정 이미지 URL은 **HA 기본 picture 카드를 담은 확대 대화상자**로 엽니다. 컴팩트 카드 안에서는 큰 이미지나 영상을 재생하지 않습니다.
 
-A small 96px-wide thumbnail and title in one compact row. Tap the thumbnail or title for native HA entity details, or a native `picture` card in a closable dialog for a static URL. Image entities and URLs are mutually exclusive.
+A small 96px-wide (72px in narrow cards) thumbnail and title in one compact row. Tap the thumbnail or title for native HA entity details, or a native `picture` card in a closable dialog for a static URL. Image entities and URLs are mutually exclusive.
 
 ```yaml
 type: custom:compact-image-card
@@ -32,3 +32,5 @@ alt_text: 현관 카메라의 최근 감지 이미지
 Use the visual editor or YAML. Store local files under `/config/www/` and refer to them as `/local/…`. Remote images must be browser-reachable; HTTPS dashboards should use HTTPS URLs. Full-size display requires the HA runtime. No upload, `media-source://`, navigation actions or home-panel embedding is implemented.
 
 Image-entity proxy behavior follows [HA frontend](https://github.com/home-assistant/frontend/blob/dev/src/data/image.ts); hosting follows the [official picture card guide](https://www.home-assistant.io/dashboards/picture/). Local tests cover load/error/retry, entity refresh/recovery, keyboard activation, native dialog configuration and editor round trips. Live HA authentication and dialog rendering still need verification. See `examples/picture-preview.html` and `examples/picture-cards.yaml`.
+
+Sections defaults to full section width with a minimum of six columns. Narrow cards shrink the thumbnail and wrap the retry button below the title to keep the title readable. / Sections에서는 기본 전체 폭을 사용하며, 좁은 카드에서는 썸네일을 줄이고 재시도 버튼을 제목 아래로 배치합니다.

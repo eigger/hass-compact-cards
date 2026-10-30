@@ -68,3 +68,32 @@ test('thumbnail activation opens native entity details; static image opens a nat
 test('loss of image credentials clears the previous thumbnail instead of leaving a stale picture',t=>{
   const {card,hass,q}=setup(t,'compact-image-card',{entity:'image.floor'});delete hass.states['image.floor'].attributes.access_token;card.hass=hass;assert.equal(q('img'),null);
 });
+
+test('image editor source selection clears the other source and emitted configurations render',async t=>{
+  for(const forms of [true,false]){
+    const {window,card,hass}=setup(t,'compact-image-card',{image:'/local/stub.jpg'});
+    if(forms)window.customElements.define('ha-form',class extends window.HTMLElement{});
+    const editor=await card.constructor.getConfigElement();editor.setConfig({image:'/local/stub.jpg',future:42});editor.hass=hass;window.document.body.append(editor);t.after(()=>editor.remove());
+    const emitted=[];editor.addEventListener('config-changed',event=>{card.setConfig(event.detail.config);emitted.push(event.detail.config);});
+    if(forms){
+      const form=editor.shadowRoot.querySelector('ha-form');
+      form.dispatchEvent(new window.CustomEvent('value-changed',{detail:{value:{image:'/local/stub.jpg',entity:'image.floor'}}}));
+      assert.equal(form.data.image,undefined);
+      form.dispatchEvent(new window.CustomEvent('value-changed',{detail:{value:{entity:'image.floor',image:'/local/new.jpg'}}}));
+      assert.equal(form.data.entity,undefined);
+    }else{
+      const entity=editor.shadowRoot.querySelector('input[data-field="entity"]'),image=editor.shadowRoot.querySelector('input[data-field="image"]');
+      entity.focus();entity.value='image.floor';entity.dispatchEvent(new window.Event('change'));assert.equal(image.value,'');assert.equal(editor.shadowRoot.activeElement,entity);
+      image.focus();image.value='/local/new.jpg';image.dispatchEvent(new window.Event('change'));assert.equal(entity.value,'');assert.equal(editor.shadowRoot.activeElement,image);
+    }
+    assert.equal(emitted[0].entity,'image.floor');assert.equal(emitted[0].image,undefined);assert.equal(emitted[1].entity,undefined);assert.equal(emitted[1].image,'/local/new.jpg');assert.equal(emitted[1].future,42);
+  }
+});
+
+test('camera helper failure recovers after unavailable transition without stranding the retry state',async t=>{
+  const {window,hass,card,q}=setup(t,'compact-camera-card',{entity:'camera.door'});
+  window.loadCardHelpers=async()=>{throw new Error('loading failed');};window.document.body.append(card);await tick();assert.equal(q('.retry').hidden,false);
+  hass.states['camera.door'].state='unavailable';card.hass=hass;assert.equal(q('.retry').hidden,true);
+  window.loadCardHelpers=async()=>({createCardElement:()=>window.document.createElement('native-camera-test')});
+  hass.states['camera.door'].state='idle';card.hass=hass;await tick();assert.equal(q('.native').childElementCount,1);assert.equal(q('.message').hidden,true);assert.equal(q('.retry').hidden,true);
+});

@@ -1040,7 +1040,7 @@ class CompactPictureCard extends HTMLElement {
   constructor(camera=false) {
     super();this._camera=camera;this._epoch=0;this.attachShadow({mode:'open'});
     this.shadowRoot.innerHTML=`<style>
-      :host{display:block}ha-card{display:flex;align-items:center;gap:8px;padding:6px;overflow:hidden;color:var(--primary-text-color);box-sizing:border-box}
+      :host{display:block;container-type:inline-size}ha-card{display:flex;align-items:center;gap:8px;padding:6px;overflow:hidden;color:var(--primary-text-color);box-sizing:border-box}
       .surface{position:relative;flex:0 0 96px;width:96px;aspect-ratio:16 / 9;background:var(--secondary-background-color);overflow:hidden;border-radius:8px;cursor:pointer}.surface:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
       .surface>img{width:100%;height:100%;object-fit:var(--picture-fit,cover);display:block}
       .surface>img[hidden],.message[hidden],.native[hidden],button[hidden]{display:none}
@@ -1051,6 +1051,7 @@ class CompactPictureCard extends HTMLElement {
       button:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}button:disabled{cursor:default}
       .info{text-align:left;min-width:0;flex:1;padding:4px 2px}.name{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .state{display:block;font-size:12px;color:var(--secondary-text-color);padding-top:2px}.retry{font-size:13px;color:var(--primary-color)}
+      @container(max-width:240px){.surface{flex-basis:72px;width:72px}footer{flex-wrap:wrap}.info{flex-basis:100%;width:100%}.retry{margin-left:auto}}
       @media(pointer:coarse){button{min-height:44px;min-width:44px}}
     </style><ha-card><div class="surface"><div class="native"></div><div class="message" role="status" aria-live="polite"></div></div><footer><button class="info" type="button"><span class="name"></span><span class="state"></span></button><button class="retry" type="button">재시도</button></footer></ha-card><dialog aria-label="이미지 크게 보기"><header><span class="dialog-title"></span><button type="button" class="close" aria-label="닫기">닫기</button></header><div class="full"></div></dialog>`;
     this._surface=this.shadowRoot.querySelector('.surface');this._native=this.shadowRoot.querySelector('.native');this._message=this.shadowRoot.querySelector('.message');
@@ -1079,7 +1080,7 @@ class CompactPictureCard extends HTMLElement {
   }
   set hass(value){this._hass=value;this._render();}
   getCardSize(){return 1;}
-  getGridOptions(){return {columns:6,min_columns:6,min_rows:1};}
+  getGridOptions(){return {columns:12,min_columns:6,min_rows:1};}
   connectedCallback(){this._render();}
   disconnectedCallback(){this._reset();}
   _reset(){this._info?.removeAttribute('aria-busy');if(this._dialog?.open)this._dialog.close();this._opening=false;this._epoch++;this._loading=false;this._failed=false;this._url=undefined;this._child=undefined;this._native.replaceChildren();this._img?.remove();this._img=undefined;}
@@ -1091,7 +1092,7 @@ class CompactPictureCard extends HTMLElement {
     compactText(this.shadowRoot.querySelector('.name'),name);this._info.disabled=Boolean(c.entity&&!state);compactAttr(this._info,'aria-label',`${name} 크게 보기`);compactAttr(this._surface,'aria-label',`${name} 크게 보기`);
     const unavailable=c.entity&&(!state||['unavailable','unknown',...(this._camera?['off']:[])].includes(state.state));
     compactText(this.shadowRoot.querySelector('.state'),unavailable?'확인 불가':this._camera?'카메라':c.entity?'이미지':'');
-    if(unavailable){if(this._child||this._img||this._loading)this._reset();this._native.hidden=true;this._status(!state?'엔티티 없음':'사용 불가');return;}
+    if(unavailable){if(this._child||this._img||this._loading||this._failed)this._reset();this._native.hidden=true;this._status(!state?'엔티티 없음':'사용 불가');return;}
     if(this._camera){
       this._native.hidden=false;
       if(this._child){this._child.hass=this._hass;this._status('');return;}
@@ -1246,13 +1247,22 @@ for(const [type,Constructor,name,description] of [
     _update(path,values,schema){
       this._commit(next=>{
         const target=at(next,path);
+        const imageSource=this._kind==='compact-image-card'&&path.length===0;
+        const changedEntity=imageSource&&values.entity&&values.entity!==target.entity;
+        const changedImage=imageSource&&values.image&&values.image!==target.image;
         for(const item of flatSchema(schema)){
           if(!Object.prototype.hasOwnProperty.call(values,item.name))continue;
           let value=clone(values[item.name]);
           if(item.name==='columns'&&value!=='auto'&&value!==undefined&&value!==null&&value!=='')value=Number(value);
           if(value===undefined||value===null||value==='')delete target[item.name];else target[item.name]=value;
         }
+        if(changedEntity)delete target.image;else if(changedImage)delete target.entity;
       });
+      if(this._kind==='compact-image-card'&&path.length===0){
+        for(const input of this.shadowRoot.querySelectorAll('input[data-field="image"],input[data-field="entity"]')){
+          if(input!==this.shadowRoot.activeElement)input.value=this._config[input.dataset.field]??'';
+        }
+      }
     }
     _form(parent,path,schema){
       const data=()=>{
@@ -1422,7 +1432,7 @@ for(const [type,Constructor,name,description] of [
       if(['compact-image-card','compact-camera-card'].includes(this._kind)){
         const camera=this._kind==='compact-camera-card';
         const schema=camera?[entity('entity','카메라 엔티티','camera')]:[text('image','이미지 URL (/local/ 또는 HTTP(S))'),entity('entity','이미지 엔티티 (URL과 택일)','image',false),text('alt_text','대체 텍스트')];
-        schema.push(display([text('name','표시 이름'),select('fit_mode','이미지 맞춤',[['cover','영역 채우기 (기본)'],['contain','전체 보기']])]));
+        schema.push(display([text('name','표시 이름'),select('fit_mode','이미지 맞춤',[['cover',camera?'영역 채우기 (기본)':'영역 채우기'],['contain',camera?'전체 보기':'전체 보기 (기본)']])]));
         this._form(root,[],schema);return;
       }
       if(['compact-climate-row','compact-light-row','compact-cover-row','compact-media-row'].includes(this._kind)){
