@@ -32,6 +32,8 @@
 
 `examples/showcase.yaml`은 HTML의 카드 설정과 동일한 엔티티·이름·옵션을 사용하는 대시보드 예제입니다. 기본 Sections 뷰의 방별 섹션 제목을 제외하면 HTML과 같은 커스텀 카드 설정을 사용합니다. 엔티티 ID를 실제 장치·센서·장면에 맞게 바꾸고 카드 리소스를 먼저 등록하세요. HTML의 모의 엔티티나 상태는 YAML만으로 생성되지 않습니다.
 
+[Home Assistant 공식 Sections 문서](https://www.home-assistant.io/dashboards/sections/)의 대시보드 구조를 따릅니다.
+
 쇼케이스의 카드 설정을 변경하면 YAML도 함께 변경하여 두 예제가 같은 구성을 유지하도록 하세요. 실제 HA의 Sections 배치는 HA 버전·대시보드 설정에 따라 HTML의 CSS 그리드와 차이가 있을 수 있습니다.
 
 ## English

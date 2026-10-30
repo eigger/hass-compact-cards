@@ -4,20 +4,20 @@
 
 [English](README.md) | **한국어**
 
-![조명·냉난방·커튼·미디어를 함께 배치한 컴팩트 거실 대시보드](images/showcase-light.jpg)
+![조명·냉난방·커튼·미디어를 함께 배치한 컴팩트 방별 대시보드](images/showcase-light.jpg)
 
 *실제 카드 JavaScript와 모의 상태로 렌더링한 로컬 미리보기입니다. 실제 기기 연결 검증 화면은 아닙니다.*
 
 <details>
 <summary>다크 테마 보기</summary>
 
-![같은 거실 대시보드의 다크 테마](images/showcase-dark.jpg)
+![같은 방별 대시보드의 다크 테마](images/showcase-dark.jpg)
 
 </details>
 
 전원·밝기·온도·커튼 위치·재생처럼 자주 쓰는 조작을 가까이 모읍니다. 카드 너비에 따라 배치를 조정하고 Home Assistant 테마 색상을 사용합니다. UI와 YAML 편집을 지원하며, 별도 빌드나 외부 런타임 라이브러리 없이 JavaScript 파일 하나에 7종 카드가 포함됩니다.
 
-[대시보드 구성 YAML](examples/showcase.yaml) · [거실 대시보드 가이드](docs/showcase.md) · [UI 설정 가이드](docs/visual-editor.md)
+[대시보드 구성 YAML](examples/showcase.yaml) · [방별 대시보드 가이드](docs/showcase.md) · [UI 설정 가이드](docs/visual-editor.md)
 
 ## 카드와 사용 가이드
 

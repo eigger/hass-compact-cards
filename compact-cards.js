@@ -66,6 +66,7 @@ function compactInteractions(host) {
   const style=document.createElement('style');
   style.textContent=`:host{--compact-control-surface:color-mix(in srgb,var(--primary-text-color) 4%,transparent);--compact-icon-surface:color-mix(in srgb,var(--primary-color) 10%,transparent);--compact-divider:color-mix(in srgb,var(--divider-color) 65%,transparent)}
     ha-card{border-radius:var(--ha-card-border-radius,14px)}
+    output{flex:none}
     ${skins[type]||''}
     button{touch-action:manipulation;transition:transform 100ms ease,background-color 150ms ease,color 150ms ease}
     button:active:not(:disabled){transform:scale(.96);background:color-mix(in srgb,var(--primary-color) 12%,transparent)}

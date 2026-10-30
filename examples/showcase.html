@@ -72,7 +72,7 @@ const rooms=[
  ]},
  {name:'집 전체',icon:'mdi:gauge',cards:[
   {type:'custom:compact-scene-panel',items:[{entity:'scene.evening',name:'편안한 저녁',icon:'mdi:sofa-outline'},{entity:'scene.reading',name:'독서',icon:'mdi:lightbulb-outline'},{entity:'script.away',name:'외출',icon:'mdi:power'},{entity:'script.good_night',name:'취침',icon:'mdi:weather-night'}]},
-  {type:'custom:compact-home-panel',items:[{type:'heading',name:'조명·전원'},{entity:'light.kitchen',name:'주방'},{entity:'switch.entryway',name:'현관'},{entity:'switch.desk',name:'책상'},{entity:'switch.balcony',name:'베란다'},{type:'heading',name:'전기 사용량'},{type:'comparison',rows:[{name:'전기',entity:'sensor.electricity_this_month',previous:'sensor.electricity_last_month'}]}]},
+  {type:'custom:compact-home-panel',columns:2,items:[{type:'heading',name:'조명·전원'},{entity:'light.kitchen',name:'주방'},{entity:'switch.entryway',name:'현관'},{entity:'switch.desk',name:'책상'},{entity:'switch.balcony',name:'베란다'},{type:'heading',name:'전기 사용량'},{type:'comparison',rows:[{name:'전기',entity:'sensor.electricity_this_month',previous:'sensor.electricity_last_month'}]}]},
  ]},
 ];
 const cards=[],timers=new Map();let toastTimer;

@@ -65,6 +65,7 @@ views:
                 name: "취침"
                 icon: "mdi:weather-night"
           - type: "custom:compact-home-panel"
+            columns: 2
             items:
               - type: "heading"
                 name: "조명·전원"
