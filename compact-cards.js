@@ -12,7 +12,7 @@ function compactFlash(el, cls) {
   el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);
   if(!el._flashEnd){
     el._flashEnd=event=>{if(event.target===el)el.classList.remove('changed','pop','shake');};
-    el.addEventListener('animationend',el._flashEnd);el.addEventListener('animationcancel',el._flashEnd);
+    el.addEventListener('animationend',el._flashEnd);
   }
 }
 function compactEffectOf(state) {
