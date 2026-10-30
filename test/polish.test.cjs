@@ -55,3 +55,24 @@ test('light power label describes the available action, and canceled slider rest
   card._brightness.input.value='80';card._brightness.input.dispatchEvent(new window.Event('input'));card._brightness.input.dispatchEvent(new window.Event('pointercancel'));
   assert.equal(card._brightness.input.value,'40');hass.states['light.room'].state='off';card.hass=hass;assert.equal(card._toggle.getAttribute('aria-label'),'거실 켜기');
 });
+
+test('home toggle dims only its controls while pending and waits for HA state before showing on',async t=>{
+  const {window,card,hass,calls}=setup(t,'compact-home-panel',{items:[
+    {entity:'switch.purifier',name:'전원',tap_action:{action:'toggle'}},
+    {entity:'switch.other',name:'다른 기기',tap_action:{action:'toggle'}}
+  ]},{'switch.purifier':state('switch.purifier','off'),'switch.other':state('switch.other','off')});
+  const [ref,other]=card._refs;
+  const offColor=ref.row.style.getPropertyValue('--entity-color');
+  let resolve;hass.callService=(...args)=>{calls.push(args);return new Promise(done=>resolve=done);};
+  const pending=card._toggle(ref);
+  assert.equal(ref.label.getAttribute('aria-busy'),'true');assert.equal(ref.control.getAttribute('aria-busy'),'true');
+  assert.equal(ref.label.disabled,true);assert.equal(ref.control.disabled,true);assert.equal(other.label.disabled,false);
+  for(const button of [ref.label,ref.control]){const style=window.getComputedStyle(button);assert.equal(Number(style.opacity),.65);assert.equal(style.cursor,'progress');assert.doesNotMatch(style.outline,/dotted|dashed/);}
+  assert.equal(ref.control.getAttribute('aria-checked'),'false');assert.equal(ref.row.style.getPropertyValue('--entity-color'),offColor);
+  await card._toggle(ref);assert.equal(calls.length,1);
+  resolve();await pending;
+  assert.equal(ref.label.getAttribute('aria-busy'),'false');assert.equal(ref.control.disabled,false);
+  assert.equal(ref.control.getAttribute('aria-checked'),'false');assert.equal(ref.row.style.getPropertyValue('--entity-color'),offColor);
+  hass.states['switch.purifier'].state='on';card.hass=hass;
+  assert.equal(ref.control.getAttribute('aria-checked'),'true');assert.notEqual(ref.row.style.getPropertyValue('--entity-color'),offColor);
+});

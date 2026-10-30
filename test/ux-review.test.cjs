@@ -61,3 +61,12 @@ test('mute-only devices use a compact main-row control and adapt to changing vol
  hass.states['media_player.room'].attributes.supported_features=8;card.hass=hass;assert.equal(q('.mute').parentElement,q('.main'));assert.equal(q('.volume').hidden,true);
  card.setConfig({entity:'media_player.room',show_volume:false});assert.equal(q('.mute').hidden,true);assert.equal(q('.volume').hidden,true);assert.match(q('.state').textContent,/음소거/);
 });
+
+test('pending media mute dims without fading unrelated transport controls',async t=>{
+ const {window,card,hass,q}=setup(t,'compact-media-row',{entity:'media_player.room'},{'media_player.room':state('media_player.room','playing',{supported_features:mediaFeatures,is_volume_muted:false,volume_level:.35})});
+ let resolve;hass.callService=()=>new Promise(done=>resolve=done);
+ const pending=card._call('volume_mute',{is_volume_muted:true});const mute=q('.mute');
+ assert.equal(mute.disabled,true);assert.equal(mute.getAttribute('aria-busy'),'true');assert.equal(Number(window.getComputedStyle(mute).opacity),.65);
+ assert.equal(q('.play').disabled,false);assert.equal(q('.play').getAttribute('aria-busy'),'false');
+ resolve();await pending;assert.equal(mute.disabled,false);assert.equal(mute.getAttribute('aria-busy'),'false');assert.notEqual(Number(window.getComputedStyle(mute).opacity),.65);
+});
