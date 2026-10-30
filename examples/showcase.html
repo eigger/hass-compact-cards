@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Compact Cards · 우리집</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light;--primary-color:#237d92;--primary-text-color:#24333e;--secondary-text-color:#74818b;--divider-color:#e2e8ed;--disabled-color:#b4bec6;--card-background-color:#fff;--secondary-background-color:#f0f4f6;--state-active-color:#237d92;--state-inactive-color:#8a97a0;--state-unavailable-color:#8a97a0;--state-light-active-color:#c48c31;--state-climate-heat-color:#d98346;--state-climate-cool-color:#388ebc;--state-climate-fan_only-color:#398f85;--success-color:#398968;--error-color:#c55757;--warning-color:#c58c2c;--ha-card-border-radius:14px;background:#f3f6f8;color:var(--primary-text-color)}
+:root[data-theme=dark]{color-scheme:dark;--primary-color:#78b9c8;--primary-text-color:#e5edf1;--secondary-text-color:#9aaab5;--divider-color:#34434c;--disabled-color:#61737d;--card-background-color:#1d2931;--secondary-background-color:#273740;--state-active-color:#78b9c8;--state-inactive-color:#7a8c97;--state-unavailable-color:#7a8c97;--state-light-active-color:#e2b264;--state-climate-heat-color:#e4a16d;--state-climate-cool-color:#79bddd;--state-climate-fan_only-color:#81bdb1;--success-color:#7fbea0;--error-color:#e49797;--warning-color:#e3ba72;background:#121d25}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:32px}header,main,footer{max-width:1120px;margin-inline:auto}header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:25px;border-bottom:1px solid var(--divider-color);margin-bottom:25px}h1{font-size:24px;font-weight:650;letter-spacing:-.6px;margin:0 0 6px}.caption{margin:0;font-size:12px;line-height:1.5;color:var(--secondary-text-color)}.toolbar{display:flex;gap:8px;align-items:center}.toolbar button{font:inherit;font-size:12px;min-height:36px;padding:6px 12px;border:1px solid var(--divider-color);border-radius:9px;background:var(--card-background-color);color:var(--primary-text-color);cursor:pointer}.toolbar button:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}.room{min-width:0}.room-heading{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding-inline:2px;font-size:16px;font-weight:650;letter-spacing:-.3px}.room-heading ha-icon{width:19px;height:19px;color:var(--secondary-text-color)}.cards{display:grid;gap:10px;min-width:0}footer{margin-top:22px;color:var(--secondary-text-color);font-size:11px;line-height:1.5}.capture .toolbar{display:none}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;border:1px solid var(--divider-color);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color);font-size:12px;box-shadow:0 6px 24px #0001;z-index:10}.toast:empty{display:none}@media(max-width:960px){main{grid-template-columns:repeat(2,minmax(0,1fr))}.room:last-child{grid-column:1/-1}.room:last-child .cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){body{padding:20px 14px}header{padding-bottom:18px;margin-bottom:20px;align-items:flex-start}h1{font-size:22px}main{grid-template-columns:minmax(0,1fr);gap:22px}.room:last-child{grid-column:auto}.room:last-child .cards{grid-template-columns:minmax(0,1fr)}.toolbar button{padding-inline:9px}.room-heading{margin-bottom:10px}}
+</style>
+<script>
+const showcaseParams=new URLSearchParams(location.search);
+document.documentElement.dataset.theme=showcaseParams.get('theme')==='dark'?'dark':'light';
+</script>
+</head>
+<body>
+<header><div><h1>Compact Cards</h1><p class="caption">우리집 · 거실과 침실, 자주 쓰는 조작을 한곳에</p></div><div class="toolbar"><button id="theme" type="button">테마 변경</button></div></header>
+<main aria-label="모의 Home Assistant 대시보드"></main>
+<footer>실제 Compact Cards로 구성한 모의 대시보드입니다. 표시된 값과 동작은 예시이며 실제 기기에 연결하지 않습니다.</footer>
+<div id="feedback" class="toast" role="status" aria-live="polite"></div>
+<script src="preview-icons.js"></script>
+<script>
+// These two local primitives stand in for HA; all card layout/controls come from the real bundle.
+customElements.define('ha-card',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:var(--ha-card-border-radius,14px);color:var(--primary-text-color)}</style><slot></slot>';}});
+customElements.define('ha-icon',class extends HTMLElement{
+ constructor(){super();this.attachShadow({mode:'open'});this._observer=new MutationObserver(()=>this.update());}
+ connectedCallback(){this.update();this._observer.observe(this,{attributes:true,attributeFilter:['icon']});}
+ disconnectedCallback(){this._observer.disconnect();}
+ update(){const key=(this.getAttribute('icon')||'').replace('mdi:',''),path=window.compactPreviewIcons?.[key];this.shadowRoot.innerHTML='<style>:host{display:inline-flex;align-items:center;justify-content:center}</style>';if(!path)return;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),glyph=document.createElementNS('http://www.w3.org/2000/svg','path');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','100%');svg.setAttribute('height','100%');svg.setAttribute('fill','currentColor');glyph.setAttribute('d',path);svg.append(glyph);this.shadowRoot.append(svg);}
+});
+if(showcaseParams.get('capture')==='true')document.body.classList.add('capture');
+</script>
+<script src="../compact-cards.js"></script>
+<script>
+const entity=(id,state,attributes)=>({entity_id:id,state,attributes});
+const initial={
+ 'climate.living_room':entity('climate.living_room','heat',{friendly_name:'거실 냉난방',current_temperature:22.4,temperature:23,min_temp:16,max_temp:30,target_temp_step:.5,supported_features:1,hvac_modes:['off','heat','cool','fan_only'],hvac_action:'heating'}),
+ 'climate.bedroom':entity('climate.bedroom','off',{friendly_name:'침실 냉난방',current_temperature:21.8,temperature:22,min_temp:16,max_temp:30,target_temp_step:.5,supported_features:1,hvac_modes:['off','heat','cool'],hvac_action:'off'}),
+ 'light.living_room':entity('light.living_room','on',{friendly_name:'거실 조명',brightness:166,supported_color_modes:['color_temp'],color_temp_kelvin:3200,min_color_temp_kelvin:2200,max_color_temp_kelvin:6500}),
+ 'light.bedroom':entity('light.bedroom','on',{friendly_name:'침실 조명',brightness:89,supported_color_modes:['brightness']}),
+ 'light.kitchen':entity('light.kitchen','on',{friendly_name:'주방 조명',supported_color_modes:['onoff']}),
+ 'switch.entryway':entity('switch.entryway','off',{friendly_name:'현관 조명'}),
+ 'switch.desk':entity('switch.desk','on',{friendly_name:'책상 조명'}),
+ 'switch.balcony':entity('switch.balcony','off',{friendly_name:'베란다 조명'}),
+ 'cover.bedroom':entity('cover.bedroom','open',{friendly_name:'침실 커튼',supported_features:15,current_position:60}),
+ 'sensor.living_temperature':entity('sensor.living_temperature','22.4',{friendly_name:'거실 온도',device_class:'temperature',unit_of_measurement:'°C'}),
+ 'sensor.living_humidity':entity('sensor.living_humidity','46',{friendly_name:'거실 습도',device_class:'humidity',unit_of_measurement:'%'}),
+ 'sensor.living_co2':entity('sensor.living_co2','680',{friendly_name:'거실 CO₂',device_class:'carbon_dioxide',unit_of_measurement:'ppm'}),
+ 'sensor.bedroom_temperature':entity('sensor.bedroom_temperature','21.8',{friendly_name:'침실 온도',device_class:'temperature',unit_of_measurement:'°C'}),
+ 'sensor.bedroom_humidity':entity('sensor.bedroom_humidity','49',{friendly_name:'침실 습도',device_class:'humidity',unit_of_measurement:'%'}),
+ 'sensor.electricity_this_month':entity('sensor.electricity_this_month','128.6',{friendly_name:'이번 달 전기',unit_of_measurement:'kWh'}),
+ 'sensor.electricity_last_month':entity('sensor.electricity_last_month','146.2',{friendly_name:'지난달 전기',unit_of_measurement:'kWh'}),
+ 'scene.evening':entity('scene.evening','unknown',{friendly_name:'편안한 저녁'}),
+ 'scene.reading':entity('scene.reading','unknown',{friendly_name:'독서'}),
+ 'script.away':entity('script.away','off',{friendly_name:'외출'}),
+ 'script.good_night':entity('script.good_night','off',{friendly_name:'취침'}),
+ 'media_player.living_room':entity('media_player.living_room','playing',{friendly_name:'거실 스피커',media_title:'조용한 저녁의 피아노',media_artist:'Evening Piano',supported_features:1|4|8|32|128|16384,volume_level:.28,is_volume_muted:false}),
+};
+// Keep these exact configurations synchronized with showcase.yaml; native room headings are presentation only.
+const rooms=[
+ {name:'거실',icon:'mdi:sofa-outline',cards:[
+  {type:'custom:compact-environment-panel',items:[{entity:'sensor.living_temperature',name:'온도'},{entity:'sensor.living_humidity',name:'습도'},{entity:'sensor.living_co2',name:'CO₂'}]},
+  {type:'custom:compact-climate-row',entity:'climate.living_room',name:'거실 냉난방'},
+  {type:'custom:compact-light-row',entity:'light.living_room',name:'거실 조명'},
+  {type:'custom:compact-media-row',entity:'media_player.living_room',name:'거실 스피커'},
+ ]},
+ {name:'침실',icon:'mdi:weather-night',cards:[
+  {type:'custom:compact-environment-panel',items:[{entity:'sensor.bedroom_temperature',name:'온도'},{entity:'sensor.bedroom_humidity',name:'습도'}]},
+  {type:'custom:compact-climate-row',entity:'climate.bedroom',name:'침실 냉난방'},
+  {type:'custom:compact-cover-row',entity:'cover.bedroom',name:'침실 커튼'},
+  {type:'custom:compact-light-row',entity:'light.bedroom',name:'침실 조명'},
+ ]},
+ {name:'집 전체',icon:'mdi:gauge',cards:[
+  {type:'custom:compact-scene-panel',items:[{entity:'scene.evening',name:'편안한 저녁',icon:'mdi:sofa-outline'},{entity:'scene.reading',name:'독서',icon:'mdi:lightbulb-outline'},{entity:'script.away',name:'외출',icon:'mdi:power'},{entity:'script.good_night',name:'취침',icon:'mdi:weather-night'}]},
+  {type:'custom:compact-home-panel',items:[{type:'heading',name:'조명·전원'},{entity:'light.kitchen',name:'주방'},{entity:'switch.entryway',name:'현관'},{entity:'switch.desk',name:'책상'},{entity:'switch.balcony',name:'베란다'},{type:'heading',name:'전기 사용량'},{type:'comparison',rows:[{name:'전기',entity:'sensor.electricity_this_month',previous:'sensor.electricity_last_month'}]}]},
+ ]},
+];
+const cards=[],timers=new Map();let toastTimer;
+function announce(message){clearTimeout(toastTimer);document.querySelector('#feedback').textContent=message;toastTimer=setTimeout(()=>document.querySelector('#feedback').textContent='',2200);}
+function refresh(){for(const card of cards)card.hass={...hass};}
+const hass={states:structuredClone(initial),config:{unit_system:{temperature:'°C'}},formatEntityState:state=>{
+ const labels={heat:'난방',cool:'냉방',fan_only:'송풍',on:'켜짐',off:'꺼짐',open:'열림',closed:'닫힘',opening:'여는 중',closing:'닫는 중',playing:'재생 중',paused:'일시정지',idle:'대기'};
+ return `${labels[state.state]||state.state}${state.attributes.unit_of_measurement?' '+state.attributes.unit_of_measurement:''}`;
+},callService:async(domain,service,data)=>{
+ await new Promise(resolve=>setTimeout(resolve,350));const state=hass.states[data.entity_id];if(!state)throw new Error('모의 엔티티를 찾을 수 없습니다.');
+ if(service==='toggle')state.state=state.state==='on'?'off':'on';
+ if(service==='set_temperature')state.attributes.temperature=data.temperature;
+ if(service==='set_hvac_mode'){state.state=data.hvac_mode;state.attributes.hvac_action=({off:'off',heat:'heating',cool:'cooling',fan_only:'fan'}[data.hvac_mode]||'idle');}
+ if(service==='turn_on'){
+  state.state=domain==='scene'?new Date().toISOString():'on';
+  if(data.brightness_pct!==undefined)state.attributes.brightness=data.brightness_pct*255/100;
+  if(data.color_temp_kelvin!==undefined)state.attributes.color_temp_kelvin=data.color_temp_kelvin;
+  if(domain==='script'){clearTimeout(timers.get(state.entity_id));timers.set(state.entity_id,setTimeout(()=>{state.state='off';refresh();},1800));}
+ }
+ if(service==='turn_off')state.state='off';
+ if(service==='set_cover_position'){state.attributes.current_position=data.position;state.state=data.position===0?'closed':'open';}
+ if(['open_cover','close_cover'].includes(service)){clearTimeout(timers.get(state.entity_id));state.state=service==='open_cover'?'opening':'closing';timers.set(state.entity_id,setTimeout(()=>{state.attributes.current_position=service==='open_cover'?100:0;state.state=service==='open_cover'?'open':'closed';refresh();},1000));}
+ if(service==='stop_cover'){clearTimeout(timers.get(state.entity_id));state.state=state.attributes.current_position===0?'closed':'open';}
+ if(service==='media_pause')state.state='paused';
+ if(service==='media_play')state.state='playing';
+ if(service==='media_next_track'){state.attributes.media_title=state.attributes.media_title==='조용한 저녁의 피아노'?'창가에 흐르는 재즈':'조용한 저녁의 피아노';state.attributes.media_artist=state.attributes.media_title==='창가에 흐르는 재즈'?'Window Jazz':'Evening Piano';}
+ if(service==='volume_set')state.attributes.volume_level=data.volume_level;
+ if(service==='volume_mute')state.attributes.is_volume_muted=data.is_volume_muted;
+ refresh();
+}};
+for(const room of rooms){const section=document.createElement('section');section.className='room';const heading=document.createElement('h2');heading.className='room-heading';const icon=document.createElement('ha-icon');icon.setAttribute('icon',room.icon);icon.setAttribute('aria-hidden','true');heading.append(icon,document.createTextNode(room.name));const group=document.createElement('div');group.className='cards';section.append(heading,group);document.querySelector('main').append(section);for(const config of room.cards){const card=document.createElement(config.type.replace('custom:',''));card.setConfig(config);card.hass=hass;group.append(card);cards.push(card);}}
+document.querySelector('#theme').onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';};
+document.addEventListener('hass-more-info',event=>{const state=hass.states[event.detail.entityId];announce(`${state?.attributes.friendly_name||event.detail.entityId} · ${state?hass.formatEntityState(state):'확인 불가'} (모의 정보)`);});
+document.addEventListener('hass-notification',event=>announce(event.detail.message));
+window.addEventListener('pagehide',()=>{clearTimeout(toastTimer);for(const timer of timers.values())clearTimeout(timer);});
+</script>
+</body>
+</html>
