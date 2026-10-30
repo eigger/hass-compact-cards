@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove the blue pressed-button background and the mobile tap highlight so presses no longer flash behind icon surfaces.
+
 ## 0.2.6 — 2026-10-30
 
 - Make icon motion subtler: slower fan rotation, smaller pulse and sway, and gentler lock pop, door shake and equalizer bars.

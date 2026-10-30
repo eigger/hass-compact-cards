@@ -102,7 +102,7 @@ function compactInteractions(host) {
     output{flex:none}
     ${skins[type]||''}
     button{touch-action:manipulation;transition:background-color 150ms ease,color 150ms ease,opacity 150ms ease}
-    button:active:not(:disabled){background:color-mix(in srgb,var(--primary-color) 12%,transparent)}
+    button{-webkit-tap-highlight-color:transparent}
     /* Request feedback stays on the affected controls; state colors come from HA. */
     button[aria-busy=true],select[aria-busy=true],input[aria-busy=true]{cursor:progress;opacity:.65}
     :host([data-feedback=error]) ha-card{box-shadow:inset 0 2px var(--error-color,#db4437)}
