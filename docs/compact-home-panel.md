@@ -2,7 +2,7 @@
 
 [UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
 
-![홈 패널 대표 화면](../images/compact-home-panel.jpg)
+![홈 패널 대표 화면](../images/compact-home-panel-ko.jpg)
 
 조명·스위치·센서·냉난방·사용량 비교·실행 버튼을 한 패널에 묶습니다. 일반 항목은 두 열로 묶고, 자세한 조작이 필요한 행은 전체 너비를 사용합니다. 이미지는 모의 상태를 사용하는 로컬 미리보기이며 설정과 카드 너비에 따라 실제 화면은 달라집니다.
 
@@ -105,7 +105,7 @@ items:
 <details>
 <summary>UI에서 이름 터치 동작 선택하기</summary>
 
-![홈 패널의 토글 터치 동작 편집 예시](../images/compact-home-editor.jpg)
+![홈 패널의 토글 터치 동작 편집 예시](../images/compact-home-editor-ko.jpg)
 
 실제 카드 코드와 모의 상태를 사용하는 로컬 편집 예시입니다.
 
@@ -227,6 +227,10 @@ items:
 카드가 비어 보이면 `items` 목록과 실제 엔티티 ID를 먼저 확인하세요. `확인 불가`는 엔티티 누락·연결 불가·이름 검색 중복 등으로 발생할 수 있습니다. 서비스 실패는 Home Assistant 개발자 도구에서 같은 서비스를 실행해 확인할 수 있습니다.
 
 ## English
+
+![Compact home panel](../images/compact-home-panel.jpg)
+
+![Editing the toggle tap action of a home panel item](../images/compact-home-editor.jpg)
 
 Use `custom:compact-home-panel` with an `items` array. Optional `columns` accepts `auto` (default), `1`, or `2`; automatic entity rows collapse to one column at 380px. Full-width headings, notes, select controls, comparisons, navigation, and `type: climate/light/cover` rows keep their own layouts.
 

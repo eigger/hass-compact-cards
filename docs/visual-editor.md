@@ -2,7 +2,7 @@
 
 9종 카드 모두 Home Assistant 카드 편집 화면에서 설정할 수 있습니다. YAML 편집도 계속 사용할 수 있으며 두 편집 방식은 같은 카드 설정을 사용합니다.
 
-![환경 카드 시각 편집 예시](../images/visual-editor.jpg)
+![환경 카드 시각 편집 예시](../images/visual-editor-ko.jpg)
 
 이미지는 로컬 모의 상태에서 기본 입력 폼으로 검증한 화면입니다. 실제 HA에서는 사용 가능한 네이티브 엔티티·아이콘·대상 선택기를 사용합니다.
 
@@ -54,6 +54,8 @@ Home Assistant 기본 폼을 사용하여 엔티티·아이콘·대상 선택기
 이름 터치 동작은 `toggle`, `more-info`, `perform-action` 범위에서 제공합니다. 길게 누르기·두 번 누르기나 Home Assistant의 전체 액션 스키마를 지원한다는 뜻은 아닙니다.
 
 ## English
+
+![Visual editor for the environment card](../images/visual-editor.jpg)
 
 All nine cards expose Home Assistant visual configuration editors. Pick a Compact card, choose an entity, edit its optional name, and save with Home Assistant. Panels provide expandable items with add, remove and reorder controls; reordering keeps the moved item expanded and restores keyboard focus. Optional names/icons live in expandable display settings. Threshold summaries include the sensor unit, direction and localized severity, and their inputs adapt to available width. Home panels include headings/badges, notes, entity lookup, embedded controls, navigation, comparison rows and action buttons. Scene panels expose confirmations. Environment panels expose numeric thresholds, comparison directions and warning levels.
 

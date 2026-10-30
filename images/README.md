@@ -8,6 +8,8 @@ Run `python -m http.server 8129 --bind 127.0.0.1` in the repository root and ope
 
 ## Room dashboard captures
 
+The source commits and viewports named in this section describe the original captures, which are now the `-ko` images (see Languages below). The unsuffixed English images are recaptures of the same pages and viewports from the current bundle.
+
 `showcase-light.jpg` and `showcase-dark.jpg` are actual Chromium captures of `examples/showcase.html?capture=true` (add `&theme=dark` for dark mode), at a 1200 × 640 viewport. `showcase-mobile.jpg` uses a 390 × 1377 viewport. These room images, `compact-climate-row.jpg` (422 × 180), and `overview.jpg` (422 × 946) were regenerated from source `a889174` for the climate fit update, using the isolated worktree server on port 8130. Other individual card images retain their original `49c1a5e` captures; their card implementations did not change in this update.
 
 These demonstrate three room groups with ten real card instances, seven card types, mocked states, and local HA visual primitives. No image generation, screenshot-only card CSS, or real device connection is involved. The exact card configurations are in `examples/showcase.yaml`; reproduction details are in `docs/showcase.md`.
@@ -15,3 +17,11 @@ These demonstrate three room groups with ten real card instances, seven card typ
 `compact-home-editor.jpg` demonstrates explicit name-tap configuration in the home-panel editor. It was captured from source `d6e19a8` at a 422 × 1104 viewport using `/examples/preview.html?card=compact-home-panel&editor=true&capture=true`, with the first heading collapsed and the second item expanded. The shown switch and sensor use mocked states; keyboard Enter toggling and UI switching to more-info were also checked in Chromium.
 
 `compact-climate-inline.jpg` (422 × 180) and `compact-climate-picker.jpg` (320 × 390) were captured from source `a889174` using `/examples/climate-fit.html?target=panel&theme=dark&capture=true` and `target=picker`, respectively. The former shows a 390px home panel; the latter exposes the fixed 280 × 320 parent boundary while the actual card keeps its content height. Only external fixture layout and local HA primitives are mocked; card CSS comes from the bundle.
+
+## Languages
+
+Images without a suffix are English and are used by `README.md` and the English sections of the guides. `*-ko.jpg` are the Korean versions used by `README.ko.md` and the Korean sections. The preview pages (`preview.html`, `climate-fit.html`, `showcase.html`) render English by default; add `lang=ko` to the URL for the Korean captures.
+
+The `-ko` images are the original captures, taken from the source commits named above. The English images were captured later from the current bundle (source `b7e4109`, the v0.2.4 release) at the same viewports with the same mocked states, so small layout differences against the `-ko` twins (for example the climate mode-button order) come from bundle changes, not from translation. In `compact-climate-inline.jpg` the five-mode air conditioner row wrapped its modes onto a second line on the capture machine; this depends on the available text widths and fonts (Korean fit on one line there), so other machines may render it on one line.
+
+The cards' own labels are Korean-only in the bundle, so English captures swap the Korean sample text and card-rendered labels in the page's DOM through `examples/preview-locale.js` (preview only; the bundle is unchanged; tooltips are translated only when every word is covered, otherwise they stay Korean). `preview.html` also accepts `width=320|390|760` to set the preview width for capture. `compact-home-editor` and `visual-editor` are captured after expanding the editor sections they show (home panel: item 2 only; environment panel: item 1 with one added `31°C or above · Warning` threshold, `이상 · 주의` in Korean).

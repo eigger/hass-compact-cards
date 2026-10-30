@@ -2,7 +2,7 @@
 
 [UI에서 구성하기](visual-editor.md) · 아래 YAML 예제도 동일하게 사용할 수 있습니다.
 
-![조명 대표 화면](../images/compact-light-row.jpg)
+![조명 대표 화면](../images/compact-light-row-ko.jpg)
 
 모의 상태로 렌더링한 대표 이미지입니다. 조명 전원과 밝기를 같은 행에서 직접 제어하고, 지원 기기의 색온도를 바로 조절합니다. 긴 이름과 좁은 화면에서는 내용에 맞춰 줄을 나눕니다.
 
@@ -49,5 +49,7 @@ items:
 `type: light`는 밝기·색온도를 포함하는 전체 너비 행이고, `entity`만 지정한 일반 조명 항목은 작은 토글입니다. 용도에 맞게 조합하면 공간을 줄일 수 있습니다.
 
 ## English
+
+![Light row](../images/compact-light-row.jpg)
 
 Use `custom:compact-light-row` with required `light.*` entity and optional name. Power, brightness, and device-bounded Kelvin controls appear according to supported color modes. Sliders commit on release, preserve drafts during HA updates, and retain requested values briefly while awaiting acknowledgment. Zero brightness turns off. Embed with `type: light` in a home panel; a plain light item remains a small toggle. Screenshot uses mocked data, with local HA primitives and upstream MDI icons.

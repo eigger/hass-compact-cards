@@ -7,6 +7,7 @@
 저장소 루트를 정적 서버로 제공한 뒤 다음 경로를 엽니다.
 
 - 밝은 테마: `/examples/showcase.html`
+- 미리보기는 기본 영어입니다. 한글 화면은 `lang=ko`를 붙입니다. 예: `/examples/showcase.html?lang=ko`
 - 어두운 테마: `/examples/showcase.html?theme=dark`
 - 밝은 테마 캡처: `/examples/showcase.html?capture=true`
 - 어두운 테마 캡처: `/examples/showcase.html?theme=dark&capture=true`
@@ -30,7 +31,7 @@
 
 ## Home Assistant에서 같은 구성 사용
 
-`examples/showcase.yaml`은 HTML의 카드 설정과 동일한 엔티티·이름·옵션을 사용하는 대시보드 예제입니다. 기본 Sections 뷰의 방별 섹션 제목을 제외하면 HTML과 같은 커스텀 카드 설정을 사용합니다. 엔티티 ID를 실제 장치·센서·장면에 맞게 바꾸고 카드 리소스를 먼저 등록하세요. HTML의 모의 엔티티나 상태는 YAML만으로 생성되지 않습니다.
+`examples/showcase.yaml`은 HTML의 카드 설정과 동일한 엔티티·이름·옵션을 사용하는 대시보드 예제입니다. 기본 Sections 뷰의 방별 섹션 제목을 제외하면 HTML과 같은 커스텀 카드 설정을 사용합니다. 엔티티 ID를 실제 장치·센서·장면에 맞게 바꾸고 카드 리소스를 먼저 등록하세요. HTML의 모의 엔티티나 상태는 YAML만으로 생성되지 않습니다. HTML 미리보기는 기본 영어 표시(`lang=ko`는 한글)이며, YAML의 이름은 한글 원본입니다.
 
 [Home Assistant 공식 Sections 문서](https://www.home-assistant.io/dashboards/sections/)의 대시보드 구조를 따릅니다.
 
@@ -42,6 +43,13 @@ The showcase renders the real seven custom-card elements in coherent living-room
 
 `examples/showcase.yaml` contains the same custom-card configurations for an HA Sections dashboard. Replace entity IDs with your own; it does not create mock entities. Representative images should be actual browser captures of this page, with capture context recorded. This is a demonstration, not live-device compatibility evidence.
 
+<details>
+<summary>View the 390px mobile layout</summary>
+
+![Mobile room dashboard reflowed into one column](../images/showcase-mobile.jpg)
+
+</details>
+
 ## 실제 카드의 시각 개선
 
 주요 값과 제목의 굵기를 정리하고, 선택한 조작과 색온도·밝기·음량 레일을 일관되게 표현했습니다. 환경·장면의 내부 칸은 반복 테두리를 줄였습니다. 이 스타일은 쇼케이스 전용이 아니라 실제 카드와 홈 패널에 적용됩니다. 냉난방은 아이콘 중심 구성을 유지합니다.
@@ -51,6 +59,6 @@ The showcase renders the real seven custom-card elements in coherent living-room
 <details>
 <summary>390px 모바일 구성 보기</summary>
 
-![한 열로 재배치한 모바일 방별 대시보드](../images/showcase-mobile.jpg)
+![한 열로 재배치한 모바일 방별 대시보드](../images/showcase-mobile-ko.jpg)
 
 </details>

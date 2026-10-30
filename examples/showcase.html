@@ -19,6 +19,7 @@ document.documentElement.dataset.theme=showcaseParams.get('theme')==='dark'?'dar
 <footer>실제 Compact Cards로 구성한 모의 대시보드입니다. 표시된 값과 동작은 예시이며 실제 기기에 연결하지 않습니다.</footer>
 <div id="feedback" class="toast" role="status" aria-live="polite"></div>
 <script src="preview-icons.js"></script>
+<script src="preview-locale.js"></script>
 <script>
 // These two local primitives stand in for HA; all card layout/controls come from the real bundle.
 customElements.define('ha-card',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:var(--ha-card-border-radius,14px);color:var(--primary-text-color)}</style><slot></slot>';}});
@@ -75,11 +76,13 @@ const rooms=[
   {type:'custom:compact-home-panel',columns:2,items:[{type:'heading',name:'조명·전원'},{entity:'light.kitchen',name:'주방'},{entity:'switch.entryway',name:'현관'},{entity:'switch.desk',name:'책상'},{entity:'switch.balcony',name:'베란다'},{type:'heading',name:'전기 사용량'},{type:'comparison',rows:[{name:'전기',entity:'sensor.electricity_this_month',previous:'sensor.electricity_last_month'}]}]},
  ]},
 ];
+// English by default (see preview-locale.js); ?lang=ko keeps the Korean sample text.
+const {english,translate,localize,dictionary}=compactPreviewLocale;
 const cards=[],timers=new Map();let toastTimer;
 function announce(message){clearTimeout(toastTimer);document.querySelector('#feedback').textContent=message;toastTimer=setTimeout(()=>document.querySelector('#feedback').textContent='',2200);}
-function refresh(){for(const card of cards)card.hass={...hass};}
-const hass={states:structuredClone(initial),config:{unit_system:{temperature:'°C'}},formatEntityState:state=>{
- const labels={heat:'난방',cool:'냉방',fan_only:'송풍',on:'켜짐',off:'꺼짐',open:'열림',closed:'닫힘',opening:'여는 중',closing:'닫는 중',playing:'재생 중',paused:'일시정지',idle:'대기'};
+function refresh(){for(const card of cards)card.hass={...hass};localize(document.body);}
+const hass={states:structuredClone(translate(initial)),config:{unit_system:{temperature:'°C'}},formatEntityState:state=>{
+ const labels=english?{heat:'Heat',cool:'Cool',fan_only:'Fan',on:'On',off:'Off',open:'Open',closed:'Closed',opening:'Opening',closing:'Closing',playing:'Playing',paused:'Paused',idle:'Idle'}:{heat:'난방',cool:'냉방',fan_only:'송풍',on:'켜짐',off:'꺼짐',open:'열림',closed:'닫힘',opening:'여는 중',closing:'닫는 중',playing:'재생 중',paused:'일시정지',idle:'대기'};
  return `${labels[state.state]||state.state}${state.attributes.unit_of_measurement?' '+state.attributes.unit_of_measurement:''}`;
 },callService:async(domain,service,data)=>{
  await new Promise(resolve=>setTimeout(resolve,350));const state=hass.states[data.entity_id];if(!state)throw new Error('모의 엔티티를 찾을 수 없습니다.');
@@ -98,12 +101,14 @@ const hass={states:structuredClone(initial),config:{unit_system:{temperature:'°
  if(service==='stop_cover'){clearTimeout(timers.get(state.entity_id));state.state=state.attributes.current_position===0?'closed':'open';}
  if(service==='media_pause')state.state='paused';
  if(service==='media_play')state.state='playing';
- if(service==='media_next_track'){state.attributes.media_title=state.attributes.media_title==='조용한 저녁의 피아노'?'창가에 흐르는 재즈':'조용한 저녁의 피아노';state.attributes.media_artist=state.attributes.media_title==='창가에 흐르는 재즈'?'Window Jazz':'Evening Piano';}
+ if(service==='media_next_track'){const [a,b]=english?['Quiet Evening Piano','Jazz by the Window']:['조용한 저녁의 피아노','창가에 흐르는 재즈'];state.attributes.media_title=state.attributes.media_title===a?b:a;state.attributes.media_artist=state.attributes.media_title===b?'Window Jazz':'Evening Piano';}
  if(service==='volume_set')state.attributes.volume_level=data.volume_level;
  if(service==='volume_mute')state.attributes.is_volume_muted=data.is_volume_muted;
  refresh();
 }};
-for(const room of rooms){const section=document.createElement('section');section.className='room';const heading=document.createElement('h2');heading.className='room-heading';const icon=document.createElement('ha-icon');icon.setAttribute('icon',room.icon);icon.setAttribute('aria-hidden','true');heading.append(icon,document.createTextNode(room.name));const group=document.createElement('div');group.className='cards';section.append(heading,group);document.querySelector('main').append(section);for(const config of room.cards){const card=document.createElement(config.type.replace('custom:',''));card.setConfig(config);card.hass=hass;group.append(card);cards.push(card);}}
+for(const room of translate(rooms)){const section=document.createElement('section');section.className='room';const heading=document.createElement('h2');heading.className='room-heading';const icon=document.createElement('ha-icon');icon.setAttribute('icon',room.icon);icon.setAttribute('aria-hidden','true');heading.append(icon,document.createTextNode(room.name));const group=document.createElement('div');group.className='cards';section.append(heading,group);document.querySelector('main').append(section);for(const config of room.cards){const card=document.createElement(config.type.replace('custom:',''));card.setConfig(config);card.hass=hass;group.append(card);cards.push(card);}}
+compactPreviewLocale.start();
+if(english){for(const [selector,key] of [['.caption','우리집 · 거실과 침실, 자주 쓰는 조작을 한곳에'],['footer','실제 Compact Cards로 구성한 모의 대시보드입니다. 표시된 값과 동작은 예시이며 실제 기기에 연결하지 않습니다.'],['#theme','테마 변경']])document.querySelector(selector).textContent=dictionary[key];document.querySelector('main').setAttribute('aria-label',dictionary['모의 Home Assistant 대시보드']);document.title='Compact Cards · My Home';}
 document.querySelector('#theme').onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';};
 document.addEventListener('hass-more-info',event=>{const state=hass.states[event.detail.entityId];announce(`${state?.attributes.friendly_name||event.detail.entityId} · ${state?hass.formatEntityState(state):'확인 불가'} (모의 정보)`);});
 document.addEventListener('hass-notification',event=>announce(event.detail.message));
