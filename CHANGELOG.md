@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove the home panel row background flash on state changes because it was clipped around icon surfaces. Lock pop, door shake and light glow icon effects are unchanged.
+
 ## 0.2.5 — 2026-10-30
 
 - Add state-change effects: the media play dot becomes an equalizer while playing; home panel rows flash once when their state changes, locks pop, opened doors/windows shake, and lights that are on get a soft glow. Effects skip recoveries from unavailable and are disabled under reduced-motion.

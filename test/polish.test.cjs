@@ -68,36 +68,29 @@ test('scene items never get icon motion unless they are running scripts',t=>{
   const {card}=setup(t,'compact-scene-panel',{items:[{entity:'scene.a'}]},{'scene.a':state('scene.a','2026-01-01T00:00:00Z')});
   assert.equal(card.shadowRoot.querySelector('ha-icon').classList.contains('motion'),false);
 });
-test('home panel flashes a changed row once and gives locks and open doors a one-shot effect',t=>{
+test('locks pop and opened doors shake once; other state changes leave icons still',t=>{
   const {card,hass}=setup(t,'compact-home-panel',{items:[{entity:'lock.a'},{entity:'binary_sensor.b'},{entity:'sensor.c'}]},{'lock.a':state('lock.a','locked'),'binary_sensor.b':state('binary_sensor.b','off',{device_class:'door'}),'sensor.c':state('sensor.c','20')});
-  const rows=()=>[...card.shadowRoot.querySelectorAll('.row')],icons=()=>[...card.shadowRoot.querySelectorAll('.label>ha-state-icon')];
-  assert.deepEqual(rows().map(r=>r.classList.contains('changed')),[false,false,false]);
+  const icons=()=>[...card.shadowRoot.querySelectorAll('.label>ha-state-icon')];
+  assert.deepEqual(icons().map(i=>i.classList.contains('pop')||i.classList.contains('shake')),[false,false,false]);
   hass.states['lock.a'].state='unlocked';hass.states['binary_sensor.b'].state='on';hass.states['sensor.c'].state='21';card.hass=hass;
-  assert.deepEqual(rows().map(r=>r.classList.contains('changed')),[true,true,true]);
   assert.equal(icons()[0].classList.contains('pop'),true);assert.equal(icons()[1].classList.contains('shake'),true);assert.equal(icons()[2].classList.contains('pop')||icons()[2].classList.contains('shake'),false);
+  assert.equal(card.shadowRoot.querySelector('.row').classList.contains('changed'),false);
 });
-test('flash effects clean up on animationend only for their own element and are not re-added on unchanged renders',t=>{
+test('icon effects clean up on their own animationend and are not re-added on unchanged renders',t=>{
   const {window,card,hass}=setup(t,'compact-home-panel',{items:[{entity:'binary_sensor.b'},{entity:'light.l'}]},{'binary_sensor.b':state('binary_sensor.b','off',{device_class:'door'}),'light.l':state('light.l','off')});
-  const row=card.shadowRoot.querySelector('.row'),icon=row.querySelector('ha-state-icon');
+  const icon=card.shadowRoot.querySelector('.label>ha-state-icon');
   hass.states['binary_sensor.b'].state='on';card.hass=hass;card.hass=hass;
-  assert.equal(row.classList.contains('changed'),true);assert.equal(icon.classList.contains('shake'),true);
-  icon.dispatchEvent(new window.Event('animationend',{bubbles:true}));
-  assert.equal(icon.classList.contains('shake'),false);assert.equal(row.classList.contains('changed'),true);
-  row.dispatchEvent(new window.Event('animationend',{bubbles:true}));assert.equal(row.classList.contains('changed'),false);
+  assert.equal(icon.classList.contains('shake'),true);
+  icon.dispatchEvent(new window.Event('animationend',{bubbles:true}));assert.equal(icon.classList.contains('shake'),false);
   hass.states['binary_sensor.b'].state='off';hass.states['light.l'].state='on';card.hass=hass;
-  const rows=card.shadowRoot.querySelectorAll('.row');
-  assert.equal(rows[0].classList.contains('changed'),true);assert.equal(icon.classList.contains('shake'),false);
-  assert.equal(rows[1].classList.contains('changed'),true);assert.equal(rows[1].querySelector('ha-state-icon').classList.contains('pop'),false);
+  const icons=card.shadowRoot.querySelectorAll('.label>ha-state-icon');
+  assert.equal(icons[0].classList.contains('shake'),false);assert.equal(icons[1].classList.contains('pop'),false);
 });
-test('a change into unavailable does not flash',t=>{
-  const {card,hass}=setup(t,'compact-home-panel',{items:[{entity:'lock.a'}]},{'lock.a':state('lock.a','locked')});
-  hass.states['lock.a'].state='unavailable';card.hass=hass;
-  assert.equal(card.shadowRoot.querySelector('.row').classList.contains('changed'),false);
-});
-test('home panel does not flash when an entity merely recovers from unavailable',t=>{
+test('a lock recovering from unavailable or going unavailable does not pop',t=>{
   const {card,hass}=setup(t,'compact-home-panel',{items:[{entity:'lock.a'}]},{'lock.a':state('lock.a','unavailable')});
-  hass.states['lock.a'].state='locked';card.hass=hass;
-  assert.equal(card.shadowRoot.querySelector('.row').classList.contains('changed'),false);
+  const icon=card.shadowRoot.querySelector('.label>ha-state-icon');
+  hass.states['lock.a'].state='locked';card.hass=hass;assert.equal(icon.classList.contains('pop'),false);
+  hass.states['lock.a'].state='unavailable';card.hass=hass;assert.equal(icon.classList.contains('pop'),false);
 });
 test('scene script icon pulses only while the script runs',t=>{
   const {card,hass}=setup(t,'compact-scene-panel',{items:[{entity:'script.go'}]},{'script.go':state('script.go','on')});
