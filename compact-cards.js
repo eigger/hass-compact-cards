@@ -897,7 +897,7 @@ for(const [type,constructor,name,description] of [
         compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || (ref.item.entity.startsWith('scene.') ? 'mdi:palette-outline' : 'mdi:play'));
         compactMotion(ref.icon,running?'pulse':'');
         compactProp(ref.button,'disabled',!available || busy || running);
-        compactAttr(ref.button,'aria-busy',busy&&available);
+        compactAttr(ref.button,'aria-busy',busy&&available&&!running);
         compactAttr(ref.button,'aria-label',`${name} · ${ref.detail.textContent}`);
         compactProp(ref.button,'title',`${name} · ${ref.detail.textContent}`);
       }
