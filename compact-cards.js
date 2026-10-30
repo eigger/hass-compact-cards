@@ -102,9 +102,11 @@ function compactInteractions(host) {
     output{flex:none}
     ${skins[type]||''}
     button{touch-action:manipulation;transition:background-color 150ms ease,color 150ms ease,opacity 150ms ease}
-    button{-webkit-tap-highlight-color:transparent}
+    :host{-webkit-tap-highlight-color:transparent}
     /* Request feedback stays on the affected controls; state colors come from HA. */
-    button[aria-busy=true],select[aria-busy=true],input[aria-busy=true]{cursor:progress;opacity:.65}
+    /* Pending requests block duplicates but keep the control steady so presses do not flicker. */
+    button[aria-busy=true],select[aria-busy=true],input[aria-busy=true]{cursor:progress}
+    button[aria-busy=true]:disabled,select[aria-busy=true]:disabled,input[aria-busy=true]:disabled{opacity:1}
     :host([data-feedback=error]) ha-card{box-shadow:inset 0 2px var(--error-color,#db4437)}
     input[type=range]{appearance:none;background:transparent}
     input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--primary-color) 0 var(--compact-fill,0%),var(--compact-control-surface) var(--compact-fill,0%) 100%);border:1px solid var(--divider-color)}
@@ -124,7 +126,7 @@ function compactInteractions(host) {
     @keyframes compact-fan{to{transform:rotate(360deg)}}
     @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
     @keyframes compact-dry{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
-    @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}.motion,.pop,.shake{animation:none!important}}`;
+    @media(prefers-reduced-motion:reduce){button{transition:none!important}.motion,.pop,.shake{animation:none!important}}`;
   const status=document.createElement('span');status.className='compact-feedback';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   host.shadowRoot.append(style,status);host._feedbackText=status;
 }
@@ -598,10 +600,10 @@ class CompactControlRow extends HTMLElement {
       ha-card{box-sizing:border-box;padding:6px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:56px}
       button,input{font:inherit;color:var(--primary-text-color)}
       button{border:0;background:transparent;cursor:pointer;border-radius:8px;min-width:36px;min-height:36px;padding:6px;display:grid;place-items:center}
-      button:hover{background:var(--secondary-background-color)}
+      @media(hover:hover){button:hover{background:var(--secondary-background-color)}}
       button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}
-      input[aria-busy=true]{opacity:.65;cursor:progress}
+      input[aria-busy=true]{cursor:progress}
       .info{display:block;justify-items:normal;align-items:normal;flex:1 1 84px;min-width:0;text-align:left;padding:2px 0}
       .name,.state{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
       .name{font-size:14px}.state{font-size:12px;color:var(--secondary-text-color);margin-top:2px}
@@ -801,14 +803,14 @@ for(const [type,constructor,name,description] of [
       border:1px solid var(--divider-color);border-radius:var(--ha-card-border-radius,10px);
       background:transparent;color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer;
       transition:background-color 120ms ease}
-    button:hover:not(:disabled){background:var(--secondary-background-color)}
+    @media(hover:hover){button:hover:not(:disabled){background:var(--secondary-background-color)}}
     button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px}
     button:disabled{cursor:default;opacity:.55}
     button[aria-busy=true]{cursor:progress}
     ha-icon{--mdc-icon-size:20px;flex:none;width:20px;height:20px;color:var(--primary-color)}
     .copy{flex:1;min-width:0}.label{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .detail{display:block;font-size:11px;color:var(--secondary-text-color);margin-top:2px}
-    @media(prefers-reduced-motion:reduce){button{transition:none}button:active:not(:disabled){transform:none}}
+    @media(prefers-reduced-motion:reduce){button{transition:none}}
   `;
   const make = (tag, cls, text) => {
     const node = document.createElement(tag);
@@ -1006,9 +1008,9 @@ class CompactMediaRow extends HTMLElement {
       :host{display:block;container-type:inline-size}ha-card{padding:4px 10px;box-sizing:border-box;overflow:hidden}
       .main{display:flex;align-items:center;gap:4px;min-height:48px}.info{flex:1;min-width:0;text-align:left;padding-inline:4px}
       button{font:inherit;color:var(--primary-text-color);background:transparent;border:0;border-radius:8px;cursor:pointer;min-height:40px;min-width:40px;transition:background-color 150ms ease}
-      button:hover:not(:disabled){background:var(--secondary-background-color)}button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
+      @media(hover:hover){button:hover:not(:disabled){background:var(--secondary-background-color)}}button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}
-      input[aria-busy=true]{opacity:.65;cursor:progress}
+      input[aria-busy=true]{cursor:progress}
       .name,.title,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.name{font-size:12px;color:var(--secondary-text-color)}.title{font-size:14px;line-height:20px}.state{font-size:12px;color:var(--secondary-text-color)}
       ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:before,.play.playing:after{content:'';position:absolute;width:2px;height:7px;border-radius:1px;background:currentColor;bottom:3px;transform-origin:bottom;animation:compact-eq .9s ease-in-out infinite}.play.playing:before{left:calc(50% - 5px);box-shadow:8px 0 currentColor}.play.playing:after{left:calc(50% - 1px);animation-delay:-.45s}@keyframes compact-eq{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}@media(prefers-reduced-motion:reduce){.play.playing:before,.play.playing:after{animation:none}}
       .volume{display:flex;align-items:center;gap:4px;min-height:32px;padding-inline:4px}.volume .mute{flex:none;min-width:32px;width:32px;min-height:32px;padding:0}.volume .mute:disabled:not([aria-busy=true]){opacity:1}.mute[aria-pressed=true]{color:var(--primary-color)}.volume .mute:disabled:hover{background:transparent}.volume ha-icon{color:inherit;width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
@@ -1255,7 +1257,7 @@ for(const [type,Constructor,name,description] of [
         :host{display:block;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit)}
         .root{display:grid;gap:12px}.list{display:grid;gap:8px}details{border:1px solid var(--divider-color,#ddd);border-radius:10px;padding:8px}summary{cursor:pointer;font-size:14px;font-weight:500;overflow-wrap:anywhere;min-height:32px;align-content:center}details>.content{display:grid;gap:10px;padding-top:8px}
         .toolbar,.add{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:flex-end}.toolbar button{min-width:36px}.add select{flex:1;min-width:130px}.heading{font-size:14px;font-weight:500;margin:0}.hint{font-size:12px;color:var(--secondary-text-color);margin:0;line-height:1.5}
-        button,input,textarea,select{font:inherit;color:var(--primary-text-color);box-sizing:border-box}button{border:1px solid var(--divider-color,#ddd);background:var(--card-background-color,transparent);border-radius:7px;padding:6px 10px;cursor:pointer;min-height:36px}button:hover:not(:disabled){background:var(--secondary-background-color,#eee)}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
+        button,input,textarea,select{font:inherit;color:var(--primary-text-color);box-sizing:border-box}button{border:1px solid var(--divider-color,#ddd);background:var(--card-background-color,transparent);border-radius:7px;padding:6px 10px;cursor:pointer;min-height:36px}@media(hover:hover){button:hover:not(:disabled){background:var(--secondary-background-color,#eee)}}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
         .native{display:grid;gap:10px;min-width:0}.native-grid{grid-template-columns:repeat(auto-fit,minmax(min(90px,100%),1fr));align-items:start}.native label{min-width:0}.display{background:transparent}.display summary{font-size:13px;color:var(--secondary-text-color)}.native label{display:grid;gap:5px;font-size:13px}.native input,.native textarea,.native select,.add select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.native input[type=checkbox]{width:24px;height:24px;min-height:24px}.content>label,.subsection>label{display:grid;gap:5px;font-size:13px}.content>label>select,.subsection>label>input:not([type=checkbox]),.subsection>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.subsection{display:grid;gap:8px;border-top:1px solid var(--divider-color,#ddd);padding-top:10px}
         .subsection>label>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}
         @media(pointer:coarse){button{min-height:44px;min-width:44px}}
