@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.2.2 — 2026-10-30
+
+- Center Home Assistant icon glyphs inside their background surfaces and align them with row labels and switches across cards.
+
 ## 0.2.1 — 2026-10-30
 
 - Default image and camera cards to half-width in Sections so two compact rows fit side by side. Fill image thumbnail frames by default, align preview bounds, and use black letterboxing for explicit contain mode.

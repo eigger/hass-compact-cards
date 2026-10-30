@@ -66,6 +66,8 @@ function compactInteractions(host) {
   const style=document.createElement('style');
   style.textContent=`:host{--compact-control-surface:color-mix(in srgb,var(--primary-text-color) 4%,transparent);--compact-icon-surface:color-mix(in srgb,var(--primary-color) 10%,transparent);--compact-divider:color-mix(in srgb,var(--divider-color) 65%,transparent)}
     ha-card{border-radius:var(--ha-card-border-radius,14px)}
+    /* Center HA's nested SVG without an inline text baseline inside the icon surface. */
+    ha-icon,ha-state-icon{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;line-height:0;--ha-icon-display:block}
     output{flex:none}
     ${skins[type]||''}
     button{touch-action:manipulation;transition:background-color 150ms ease,color 150ms ease,opacity 150ms ease}
