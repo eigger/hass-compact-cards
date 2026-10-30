@@ -3,6 +3,7 @@
 (()=>{
 const english=new URLSearchParams(location.search).get('lang')!=='ko';
 const dictionary={
+ '음소거 해제':'Unmute','색온도':'Color temperature','음량':'Volume','밝기':'Brightness','다음 곡':'Next track','위치':'Position',
  '우리집':'My Home',
  '우리집 · 거실과 침실, 자주 쓰는 조작을 한곳에':'My Home · Living room and bedroom, everyday controls in one place',
  '테마 변경':'Toggle theme',
@@ -166,19 +167,23 @@ const translate=value=>{
  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,translate(item)]));
  return value;
 };
+const translateText=text=>{let out=text;for(const [ko,en] of terms)out=out.split(ko).join(en);return out;};
+const observed=new WeakSet();
 function localize(root=document.body){
  if(!english)return;
  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
  for(let node=walker.nextNode();node;node=walker.nextNode()){
-  let text=node.nodeValue;for(const [ko,en] of terms)text=text.split(ko).join(en);
+  const text=translateText(node.nodeValue);
   if(text!==node.nodeValue)node.nodeValue=text;
  }
  for(const element of root.querySelectorAll('*')){
-  for(const name of ['data-label','aria-label','placeholder','title']){const value=element.getAttribute(name);if(value){let text=value;for(const [ko,en] of terms)text=text.split(ko).join(en);if(text!==value)element.setAttribute(name,text);}}
-  if(element.shadowRoot)localize(element.shadowRoot);
+  // Attributes are only swapped when nothing Korean is left, so tooltips never end up half translated.
+  for(const name of ['data-label','aria-label','placeholder','title']){const value=element.getAttribute(name);if(value){const text=translateText(value);if(text!==value&&!/[가-힣]/.test(text))element.setAttribute(name,text);}}
+  const shadow=element.shadowRoot;
+  if(shadow){localize(shadow);if(!observed.has(shadow)){observed.add(shadow);new MutationObserver(()=>localize(shadow)).observe(shadow,{childList:true,subtree:true,characterData:true});}}
  }
 }
-const start=()=>{if(!english)return;document.documentElement.lang='en';document.title=translate(document.title);localize();setInterval(localize,200);};
+const start=()=>{if(!english)return;document.documentElement.lang='en';document.title=translateText(document.title);localize();new MutationObserver(()=>localize()).observe(document.body,{childList:true,subtree:true,characterData:true});setInterval(localize,500);};
 window.compactPreviewLocale={english,translate,localize,start,dictionary};
 if(english&&new URLSearchParams(location.search).get('debug')==='ko')setTimeout(()=>{const found=new Set();const scan=root=>{const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);for(let n=w.nextNode();n;n=w.nextNode())if(/[가-힣]/.test(n.nodeValue)&&!['SCRIPT','STYLE','TITLE'].includes(n.parentNode.nodeName))found.add(n.nodeValue.trim());for(const e of root.querySelectorAll('*'))if(e.shadowRoot)scan(e.shadowRoot);};scan(document.body);document.title='KO:'+[...found].join('|');},2500);
 })();
