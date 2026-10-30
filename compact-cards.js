@@ -6,12 +6,28 @@ function compactProp(el, key, value) { if(el[key]!==value)el[key]=value; }
 function compactStyle(el, key, value) { if(el.style.getPropertyValue(key)!==value)el.style.setProperty(key,value); }
 // Icons animate only while the device reports activity; reduced-motion users get a static icon.
 function compactMotion(el, motion) { compactAttr(el,'data-motion',motion||'');if(el.classList.contains('motion')!==Boolean(motion))el.classList.toggle('motion',Boolean(motion)); }
+// One-shot effects restart on every state change and clean up after themselves.
+function compactFlash(el, cls) {
+  if(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)return;
+  el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);
+  if(!el._flashEnd){
+    el._flashEnd=event=>{if(event.target===el)el.classList.remove('changed','pop','shake');};
+    el.addEventListener('animationend',el._flashEnd);
+  }
+}
+function compactEffectOf(state) {
+  const domain=state.entity_id.split('.')[0];
+  if(domain==='lock')return 'pop';
+  if(domain==='binary_sensor'&&state.state==='on'&&['door','window','garage_door','opening'].includes(state.attributes.device_class))return 'shake';
+  return '';
+}
 // Devices without hvac_action fall back to the selected mode; a reported action always wins.
 function compactClimateAction(state) { return state.attributes.hvac_action ?? {heat:'heating',cool:'cooling',fan_only:'fan',dry:'drying'}[state.state]; }
 function compactMotionOf(state) {
   if(!state)return '';
   const domain=state.entity_id.split('.')[0],value=state.state;
   if(domain==='fan'&&value==='on')return 'fan';
+  if(domain==='light'&&value==='on')return 'glow';
   if(domain==='vacuum'&&value==='cleaning')return 'sweep';
   if(domain==='humidifier'&&value==='on')return 'pulse';
   if(domain==='water_heater'&&value!=='off')return 'pulse';
@@ -101,10 +117,16 @@ function compactInteractions(host) {
     ha-icon.motion[data-motion=fan],ha-state-icon.motion[data-motion=fan]{animation:compact-fan 2.6s linear infinite}
     ha-icon.motion[data-motion=pulse],ha-state-icon.motion[data-motion=pulse]{animation:compact-breathe 2s ease-in-out infinite}
     ha-icon.motion[data-motion=sweep],ha-state-icon.motion[data-motion=sweep]{animation:compact-dry 2.2s ease-in-out infinite}
+    ha-icon.motion[data-motion=glow],ha-state-icon.motion[data-motion=glow]{filter:drop-shadow(0 0 4px var(--entity-color,currentColor))}
+    .row.changed{animation:compact-flash .8s ease-out}
+    .pop{animation:compact-pop .5s cubic-bezier(.3,1.6,.5,1)}.shake{animation:compact-shake .5s ease-in-out}
+    @keyframes compact-flash{from{background:color-mix(in srgb,var(--entity-color,var(--primary-color)) 22%,transparent)}to{background:transparent}}
+    @keyframes compact-pop{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+    @keyframes compact-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-2px)}40%,80%{transform:translateX(2px)}}
     @keyframes compact-fan{to{transform:rotate(360deg)}}
     @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
     @keyframes compact-dry{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
-    @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}.motion{animation:none!important}}`;
+    @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}.motion,.changed,.pop,.shake{animation:none!important}}`;
   const status=document.createElement('span');status.className='compact-feedback';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   host.shadowRoot.append(style,status);host._feedbackText=status;
 }
@@ -513,6 +535,8 @@ class CompactHomePanel extends HTMLElement {
       compactProp(ref.icon,'stateObj',state);
       compactProp(ref.icon,'icon',item.icon || (!state?'mdi:help-circle-outline':undefined));
       compactMotion(ref.icon,offline?'':compactMotionOf(state));
+      if(state&&ref.lastEntity===state.entity_id&&ref.lastState!==state.state&&!offline&&!['unknown','unavailable'].includes(ref.lastState)){compactFlash(ref.row,'changed');const effect=compactEffectOf(state);if(effect)compactFlash(ref.icon,effect);}
+      ref.lastEntity=state?.entity_id;ref.lastState=state?.state;
       if (ref.value){compactText(ref.value,this._format(state));compactProp(ref.value,'title',ref.value.textContent);}
       if (ref.control) {
         compactProp(ref.control,'disabled',offline || this._busy.has(item.entity));
@@ -988,7 +1012,7 @@ class CompactMediaRow extends HTMLElement {
       button:disabled,input:disabled{opacity:.4;cursor:default}
       input[aria-busy=true]{opacity:.65;cursor:progress}
       .name,.title,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.name{font-size:12px;color:var(--secondary-text-color)}.title{font-size:14px;line-height:20px}.state{font-size:12px;color:var(--secondary-text-color)}
-      ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:after{content:'';position:absolute;width:4px;height:4px;border-radius:50%;background:currentColor;bottom:4px;left:calc(50% - 2px)}
+      ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:before,.play.playing:after{content:'';position:absolute;width:2px;height:7px;border-radius:1px;background:currentColor;bottom:3px;transform-origin:bottom;animation:compact-eq .9s ease-in-out infinite}.play.playing:before{left:calc(50% - 5px);box-shadow:8px 0 currentColor}.play.playing:after{left:calc(50% - 1px);animation-delay:-.45s}@keyframes compact-eq{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}@media(prefers-reduced-motion:reduce){.play.playing:before,.play.playing:after{animation:none}}
       .volume{display:flex;align-items:center;gap:4px;min-height:32px;padding-inline:4px}.volume .mute{flex:none;min-width:32px;width:32px;min-height:32px;padding:0}.volume .mute:disabled:not([aria-busy=true]){opacity:1}.mute[aria-pressed=true]{color:var(--primary-color)}.volume .mute:disabled:hover{background:transparent}.volume ha-icon{color:inherit;width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
       [hidden]{display:none!important}:host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding-inline:0}
       @media(pointer:coarse){button{min-width:44px;min-height:44px}.volume{min-height:44px}.volume .mute{min-width:44px;min-height:44px}.volume input{height:40px}}

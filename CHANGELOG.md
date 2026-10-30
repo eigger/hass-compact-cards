@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add state-change effects: the media play dot becomes an equalizer while playing; home panel rows flash once when their state changes, locks pop, opened doors/windows shake, and lights that are on get a soft glow. Effects skip recoveries from unavailable and are disabled under reduced-motion.
+
 - Animate climate icons for entities that do not report `hvac_action` by falling back to the selected mode (idle/off still stop motion). Home panel icons now spin for running fans, sway for cleaning vacuums and pulse for active humidifiers and running scripts; scene panel scripts pulse while running. Motion is disabled under reduced-motion.
 
 ## 0.2.4 — 2026-10-30
