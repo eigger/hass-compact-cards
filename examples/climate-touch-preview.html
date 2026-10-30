@@ -7,7 +7,7 @@
 body{font-family:system-ui;margin:16px;background:#fafafa;color:#212121;--primary-text-color:#212121;--secondary-text-color:#666;--primary-color:#03a9f4;--divider-color:#ddd;--card-background-color:#fff;--state-active-color:#03a9f4;--state-inactive-color:#888}
 .fixture{width:min(550px,100%);border:1px solid #ddd;background:#fff}p{max-width:550px;font-size:14px}
 </style>
-<p>Touch regression: emulate a coarse pointer in browser device mode. At 550px, seven mode buttons must appear below the name and temperature. No controls may be clipped. Narrow the viewport to verify wrapping at 320px.</p>
+<p>Touch regression: emulate a coarse pointer in browser device mode. At 550px, seven mode buttons narrow (about 43px wide) to stay on one line with the name and temperature. At 320px, buttons stop at 32px and the modes must wrap below the name and temperature. No controls may be clipped.</p>
 <div class="fixture"><compact-climate-row></compact-climate-row></div>
 <script src="../compact-cards.js"></script>
 <script>
