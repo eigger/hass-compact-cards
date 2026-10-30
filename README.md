@@ -1,47 +1,39 @@
 # Compact Cards
 
-Small, tidy dashboard custom cards for Home Assistant.
+Compact Home Assistant controls, arranged for a room. Read the state at a glance and adjust it directly on the card.
 
 **English** | [한국어](README.ko.md)
 
-This is a frontend card project. Use a single JavaScript file without a build step or external runtime libraries.
+![Room dashboard with compact lighting, climate, cover and media controls](images/showcase-light.jpg)
 
-## Included cards
+*Rendered with the actual card JavaScript and mocked states. This is a local preview, not live-device verification.*
 
-| Card type | Description |
-| --- | --- |
-| `custom:compact-climate-row` | Climate modes and target temperature controls in one row |
-| `custom:compact-home-panel` | A panel combining controls, sensors, headings, notes, navigation and usage comparisons |
-| `custom:compact-light-row` | Direct power, brightness and color temperature controls |
-| `custom:compact-cover-row` | Open, stop, close and position controls |
-| `custom:compact-scene-panel` | One-tap scene and script shortcuts |
-| `custom:compact-environment-panel` | Compact sensor readings with explicit thresholds |
-| `custom:compact-media-row` | Playback, next track and committed volume controls |
+<details>
+<summary>View the dark theme</summary>
 
-See [direct light and cover controls](docs/light-cover.md) for configuration. These rows also work inside `compact-home-panel` using `type: light` or `type: cover`.
+![The same room dashboard in the dark theme](images/showcase-dark.jpg)
 
+</details>
 
-See [scene and environment panels](docs/scene-environment.md) for options and examples.
+Keep everyday controls close together: power, brightness, temperature, cover position and playback. Cards adapt to their available width and use Home Assistant theme colors. Configure them in the UI or YAML; all seven ship in one JavaScript file without a build step or external runtime libraries.
 
-## Card previews and guides
+[Showcase configuration](examples/showcase.yaml) · [Room dashboard guide](docs/showcase.md) · [Visual editor](docs/visual-editor.md)
 
-Screenshots use mocked states; each guide includes options and detailed YAML examples.
+## Cards and guides
 
-| Card / guide | Preview |
-| --- | --- |
-| [compact-climate-row](docs/compact-climate-row.md) | ![compact-climate-row](images/compact-climate-row.jpg) |
-| [compact-home-panel](docs/compact-home-panel.md) | ![compact-home-panel](images/compact-home-panel.jpg) |
-| [compact-light-row](docs/compact-light-row.md) | ![compact-light-row](images/compact-light-row.jpg) |
-| [compact-cover-row](docs/compact-cover-row.md) | ![compact-cover-row](images/compact-cover-row.jpg) |
-| [compact-scene-panel](docs/compact-scene-panel.md) | ![compact-scene-panel](images/compact-scene-panel.jpg) |
-| [compact-environment-panel](docs/compact-environment-panel.md) | ![compact-environment-panel](images/compact-environment-panel.jpg) |
-| [compact-media-row](docs/compact-media-row.md) | ![compact-media-row](images/compact-media-row.jpg) |
+Each guide includes a card screenshot, options and YAML examples. Combine individual cards or embed controls in the home panel.
 
-[Configure cards in the UI](docs/visual-editor.md), including nested rows, thresholds, confirmation and ordering.
+| Card / guide | Use | YAML type |
+| --- | --- | --- |
+| [Home panel](docs/compact-home-panel.md) | Room controls, sensors and usage comparisons | `custom:compact-home-panel` |
+| [Climate](docs/compact-climate-row.md) | Icon-based modes and target temperature | `custom:compact-climate-row` |
+| [Light](docs/compact-light-row.md) | Power, brightness and supported color temperature | `custom:compact-light-row` |
+| [Cover](docs/compact-cover-row.md) | Open, stop, close and supported position | `custom:compact-cover-row` |
+| [Scenes](docs/compact-scene-panel.md) | Scene and script shortcuts | `custom:compact-scene-panel` |
+| [Environment](docs/compact-environment-panel.md) | Sensor readings and configured thresholds | `custom:compact-environment-panel` |
+| [Media](docs/compact-media-row.md) | Playback, mute and supported volume controls | `custom:compact-media-row` |
 
-[Interaction details](docs/polish.md) cover request feedback, state-driven motion and reduced-motion support.
-
-[UX refinements](docs/ux-refinements.md): compact icon-first climate, clearer controls, persistent keyboard focus and editing context.
+[Interaction feedback](docs/polish.md) · [UX refinements](docs/ux-refinements.md) · [Light and cover setup](docs/light-cover.md) · [Scene and environment setup](docs/scene-environment.md)
 
 ## HACS installation
 

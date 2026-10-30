@@ -1,47 +1,39 @@
 # Compact Cards
 
-Home Assistant를 위한 작고 정돈된 대시보드 커스텀 카드 모음입니다.
+방 하나의 제어를 작은 공간에 정돈하는 Home Assistant 카드입니다. 상태를 한눈에 읽고, 카드에서 바로 조작합니다.
 
 [English](README.md) | **한국어**
 
-통합(integration)이 아닌 프런트엔드 카드 프로젝트입니다. 별도 빌드나 외부 라이브러리 없이 JavaScript 파일 하나로 사용합니다.
+![조명·냉난방·커튼·미디어를 함께 배치한 컴팩트 거실 대시보드](images/showcase-light.jpg)
 
-## 포함된 카드
+*실제 카드 JavaScript와 모의 상태로 렌더링한 로컬 미리보기입니다. 실제 기기 연결 검증 화면은 아닙니다.*
 
-| 카드 유형 | 설명 |
-| --- | --- |
-| `custom:compact-climate-row` | 운전 모드와 설정 온도를 한 줄로 제어하는 기후 카드 |
-| `custom:compact-home-panel` | 제어, 센서, 제목, 메모, 탐색, 사용량 비교를 묶는 패널 |
-| `custom:compact-light-row` | 전원·밝기·색온도를 직접 제어하는 조명 행 |
-| `custom:compact-cover-row` | 열기·정지·닫기·위치를 직접 제어하는 커튼 행 |
-| `custom:compact-scene-panel` | 한 번에 실행하는 장면·스크립트 바로가기 |
-| `custom:compact-environment-panel` | 온도·습도·공기질과 사용자 지정 임계값 |
-| `custom:compact-media-row` | 곡 정보·재생·다음 곡·음량 직접 제어 |
+<details>
+<summary>다크 테마 보기</summary>
 
-[조명·커튼 설정 가이드](docs/light-cover.md). 홈 패널의 `items`에서도 `type: light`, `type: cover`로 사용할 수 있습니다.
+![같은 거실 대시보드의 다크 테마](images/showcase-dark.jpg)
 
+</details>
 
-[장면·환경 패널 가이드](docs/scene-environment.md)에서 설정과 예제를 확인하세요.
+전원·밝기·온도·커튼 위치·재생처럼 자주 쓰는 조작을 가까이 모읍니다. 카드 너비에 따라 배치를 조정하고 Home Assistant 테마 색상을 사용합니다. UI와 YAML 편집을 지원하며, 별도 빌드나 외부 런타임 라이브러리 없이 JavaScript 파일 하나에 7종 카드가 포함됩니다.
 
-## 카드 미리보기와 상세 가이드
+[대시보드 구성 YAML](examples/showcase.yaml) · [거실 대시보드 가이드](docs/showcase.md) · [UI 설정 가이드](docs/visual-editor.md)
 
-모의 상태로 렌더링한 대표 화면입니다. 각 카드별 문서에 옵션과 상세 YAML 예제를 제공합니다.
+## 카드와 사용 가이드
 
-| 카드 / 전용 문서 | 대표 이미지 |
-| --- | --- |
-| [냉난방](docs/compact-climate-row.md) | ![냉난방](images/compact-climate-row.jpg) |
-| [홈 패널](docs/compact-home-panel.md) | ![홈 패널](images/compact-home-panel.jpg) |
-| [조명](docs/compact-light-row.md) | ![조명](images/compact-light-row.jpg) |
-| [커튼](docs/compact-cover-row.md) | ![커튼](images/compact-cover-row.jpg) |
-| [장면](docs/compact-scene-panel.md) | ![장면](images/compact-scene-panel.jpg) |
-| [환경](docs/compact-environment-panel.md) | ![환경](images/compact-environment-panel.jpg) |
-| [미디어](docs/compact-media-row.md) | ![미디어](images/compact-media-row.jpg) |
+각 문서에서 카드 화면, 옵션, YAML 예제를 확인할 수 있습니다. 독립 카드를 조합하거나 홈 패널 안에 제어 행을 넣어 구성하세요.
 
-[UI 설정 가이드](docs/visual-editor.md): 엔티티 선택, 항목 추가·정렬, 임계값과 실행 확인을 화면에서 설정합니다.
+| 카드 / 가이드 | 용도 | YAML 유형 |
+| --- | --- | --- |
+| [홈 패널](docs/compact-home-panel.md) | 방의 제어·센서·사용량 비교를 한곳에 | `custom:compact-home-panel` |
+| [냉난방](docs/compact-climate-row.md) | 아이콘 중심 모드 선택과 설정 온도 | `custom:compact-climate-row` |
+| [조명](docs/compact-light-row.md) | 전원·밝기·지원 색온도 | `custom:compact-light-row` |
+| [커튼](docs/compact-cover-row.md) | 열기·정지·닫기·지원 위치 제어 | `custom:compact-cover-row` |
+| [장면](docs/compact-scene-panel.md) | 장면·스크립트 바로 실행 | `custom:compact-scene-panel` |
+| [환경](docs/compact-environment-panel.md) | 센서 값과 설정한 임계값 | `custom:compact-environment-panel` |
+| [미디어](docs/compact-media-row.md) | 재생·음소거·지원 음량 제어 | `custom:compact-media-row` |
 
-[조작감과 상태 표시](docs/polish.md): 눌림·요청 피드백, 실제 동작에 따른 움직임, 동작 줄이기 지원.
-
-[UX 리뷰 반영 내용](docs/ux-refinements.md): 냉난방 아이콘 유지, 조작 의미 개선, 키보드 포커스·편집 흐름 유지.
+[조작감과 상태 표시](docs/polish.md) · [UX 개선 내용](docs/ux-refinements.md) · [조명·커튼 설정](docs/light-cover.md) · [장면·환경 설정](docs/scene-environment.md)
 
 ## HACS 설치
 
