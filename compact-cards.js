@@ -25,7 +25,7 @@ function compactInteractions(host) {
     'compact-climate-row':`
       .name{font-weight:600;letter-spacing:-.15px}
       .temperature{background:var(--compact-control-surface);border-left:0;border-radius:10px}
-      output{font-size:18px;font-weight:600;letter-spacing:-.4px}
+      output{font-size:16px;font-weight:600;letter-spacing:-.4px}
       .modes button[aria-pressed=true]{background:color-mix(in srgb,var(--mode-color) 17%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--mode-color) 22%,transparent)}
     `,
     'compact-home-panel':`
@@ -113,17 +113,18 @@ class CompactClimateRow extends HTMLElement {
         .name{font-size:14px}.state{font-size:12px;color:var(--secondary-text-color);margin-top:2px}
         .modes,.temperature{display:flex;align-items:center;gap:2px;flex:none}
         .modes{justify-content:flex-end}
-        .modes button{width:32px;color:var(--secondary-text-color)}
+        .modes button{width:var(--compact-btn-w,var(--own-btn-w,32px));color:var(--secondary-text-color)}
         .modes button[aria-pressed=true]{color:var(--mode-color);background:color-mix(in srgb,var(--mode-color) 18%,transparent)}
         output{color:var(--climate-color,var(--primary-text-color))}
         ha-icon{--mdc-icon-size:18px;width:18px;height:18px}
         .temperature{border-left:1px solid var(--divider-color);padding-left:5px}
-        .temperature button{width:32px;font-size:18px}
+        .temperature button{width:var(--compact-btn-w,var(--own-btn-w,32px));font-size:18px}
         output{font-size:14px;font-variant-numeric:tabular-nums;min-width:39px;text-align:center;white-space:nowrap}
         ha-card.wrap-modes{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}
         .wrap-modes .modes{grid-row:2;grid-column:1/-1;flex-wrap:wrap;min-width:0;max-width:100%}
         .wrap-modes .temperature{grid-column:2;grid-row:1}
-        @media(pointer:coarse){button{min-height:44px}.modes button,.temperature button{width:44px}}
+        @media(pointer:coarse){button{min-height:44px}.modes button,.temperature button{width:var(--compact-btn-w,var(--own-btn-w,44px))}}
+        ha-card.tight .modes,ha-card.tight .temperature{gap:0}ha-card.tight .temperature{padding-left:0;border-left:0}ha-card.tight output{min-width:30px}
         :host([embedded]) ha-card{min-height:48px;border:0;box-shadow:none;background:transparent;padding:4px 0}
       </style>
       <ha-card>
@@ -157,11 +158,24 @@ class CompactClimateRow extends HTMLElement {
     const card=this.shadowRoot.querySelector('ha-card');
     if(!card.clientWidth)return;
     const styles=getComputedStyle(card),modes=this.shadowRoot.querySelector('.modes'),buttons=[...modes.children];
+    const output=this.shadowRoot.querySelector('output'),range=document.createRange();range.selectNodeContents(output);
+    const available=card.clientWidth-(parseFloat(styles.paddingLeft)||0)-(parseFloat(styles.paddingRight)||0);
+    const rowGap=parseFloat(styles.columnGap)||0;
+    // Reserve the readable name/state column, measured from its text and capped so long captions keep their tooltip.
+    const label=Math.max(...['.name','.state'].map(selector=>this.shadowRoot.querySelector(selector).scrollWidth))+8;
+    const nameWidth=Math.min(96,Math.max(56,label));
+    // Largest button width that keeps every mode on one line; uses flush buttons so the result is independent of the applied width.
+    const max=matchMedia('(pointer:coarse)').matches?44:32;
+    const fit=Math.floor((available-nameWidth-2*rowGap-Math.max(30,range.getBoundingClientRect().width)-1)/(buttons.length+2));
+    const own=Math.min(max,Math.max(32,fit));
+    if(this._fit!==own){this._fit=own;this.dispatchEvent(new CustomEvent('compact-climate-fit',{bubbles:true}));}
+    if(own<max)compactStyle(card,'--own-btn-w',`${own}px`);else card.style.removeProperty('--own-btn-w');
+    // A home panel may impose the smallest width among its climate rows so every row shares one button size.
+    const shared=parseFloat(getComputedStyle(this).getPropertyValue('--compact-btn-w'))||own;
+    card.classList.toggle('tight',shared<max);
     const gap=parseFloat(getComputedStyle(modes).columnGap)||0;
     const modesWidth=buttons.reduce((width,button)=>width+button.getBoundingClientRect().width,0)+Math.max(0,buttons.length-1)*gap;
-    const available=card.clientWidth-(parseFloat(styles.paddingLeft)||0)-(parseFloat(styles.paddingRight)||0);
-    // Reserve a short readable name/current-temperature column; long captions retain their tooltip.
-    const required=72+modesWidth+this.shadowRoot.querySelector('.temperature').getBoundingClientRect().width+2*(parseFloat(styles.columnGap)||0);
+    const required=nameWidth+modesWidth+this.shadowRoot.querySelector('.temperature').getBoundingClientRect().width+2*rowGap;
     card.classList.toggle('wrap-modes',required>available);
   }
   getCardSize() {
@@ -393,6 +407,7 @@ class CompactHomePanel extends HTMLElement {
       if (item.type === 'note') { body.append(this._make('div','note',item.name));continue; }
       if (['climate','light','cover','media'].includes(item.type)) {
         const child = document.createElement(`compact-${item.type}-row`);child.className='climate';body.append(child);
+        if(!body._fitListener){body._fitListener=true;body.addEventListener('compact-climate-fit',()=>this._shareClimateFit());}
         customElements.whenDefined(`compact-${item.type}-row`).then(()=>this._render());
         this._refs.push({item,child,configured:false});continue;
       }
@@ -434,6 +449,13 @@ class CompactHomePanel extends HTMLElement {
     }
   }
   _format(state) { return !state || ['unknown','unavailable'].includes(state.state) ? '확인 불가' : (this._hass.formatEntityState?.(state) ?? `${state.state} ${state.attributes.unit_of_measurement || ''}`.trim()); }
+  _shareClimateFit() {
+    const body=this.shadowRoot.querySelector('.items');
+    const rows=[...body.querySelectorAll('compact-climate-row')].filter(row=>typeof row._fit==='number');
+    const max=matchMedia('(pointer:coarse)').matches?44:32,width=Math.min(max,...rows.map(row=>row._fit));
+    if(width<max)compactStyle(body,'--compact-btn-w',`${width}px`);else body.style.removeProperty('--compact-btn-w');
+    for(const row of rows)row._layout();
+  }
   _render() {
     if (!this._hass || !this._config) return;
     for (const ref of this._refs) {
