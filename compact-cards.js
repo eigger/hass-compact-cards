@@ -158,21 +158,21 @@ class CompactClimateRow extends HTMLElement {
     const card=this.shadowRoot.querySelector('ha-card');
     if(!card.clientWidth)return;
     const styles=getComputedStyle(card),modes=this.shadowRoot.querySelector('.modes'),buttons=[...modes.children];
-    const output=this.shadowRoot.querySelector('output'),range=document.createRange();range.selectNodeContents(output);
+    const textWidth=selector=>{const range=document.createRange();range.selectNodeContents(this.shadowRoot.querySelector(selector));return range.getBoundingClientRect().width;};
     const available=card.clientWidth-(parseFloat(styles.paddingLeft)||0)-(parseFloat(styles.paddingRight)||0);
     const rowGap=parseFloat(styles.columnGap)||0;
-    // Reserve the readable name/state column, measured from its text and capped so long captions keep their tooltip.
-    const label=Math.max(...['.name','.state'].map(selector=>this.shadowRoot.querySelector(selector).scrollWidth))+8;
-    const nameWidth=Math.min(96,Math.max(56,label));
-    // Largest button width that keeps every mode on one line; uses flush buttons so the result is independent of the applied width.
-    const max=matchMedia('(pointer:coarse)').matches?44:32;
-    const fit=Math.floor((available-nameWidth-2*rowGap-Math.max(30,range.getBoundingClientRect().width)-1)/(buttons.length+2));
-    const own=Math.min(max,Math.max(32,fit));
-    if(this._fit!==own){this._fit=own;this.dispatchEvent(new CustomEvent('compact-climate-fit',{bubbles:true}));}
+    // Reserve the readable name/state column from the text itself (not the column box), capped so long captions keep their tooltip.
+    const nameWidth=Math.min(96,Math.max(72,Math.max(textWidth('.name'),textWidth('.state'))+8));
+    const max=matchMedia('(pointer:coarse)').matches?44:32,count=buttons.length+2,outputText=textWidth('output');
+    // Full-size buttons need gaps, divider padding and a wider output; only when that overflows are buttons packed flush and narrowed.
+    const roomy=nameWidth+count*max+Math.max(0,buttons.length-1)*2+Math.max(39,outputText)+11+2*rowGap<=available;
+    const fit=Math.floor((available-nameWidth-2*rowGap-Math.max(30,outputText)-1)/count);
+    const own=roomy?max:Math.min(max,Math.max(32,fit));
+    if(this._fit!==own||this._roomy!==roomy){this._fit=own;this._roomy=roomy;this.dispatchEvent(new CustomEvent('compact-climate-fit',{bubbles:true}));}
     if(own<max)compactStyle(card,'--own-btn-w',`${own}px`);else card.style.removeProperty('--own-btn-w');
     // A home panel may impose the smallest width among its climate rows so every row shares one button size.
     const shared=parseFloat(getComputedStyle(this).getPropertyValue('--compact-btn-w'))||own;
-    card.classList.toggle('tight',shared<max);
+    card.classList.toggle('tight',shared<max||!roomy||this.hasAttribute('data-shared-tight'));
     const gap=parseFloat(getComputedStyle(modes).columnGap)||0;
     const modesWidth=buttons.reduce((width,button)=>width+button.getBoundingClientRect().width,0)+Math.max(0,buttons.length-1)*gap;
     const required=nameWidth+modesWidth+this.shadowRoot.querySelector('.temperature').getBoundingClientRect().width+2*rowGap;
@@ -450,11 +450,17 @@ class CompactHomePanel extends HTMLElement {
   }
   _format(state) { return !state || ['unknown','unavailable'].includes(state.state) ? '확인 불가' : (this._hass.formatEntityState?.(state) ?? `${state.state} ${state.attributes.unit_of_measurement || ''}`.trim()); }
   _shareClimateFit() {
-    const body=this.shadowRoot.querySelector('.items');
-    const rows=[...body.querySelectorAll('compact-climate-row')].filter(row=>typeof row._fit==='number');
-    const max=matchMedia('(pointer:coarse)').matches?44:32,width=Math.min(max,...rows.map(row=>row._fit));
-    if(width<max)compactStyle(body,'--compact-btn-w',`${width}px`);else body.style.removeProperty('--compact-btn-w');
-    for(const row of rows)row._layout();
+    if(this._fitFrame!==undefined)return;
+    this._fitFrame=requestAnimationFrame(()=>{
+      this._fitFrame=undefined;
+      const body=this.shadowRoot.querySelector('.items');
+      const rows=[...body.querySelectorAll('compact-climate-row')].filter(row=>typeof row._fit==='number');
+      const max=matchMedia('(pointer:coarse)').matches?44:32,width=Math.min(max,...rows.map(row=>row._fit));
+      if(width<max)compactStyle(body,'--compact-btn-w',`${width}px`);else body.style.removeProperty('--compact-btn-w');
+      // Any row that needs flush buttons makes every row use them, so all rows keep the same geometry.
+      const tight=rows.some(row=>!row._roomy);
+      for(const row of rows){row.toggleAttribute('data-shared-tight',tight);row._layout();}
+    });
   }
   _render() {
     if (!this._hass || !this._config) return;
