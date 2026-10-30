@@ -52,7 +52,7 @@ name: 거실 냉난방
 
 터치 환경의 모드·온도 버튼은 44px 조작 영역을 사용합니다. 지원하는 기기에서는 실제 운전 동작에 따라 아이콘이 움직이고, 운영체제의 동작 줄이기 설정에서는 애니메이션을 중지합니다.
 
-서비스 요청 중에는 모드·온도 제어를 비활성화하고 점선 표시로 처리 중임을 알립니다. 요청이 끝나면 다시 조작할 수 있습니다. 서비스 응답과 기기의 실제 상태 갱신 시점은 통합에 따라 다르며, 화면 상태는 Home Assistant가 보고한 값으로 표시합니다. 요청 실패 시 알림을 표시하고 버튼을 복구합니다.
+서비스 요청 중에는 모드·온도 제어를 비활성화하고 조작부를 살짝 흐리게 표시하여 처리 중임을 알립니다. 요청이 끝나면 다시 조작할 수 있습니다. 서비스 응답과 기기의 실제 상태 갱신 시점은 통합에 따라 다르며, 화면 상태는 Home Assistant가 보고한 값으로 표시합니다. 요청 실패 시 알림을 표시하고 버튼을 복구합니다.
 
 ## 홈 패널에 넣기
 
@@ -79,4 +79,4 @@ items:
 
 Use `custom:compact-climate-row` with a required `climate.*` `entity` and optional `name`. Tap the name to open more-info; mode buttons request supported HVAC modes, and −/+ follows the device step and limits. A single target-temperature feature and a numeric temperature are required for temperature controls. Range-only thermostats need more-info for range adjustment.
 
-Modes wrap below the name and temperature on narrow cards; coarse-pointer devices get 44px targets. Controls disable and show a busy outline during service requests, then recover after success or failure. Reported state comes from Home Assistant. Embed the same card using `type: climate` in a home panel. The representative image uses mocked local preview data.
+Modes wrap below the name and temperature on narrow cards; coarse-pointer devices get 44px targets. Controls disable and dim subtly during service requests, then recover after success or failure. Reported state comes from Home Assistant. Embed the same card using `type: climate` in a home panel. The representative image uses mocked local preview data.

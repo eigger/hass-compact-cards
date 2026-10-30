@@ -68,10 +68,10 @@ function compactInteractions(host) {
     ha-card{border-radius:var(--ha-card-border-radius,14px)}
     output{flex:none}
     ${skins[type]||''}
-    button{touch-action:manipulation;transition:transform 100ms ease,background-color 150ms ease,color 150ms ease}
-    button:active:not(:disabled){transform:scale(.96);background:color-mix(in srgb,var(--primary-color) 12%,transparent)}
-    :host([data-feedback=pending]) ha-card{box-shadow:inset 0 2px var(--primary-color)}
-    :host([data-feedback=success]) ha-card{box-shadow:inset 0 2px var(--success-color,#43a047)}
+    button{touch-action:manipulation;transition:background-color 150ms ease,color 150ms ease,opacity 150ms ease}
+    button:active:not(:disabled){background:color-mix(in srgb,var(--primary-color) 12%,transparent)}
+    /* Request feedback stays on the affected controls; state colors come from HA. */
+    button[aria-busy=true],select[aria-busy=true],input[aria-busy=true]{cursor:progress;opacity:.65}
     :host([data-feedback=error]) ha-card{box-shadow:inset 0 2px var(--error-color,#db4437)}
     input[type=range]{appearance:none;background:transparent}
     input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--primary-color) 0 var(--compact-fill,0%),var(--compact-control-surface) var(--compact-fill,0%) 100%);border:1px solid var(--divider-color)}
@@ -97,18 +97,15 @@ class CompactClimateRow extends HTMLElement {
         button{font:inherit;color:var(--row-color);background:transparent;border:0;border-radius:7px;min-height:36px;padding:4px;cursor:pointer;flex:none;touch-action:manipulation;position:relative}
         button:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
         button:disabled{opacity:.35;cursor:default}
-        button[aria-busy=true]{cursor:progress;opacity:.65;outline:2px dotted var(--primary-color);outline-offset:-3px}
         .modes button{transition:color 180ms ease,background-color 180ms ease}
         output{transition:color 180ms ease}
-        .modes button.just-changed{animation:compact-mode-press 180ms ease-out}
         ha-icon.running[data-motion=fan]{animation:compact-fan 2.6s linear infinite}
         ha-icon.running[data-motion=heating],ha-icon.running[data-motion=cooling]{animation:compact-breathe 2s ease-in-out infinite}
         ha-icon.running[data-motion=drying]{animation:compact-dry 2.2s ease-in-out infinite}
-        @keyframes compact-mode-press{0%{transform:scale(.92)}100%{transform:scale(1)}}
         @keyframes compact-fan{to{transform:rotate(360deg)}}
         @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
         @keyframes compact-dry{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
-        @media(prefers-reduced-motion:reduce){button,output{transition:none!important}.just-changed,ha-icon.running{animation:none!important}}
+        @media(prefers-reduced-motion:reduce){button,output{transition:none!important}ha-icon.running{animation:none!important}}
         .info{flex:1;min-width:0;text-align:left;overflow:hidden}
         .name,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .name{font-size:14px}.state{font-size:12px;color:var(--secondary-text-color);margin-top:2px}
@@ -184,14 +181,12 @@ class CompactClimateRow extends HTMLElement {
         b.style.setProperty('--mode-color', this._modeColor(mode));
         b.dataset.mode = mode; b.setAttribute('aria-label', label); b.title = label;
         const i = document.createElement('ha-icon'); i.setAttribute('icon', icon); b.append(i);
-        b.addEventListener('animationend',event=>{if(event.target===b)b.classList.remove('just-changed');});
         b.onclick = () => this._perform('set_hvac_mode', { hvac_mode: mode });
         container.append(b);
       }
     }
     for (const b of container.children) {
       const pressed=!offline && b.dataset.mode === s?.state;
-      if(this._hasRendered && pressed && b.getAttribute('aria-pressed')==='false')b.classList.add('just-changed');
       compactProp(b,'disabled',offline || this._busy);
       compactAttr(b,'aria-busy',this._busy);
       compactAttr(b,'aria-disabled',offline || this._busy);
@@ -210,7 +205,6 @@ class CompactClimateRow extends HTMLElement {
     compactProp(minus,'disabled',offline || this._busy || !valid || !supported || (a.min_temp != null && t <= a.min_temp));
     compactProp(plus,'disabled',offline || this._busy || !valid || !supported || (a.max_temp != null && t >= a.max_temp));
     for(const button of [minus,plus]){compactAttr(button,'aria-busy',this._busy);compactAttr(button,'aria-disabled',button.disabled || this._busy);}
-    this._hasRendered=true;
   }
   _step(direction) {
     const s = this._hass?.states[this._config.entity];
@@ -290,7 +284,6 @@ class CompactHomePanel extends HTMLElement {
       button{border:0;background:transparent;border-radius:6px;padding:4px;cursor:pointer;min-height:36px}
       button:focus-visible,select:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
       button,select{touch-action:manipulation}button:disabled,select:disabled{opacity:.45;cursor:default}.label{display:flex;align-items:center;gap:9px;text-align:left;flex:1;min-width:0}
-      button[aria-busy=true],select[aria-busy=true]{cursor:progress;opacity:.65;outline:2px dotted var(--primary-color);outline-offset:-3px}
       .label span{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       ha-icon{--mdc-icon-size:18px;width:18px;height:18px;flex:none;color:var(--entity-color,var(--secondary-text-color))}
       .value{font-size:14px;min-width:0;max-width:68%;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--entity-color,var(--primary-text-color));transition:color 180ms ease}
@@ -506,7 +499,6 @@ class CompactControlRow extends HTMLElement {
       button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}
       input[aria-busy=true]{opacity:.65;cursor:progress}
-      button[aria-busy=true]{background:color-mix(in srgb,var(--primary-color) 14%,transparent)}
       .info{display:block;justify-items:normal;align-items:normal;flex:1 1 84px;min-width:0;text-align:left;padding:2px 0}
       .name,.state{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
       .name{font-size:14px}.state{font-size:12px;color:var(--secondary-text-color);margin-top:2px}
@@ -705,9 +697,8 @@ for(const [type,constructor,name,description] of [
     button{display:flex;align-items:center;gap:8px;min-width:0;min-height:44px;padding:6px 8px;
       border:1px solid var(--divider-color);border-radius:var(--ha-card-border-radius,10px);
       background:transparent;color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer;
-      transition:background-color 120ms ease,transform 120ms ease}
+      transition:background-color 120ms ease}
     button:hover:not(:disabled){background:var(--secondary-background-color)}
-    button:active:not(:disabled){transform:scale(.98)}
     button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px}
     button:disabled{cursor:default;opacity:.55}
     button[aria-busy=true]{cursor:progress}
@@ -912,11 +903,11 @@ class CompactMediaRow extends HTMLElement {
       .main{display:flex;align-items:center;gap:4px;min-height:48px}.info{flex:1;min-width:0;text-align:left;padding-inline:4px}
       button{font:inherit;color:var(--primary-text-color);background:transparent;border:0;border-radius:8px;cursor:pointer;min-height:40px;min-width:40px;transition:background-color 150ms ease}
       button:hover:not(:disabled){background:var(--secondary-background-color)}button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
-      button:disabled,input:disabled{opacity:.4;cursor:default}button[aria-busy=true]{cursor:progress;background:var(--secondary-background-color)}
+      button:disabled,input:disabled{opacity:.4;cursor:default}
       input[aria-busy=true]{opacity:.65;cursor:progress}
       .name,.title,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.name{font-size:12px;color:var(--secondary-text-color)}.title{font-size:14px;line-height:20px}.state{font-size:12px;color:var(--secondary-text-color)}
       ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:after{content:'';position:absolute;width:4px;height:4px;border-radius:50%;background:currentColor;bottom:4px;left:calc(50% - 2px)}
-      .volume{display:flex;align-items:center;gap:4px;min-height:32px;padding-inline:4px}.volume .mute{flex:none;min-width:32px;width:32px;min-height:32px;padding:0}.volume .mute:disabled{opacity:1}.mute[aria-pressed=true]{color:var(--primary-color)}.volume .mute:disabled:hover{background:transparent}.volume ha-icon{color:inherit;width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
+      .volume{display:flex;align-items:center;gap:4px;min-height:32px;padding-inline:4px}.volume .mute{flex:none;min-width:32px;width:32px;min-height:32px;padding:0}.volume .mute:disabled:not([aria-busy=true]){opacity:1}.mute[aria-pressed=true]{color:var(--primary-color)}.volume .mute:disabled:hover{background:transparent}.volume ha-icon{color:inherit;width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
       [hidden]{display:none!important}:host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding-inline:0}
       @media(pointer:coarse){button{min-width:44px;min-height:44px}.volume{min-height:44px}.volume .mute{min-width:44px;min-height:44px}.volume input{height:40px}}
       @media(prefers-reduced-motion:reduce){button{transition:none}}
