@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.1 — 2026-10-30
+
 - Default image and camera cards to half-width in Sections so two compact rows fit side by side. Fill image thumbnail frames by default, align preview bounds, and use black letterboxing for explicit contain mode.
 
 - Right-align climate mode controls with power last, cooling beside power, and a consistent automatic/fan/dry/heat/cool/off order across devices, including wrapped rows.
