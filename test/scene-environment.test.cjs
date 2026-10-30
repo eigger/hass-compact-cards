@@ -50,7 +50,7 @@ test('environment handles unavailable numeric values, localized units and more-i
   const {card,hass} = setup('compact-environment-panel',{items:[{entity:'sensor.room',thresholds:[{value:10,direction:'below',level:'warning'}]}]}, {'sensor.room':state('sensor.room','5',{unit_of_measurement:'°C'})});
   const ref=card._refs[0]; assert.equal(ref.button.dataset.level,'warning');
   hass.formatEntityState = () => '5 °C'; card.hass=hass;
-  assert.equal(ref.number.textContent,'5 °C'); assert.equal(ref.unit.textContent,'');
+  assert.equal(ref.number.textContent,'5'); assert.equal(ref.unit.textContent,'°C');
   let id; card.addEventListener('hass-more-info',event => {id=event.detail.entityId;}); ref.button.click(); assert.equal(id,'sensor.room');
   for(const value of ['unknown','unavailable','NaN','', 'Infinity']) {
     hass.states['sensor.room']=state('sensor.room',value);card.hass=hass;

@@ -9,8 +9,8 @@
 ## 시작하기
 
 1. 대시보드 편집 → 카드 추가 → 원하는 **Compact** 카드를 선택합니다.
-2. 엔티티 선택에서 실제 기기를 고르고 표시 이름을 입력합니다. 이름을 비우면 엔티티 이름을 사용합니다.
-3. 홈·장면·환경 패널은 **항목 추가**로 구성하고, 항목을 펼쳐 설정합니다. **위로 / 아래로 / 삭제**로 순서와 구성을 바꿉니다.
+2. 엔티티 선택에서 실제 기기를 고릅니다. 이름과 아이콘을 바꾸려면 **표시 설정**을 펼칩니다. 이름을 비우면 엔티티 이름을 사용합니다.
+3. 홈·장면·환경 패널은 **항목 추가**로 구성하고, 항목을 펼쳐 설정합니다. **위로 / 아래로 / 삭제**로 순서와 구성을 바꿉니다. 이동한 항목의 펼침 상태와 키보드 포커스는 유지됩니다.
 4. 오른쪽 미리보기를 확인한 뒤 Home Assistant의 **저장**을 누릅니다.
 
 편집기 자체는 기기 제어 서비스를 호출하지 않습니다. 설정 변경은 Home Assistant 미리보기에 전달되며 대시보드 저장은 Home Assistant가 처리합니다.
@@ -33,10 +33,14 @@
 
 - **제목**: 제목과 센서 배지를 설정합니다. 배지도 추가·삭제·재정렬할 수 있습니다.
 - **메모**: 여러 줄 텍스트를 입력합니다.
-- **사용량 비교**: 각 행의 이름, 이번 달 센서, 지난달 센서를 선택합니다. 비교 행을 추가·삭제·재정렬할 수 있습니다.
+- **사용량 비교**: 각 행의 이름, 이번 달 누적 센서, 지난달 전체 센서를 선택합니다. 비교 행을 추가·삭제·재정렬할 수 있습니다.
 - **페이지 이동**: `/energy`처럼 Home Assistant 내부 경로를 입력하고 아이콘을 선택합니다.
-- **실행 버튼**: 일반 엔티티 항목에서 실행 버튼을 활성화하고 `button.press`, `script.turn_on` 같은 액션 이름과 대상을 지정합니다. 대상 생략 시 항목 엔티티를 사용합니다. 실행 전 확인 메시지도 설정할 수 있습니다. `light`, `switch`, `select`는 전용 제어가 우선합니다.
+- **실행 버튼**: 일반 엔티티 항목에서 실행 버튼을 활성화하고 `button.press`, `script.turn_on` 같은 액션 이름과 대상을 지정합니다. 대상 생략 시 항목 엔티티를 사용합니다. 실행 전 확인 메시지도 설정할 수 있습니다. `light`, `switch`, `select`는 전용 제어가 우선하므로 별도의 실행 버튼 설정을 표시하지 않습니다. 기존 YAML의 `tap_action`과 그 안의 추가 필드는 보존됩니다.
 - **액션 데이터**: 키별로 문자열·숫자·참/거짓 값을 추가·편집·삭제합니다. 이미 YAML로 작성한 배열이나 중첩 객체는 보존되며, 구조화된 데이터의 세부 편집은 YAML에서 합니다.
+
+## 작은 화면에서 빠르게 설정하기
+
+선택적인 이름·아이콘은 **표시 설정** 안에 두어 기본 엔티티 선택을 먼저 보여줍니다. 임계값은 `31°C 이상 · 주의`처럼 센서 단위·방향·강조 수준을 한 줄로 요약하며, 기준값·방향·수준 입력은 너비에 따라 나란히 표시하거나 감쌉니다. 센서가 단위를 제공하지 않으면 숫자와 방향만 표시합니다. 비교 항목의 센서 선택은 **이번 달 누적 센서 / 지난달 전체 센서**로 구분합니다.
 
 ## 기존 YAML과 호환
 
@@ -46,7 +50,7 @@ Home Assistant 기본 폼을 사용하여 엔티티·아이콘·대상 선택기
 
 ## English
 
-All seven cards expose Home Assistant visual configuration editors. Pick a Compact card, choose an entity, edit its optional name, and save with Home Assistant. Panels provide expandable items with add, remove and reorder controls. Home panels include headings/badges, notes, entity lookup, embedded controls, navigation, comparison rows and action buttons. Scene panels expose confirmations. Environment panels expose numeric thresholds, comparison directions and warning levels.
+All seven cards expose Home Assistant visual configuration editors. Pick a Compact card, choose an entity, edit its optional name, and save with Home Assistant. Panels provide expandable items with add, remove and reorder controls; reordering keeps the moved item expanded and restores keyboard focus. Optional names/icons live in expandable display settings. Threshold summaries include the sensor unit, direction and localized severity, and their inputs adapt to available width. Home panels include headings/badges, notes, entity lookup, embedded controls, navigation, comparison rows and action buttons. Scene panels expose confirmations. Environment panels expose numeric thresholds, comparison directions and warning levels.
 
 Native HA entity, icon and target selectors are used when available; native inputs provide a fallback without frontend helpers. Media visibility fields reflect their default `true` values. Unknown YAML fields and nested action data survive edits, and incoming configurations are never mutated. Primitive action data has typed fields; existing arrays and nested objects are preserved and remain editable in YAML. The editor emits `config-changed` without calling device services. Dashboard persistence belongs to Home Assistant.
 

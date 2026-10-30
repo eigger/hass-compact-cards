@@ -20,7 +20,7 @@ test('scene distinguishes pending and accepted requests, clears its brief succes
 test('failed scene request indicates error and does not claim acceptance',async t=>{
   const {card,hass}=setup(t,'compact-scene-panel',{items:[{entity:'scene.relax'}]},{'scene.relax':state('scene.relax','unknown')});
   hass.callService=async()=>{throw new Error('offline');};await card._activate(card._refs[0]);
-  assert.equal(card.dataset.feedback,'error');assert.equal(card._feedbackText.textContent,'요청 실패');assert.equal(card._refs[0].detail.textContent,'실행');
+  assert.equal(card.dataset.feedback,'error');assert.equal(card._feedbackText.textContent,'요청 실패');assert.equal(card._refs[0].detail.textContent,'요청 실패');
 });
 test('feedback cleanup prevents pending completion from leaking into another configuration or detached card',async t=>{
   const {card,hass}=setup(t,'compact-scene-panel',{items:[{entity:'scene.a'}]},{'scene.a':state('scene.a','unknown'),'scene.b':state('scene.b','unknown')});

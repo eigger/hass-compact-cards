@@ -37,9 +37,9 @@ test('pending media command disables controls, rejects duplicates, recovers on f
   const {element,hass,calls,q}=setup(t);let reject;
   hass.callService=(...args)=>{calls.push(args);return new Promise((resolve,rejectCall)=>{reject=rejectCall;});};
   let notice;element.addEventListener('hass-notification',e=>{notice=e.detail.message;});
-  const request=element._call('media_pause');assert.equal(q('.play').disabled,true);assert.equal(q('input').disabled,true);assert.match(q('.state').textContent,/처리 중/);
+  const request=element._call('media_pause');assert.equal(q('.play').disabled,true);assert.equal(q('input').disabled,false);assert.match(q('.state').textContent,/처리 중/);
   await element._call('media_pause');assert.equal(calls.length,1);reject(new Error('network failed'));await request;
-  assert.match(notice,/network failed/);assert.equal(q('.play').disabled,false);assert.equal(element._busy,false);
+  assert.match(notice,/network failed/);assert.equal(q('.play').disabled,false);assert.equal(element._busy.size,0);
 });
 test('media unavailable and missing volume disable controls and recover',t=>{
   const {element,hass,q}=setup(t);hass.states['media_player.room'].state='unavailable';element.hass=hass;assert.equal(q('.play').disabled,true);assert.equal(q('.title').textContent,'확인 불가');

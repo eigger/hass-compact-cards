@@ -314,7 +314,7 @@ class CompactHomePanel extends HTMLElement {
       }
       if (item.type === 'comparison') {
         const table=this._make('table'),thead=this._make('thead'),head=this._make('tr');table.setAttribute('role','table');thead.setAttribute('role','rowgroup');head.setAttribute('role','row');thead.append(head);table.append(thead);
-        for (const label of ['항목','이번 달','지난달','차이']) { const th=this._make('th',null,label);th.scope='col';th.setAttribute('role','columnheader');head.append(th); }
+        for (const label of ['항목','이번 달 누적','지난달 전체','차이']) { const th=this._make('th',null,label);th.scope='col';th.setAttribute('role','columnheader');head.append(th); }
         const tbody=this._make('tbody');tbody.setAttribute('role','rowgroup');table.append(tbody);
         for (const comparison of item.rows) {
           const row=this._make('tr');tbody.append(row);row.append(this._make('td',null,comparison.name));
@@ -322,10 +322,10 @@ class CompactHomePanel extends HTMLElement {
           now.onclick=()=>this._more(this._hass?.states[comparison.entity]);prev.onclick=()=>this._more(this._hass?.states[comparison.previous]);
           const delta=this._make('span'),percent=this._make('small'),deltaCell=this._make('td');deltaCell.append(delta,percent);row.append(deltaCell);
           row.setAttribute('role','row');
-          [...row.children].forEach((cell,index)=>{cell.setAttribute('role','cell');cell.dataset.label=['항목','이번 달','지난달','차이'][index];});
+          [...row.children].forEach((cell,index)=>{cell.setAttribute('role','cell');cell.dataset.label=['항목','이번 달 누적','지난달 전체','차이'][index];});
           this._refs.push({item:comparison,now,prev,delta,percent});
         }
-        body.append(table,this._make('div','note','이번 달 누적 / 지난달 전체'));continue;
+        body.append(table);continue;
       }
       const row=this._make('div','row'),label=this._make('button','label'),icon=this._make('ha-icon'),name=this._make('span',null,item.name || '');
       label.append(icon,name);row.append(label);
@@ -427,6 +427,7 @@ class CompactControlRow extends HTMLElement {
       button:hover{background:var(--secondary-background-color)}
       button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}
+      input[aria-busy=true]{opacity:.65;cursor:progress}
       button[aria-busy=true]{background:color-mix(in srgb,var(--primary-color) 14%,transparent)}
       .info{display:block;justify-items:normal;align-items:normal;flex:1 1 84px;min-width:0;text-align:left;padding:2px 0}
       .name,.state{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
@@ -440,8 +441,14 @@ class CompactControlRow extends HTMLElement {
       input{accent-color:var(--primary-color);width:100%;min-width:40px;min-height:36px;margin:0;cursor:pointer}
       output{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:36px;text-align:right}
       .slider ha-icon{--mdc-icon-size:16px;width:16px;height:16px;color:var(--secondary-text-color)}
+      .kelvin input{appearance:none;background:transparent}
+      .kelvin input::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,#e5ba7b,#e9e7df,#afcfe5);border:1px solid var(--divider-color)}
+      .kelvin input::-moz-range-track{height:4px;border-radius:6px;background:linear-gradient(90deg,#e5ba7b,#e9e7df,#afcfe5);border:1px solid var(--divider-color)}
+      .kelvin input::-webkit-slider-thumb{appearance:none;width:16px;height:16px;margin-top:-6px;border:2px solid var(--card-background-color);border-radius:50%;background:var(--primary-color)}
+      .kelvin input::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--card-background-color);border-radius:50%;background:var(--primary-color)}
+      .cover-control{width:36px;height:36px;padding:2px;grid-template-rows:16px 12px;row-gap:1px;align-content:center}.cover-control ha-icon{--mdc-icon-size:16px;width:16px;height:16px}.control-label{font-size:10px;line-height:12px;white-space:nowrap}
       @container(max-width:360px){ha-card{gap:4px 8px}.info{flex-basis:84px}}
-      @media(pointer:coarse){button,input{min-height:44px}.controls button{min-width:44px}}
+      @media(pointer:coarse){button,input{min-height:44px}.controls button{min-width:44px}.cover-control{width:44px;height:44px}}
       .open.moving ha-icon{animation:compact-opening 1.4s ease-in-out infinite}.close.moving ha-icon{animation:compact-closing 1.4s ease-in-out infinite}@keyframes compact-opening{0%,100%{transform:translateY(1px)}50%{transform:translateY(-2px)}}@keyframes compact-closing{0%,100%{transform:translateY(-1px)}50%{transform:translateY(2px)}}@media(prefers-reduced-motion:reduce){.moving ha-icon{animation:none!important}}
       :host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding:4px 0}
     </style><ha-card><button class="info"><span class="name"></span><span class="state"></span></button><div class="controls"></div></ha-card>`;
@@ -475,10 +482,10 @@ class CompactControlRow extends HTMLElement {
     const input=document.createElement('input');input.type='range';input.min=min;input.max=max;input.step=step;input.setAttribute('aria-label',label);
     const output=document.createElement('output');group.append(glyph,input,output);this._card.append(group);
     const format=value=>key==='kelvin'?`${value} K`:`${value}%`;
-    input.oninput=()=>{this._editing.add(key);compactText(output,format(input.value));input.setAttribute('aria-valuetext',format(input.value));};
+    input.oninput=()=>{if(input.disabled||ref.busy){this._editing.delete(key);this._render();return;}this._editing.add(key);compactText(output,format(input.value));input.setAttribute('aria-valuetext',format(input.value));};
     input.onchange=()=>{
       this._editing.delete(key);
-      if(input.disabled)return;
+      if(input.disabled||ref.busy){this._render();return;}
       const entity=this._config.entity,value=Number(input.value);
       if(!Number.isFinite(value))return;
       clearTimeout(ref.timer);ref.pending={entity,value};this._render();
@@ -489,11 +496,18 @@ class CompactControlRow extends HTMLElement {
     };
     input.onblur=()=>{this._editing.delete(key);this._render();};
     input.onpointercancel=()=>{this._editing.delete(key);this._render();};
+    input.onpointerdown=event=>{if(ref.busy)event.preventDefault();};
+    input.addEventListener('keydown',event=>{
+      if(ref.busy&&['ArrowRight','ArrowLeft','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();}
+    });
     const ref={group,input,output,key,format};return ref;
   }
-  _syncSlider(ref,value,visible,disabled) {
+  _syncSlider(ref,value,visible,disabled,busy=false) {
     ref.group.hidden=!visible;
-    ref.input.disabled=disabled;
+    // Native disabled blurs a focused range. Pending requests keep focus while
+    // event guards block edits; truly unavailable controls remain disabled.
+    ref.input.disabled=disabled||!visible;ref.busy=busy;
+    compactAttr(ref.input,'aria-disabled',ref.input.disabled||busy);compactAttr(ref.input,'aria-busy',busy);
     if(!this._editing.has(ref.key)) {
       if(ref.pending?.entity===this._config.entity) {
         if(value===ref.pending.value){clearTimeout(ref.timer);ref.pending=undefined;}
@@ -535,6 +549,21 @@ class CompactLightRow extends CompactControlRow {
     this._toggle=this._button('toggle','조명 켜기/끄기','mdi:power',()=>this._call('toggle'));
     this._brightness=this._slider('brightness','밝기','mdi:brightness-6',0,100,1,value=>this._call(value===0?'turn_off':'turn_on',value===0?{}:{brightness_pct:value}));
     this._kelvin=this._slider('kelvin','색온도','mdi:thermometer',2000,6500,1,value=>this._call('turn_on',{color_temp_kelvin:value}));
+    this._kelvin.group.title='색온도 · 왼쪽은 따뜻한 빛, 오른쪽은 차가운 빛';
+    this._kelvin.input.onkeydown=event=>{
+      if(event.altKey||event.ctrlKey||event.metaKey)return;
+      const input=this._kelvin.input,step=event.shiftKey?50:100;
+      const increments={ArrowRight:step,ArrowUp:step,ArrowLeft:-step,ArrowDown:-step,PageUp:500,PageDown:-500};
+      if(!(event.key in increments)&&!['Home','End'].includes(event.key))return;
+      event.preventDefault();
+      if(input.disabled||this._kelvin.group.hidden)return;
+      const min=Number(input.min),max=Number(input.max),value=Number(input.value);
+      const target=event.key==='Home'?min:event.key==='End'?max:Math.max(min,Math.min(max,value+increments[event.key]));
+      if(target===value)return;
+      input.value=String(target);
+      input.dispatchEvent(new Event('input',{bubbles:true,composed:true}));
+      input.dispatchEvent(new Event('change',{bubbles:true,composed:true}));
+    };
   }
   static getStubConfig(hass) {return {entity:Object.keys(hass?.states || {}).find(id=>id.startsWith('light.')) || 'light.living_room'};}
   _render() {
@@ -545,11 +574,11 @@ class CompactLightRow extends CompactControlRow {
     compactAttr(this._toggle,'aria-label',`${this._config.name||a.friendly_name||this._config.entity} ${state?.state==='on'?'끄기':'켜기'}`);
     const modes=Array.isArray(a.supported_color_modes)?a.supported_color_modes:[];
     const brightness=modes.some(mode=>['brightness','color_temp','hs','xy','rgb','rgbw','rgbww','white'].includes(mode));
-    this._syncSlider(this._brightness,state?.state==='off'?0:(Number.isFinite(a.brightness)?Math.round(a.brightness/255*100):NaN),brightness,offline||busy);
+    this._syncSlider(this._brightness,state?.state==='off'?0:(Number.isFinite(a.brightness)?Math.round(a.brightness/255*100):NaN),brightness,offline,busy);
     const validKelvin=Number.isFinite(a.min_color_temp_kelvin)&&Number.isFinite(a.max_color_temp_kelvin)&&a.min_color_temp_kelvin<a.max_color_temp_kelvin;
     const color=modes.includes('color_temp')&&validKelvin;
     if(color){this._kelvin.input.min=a.min_color_temp_kelvin;this._kelvin.input.max=a.max_color_temp_kelvin;}
-    this._syncSlider(this._kelvin,a.color_temp_kelvin,color,offline||busy);
+    this._syncSlider(this._kelvin,a.color_temp_kelvin,color,offline,busy);
   }
 }
 class CompactCoverRow extends CompactControlRow {
@@ -558,6 +587,9 @@ class CompactCoverRow extends CompactControlRow {
     this._open=this._button('open','열기','mdi:chevron-up',()=>this._call('open_cover'));
     this._stop=this._button('stop','정지','mdi:stop',()=>this._call('stop_cover',{},true));
     this._close=this._button('close','닫기','mdi:chevron-down',()=>this._call('close_cover'));
+    for(const [button,label] of [[this._open,'열기'],[this._stop,'정지'],[this._close,'닫기']]){
+      button.classList.add('cover-control');const text=document.createElement('span');text.className='control-label';text.textContent=label;button.append(text);
+    }
     this._position=this._slider('position','열림 위치','mdi:blinds-horizontal',0,100,1,value=>this._call('set_cover_position',{position:value}));
   }
   static getStubConfig(hass) {return {entity:Object.keys(hass?.states || {}).find(id=>id.startsWith('cover.')) || 'cover.living_room'};}
@@ -571,7 +603,7 @@ class CompactCoverRow extends CompactControlRow {
       compactAttr(button,'aria-busy',button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
     }
     this._open.classList.toggle('moving',!offline&&state.state==='opening');this._close.classList.toggle('moving',!offline&&state.state==='closing');
-    this._syncSlider(this._position,a.current_position,Boolean(features&4),offline||busy);
+    this._syncSlider(this._position,a.current_position,Boolean(features&4),offline,busy);
   }
 }
 for(const [type,constructor,name,description] of [
@@ -651,13 +683,22 @@ for(const [type,constructor,name,description] of [
     _notify(message) { this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message},bubbles:true,composed:true})); }
   }
   class CompactScenePanel extends CompactSmallPanel {
+    constructor(){super();this._itemFeedback=new Map();this._itemEpoch=0;}
+    _clearItemFeedback(){for(const entry of this._itemFeedback.values())clearTimeout(entry.timer);this._itemFeedback.clear();this._itemEpoch++;}
+    disconnectedCallback(){super.disconnectedCallback();this._clearItemFeedback();}
+    _setItemFeedback(id,status,epoch){
+      if(epoch!==this._itemEpoch)return;
+      clearTimeout(this._itemFeedback.get(id)?.timer);
+      const entry={status};entry.timer=setTimeout(()=>{if(this._itemFeedback.get(id)===entry){this._itemFeedback.delete(id);this._render();}},1800);
+      this._itemFeedback.set(id,entry);
+    }
     setConfig(config) {
       validate(config);
       config.items.forEach((item,i) => {
         if (!/^(scene|script)\.[a-z0-9_]+$/.test(item.entity)) throw new Error(`items[${i}]: scene 또는 script 엔티티가 필요합니다.`);
         if (item.confirmation !== undefined && typeof item.confirmation !== 'string') throw new Error(`items[${i}]: confirmation은 문자열이어야 합니다.`);
       });
-      this._configure(config);
+      this._clearItemFeedback();this._configure(config);
     }
     static getStubConfig(hass) {
       return {items:[{entity:Object.keys(hass?.states || {}).find(id => /^(scene|script)\./.test(id)) || 'scene.relax',name:'휴식'}]};
@@ -674,7 +715,9 @@ for(const [type,constructor,name,description] of [
         const busy = this._busy.has(ref.item.entity), running = state?.entity_id.startsWith('script.') && state.state === 'on';
         const available = this._available(state);
         compactText(ref.label,name);
-        compactText(ref.detail,busy ? '실행 요청 중…' : !available ? '확인 불가' : running ? '실행 중' : this.getAttribute('data-feedback')==='success' && this._feedbackEntity===ref.item.entity ? '요청 전달됨' : '실행');
+        const feedback=this._itemFeedback.get(ref.item.entity)?.status;
+        compactText(ref.detail,busy ? '실행 요청 중…' : !available ? '확인 불가' : running ? '실행 중' : feedback==='success' ? '요청 전달됨' : feedback==='error' ? '요청 실패' : '실행');
+        compactAttr(ref.button,'data-result',feedback||'');
         compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || (ref.item.entity.startsWith('scene.') ? 'mdi:palette-outline' : 'mdi:play'));
         compactProp(ref.button,'disabled',!available || busy || running);
         compactAttr(ref.button,'aria-busy',busy);
@@ -687,10 +730,11 @@ for(const [type,constructor,name,description] of [
       if (!this._available(state) || this._busy.has(id) || (id.startsWith('script.') && state.state === 'on')) return;
       if (ref.item.confirmation && !window.confirm(ref.item.confirmation)) return;
       this._feedbackEntity=id;
+      const itemEpoch=this._itemEpoch;
       const feedback=compactFeedback(this,'pending','실행 요청 중');
       this._busy.add(id); this._render();
-      try { await this._hass.callService(id.split('.')[0],'turn_on',{entity_id:id});compactFeedback(this,'success','요청 전달됨',feedback); }
-      catch(error) { compactFeedback(this,'error','요청 실패',feedback);this._notify('실행 실패: ' + (error?.message || error)); }
+      try { await this._hass.callService(id.split('.')[0],'turn_on',{entity_id:id});this._setItemFeedback(id,'success',itemEpoch);compactFeedback(this,'success','요청 전달됨',feedback); }
+      catch(error) { this._setItemFeedback(id,'error',itemEpoch);compactFeedback(this,'error','요청 실패',feedback);this._notify('실행 실패: ' + (error?.message || error)); }
       finally { this._busy.delete(id); this._render(); }
     }
   }
@@ -698,12 +742,33 @@ for(const [type,constructor,name,description] of [
     constructor() {
       super();
       const style = make('style');
-      style.textContent = `.reading{font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.3;overflow-wrap:anywhere}.unit{font-size:11px;font-weight:400;margin-left:3px;color:var(--secondary-text-color)}
+      style.textContent = `.reading{display:inline-flex;align-items:baseline;gap:3px;font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap;max-width:100%}.reading>span:first-child{white-space:nowrap}.reading.unit-first{flex-direction:row-reverse}.unit{font-size:11px;font-weight:400;color:var(--secondary-text-color)}.unit:empty{display:none}
         button{align-items:center}.label{font-size:12px;color:var(--secondary-text-color)}
         button[data-level=warning]{border-color:var(--warning-color,#ffa600)}button[data-level=critical]{border-color:var(--error-color,#db4437)}
         button[data-level=warning] ha-icon{color:var(--warning-color,#ffa600)}button[data-level=critical] ha-icon{color:var(--error-color,#db4437)}
         @container(max-width:360px){ha-icon{display:none}}`;
       this.shadowRoot.append(style);
+      if(typeof ResizeObserver==='function')this._resize=new ResizeObserver(()=>this._layout());
+    }
+    connectedCallback(){this._resize?.observe(this);this._layout();}
+    disconnectedCallback(){super.disconnectedCallback();this._resize?.disconnect();}
+    _readingParts(state,formatted){
+      const unit=state.attributes.unit_of_measurement||'';
+      if(!unit)return {number:formatted,unit:'',prefix:false};
+      if(formatted.endsWith(unit))return {number:formatted.slice(0,-unit.length).trimEnd(),unit,prefix:false};
+      if(formatted.startsWith(unit))return {number:formatted.slice(unit.length).trimStart(),unit,prefix:true};
+      // Preserve a formatter's unfamiliar representation rather than guessing at its digits.
+      return {number:formatted,unit:'',prefix:false};
+    }
+    _layout(){
+      if(!this._config||!(this._config.columns===undefined||this._config.columns==='auto'))return;
+      const width=this.getBoundingClientRect().width;if(!width)return;
+      const grid=this.shadowRoot.querySelector('.grid'),available=Math.max(1,width-18),iconSpace=width>360?28:0;
+      const required=Math.max(90,...this._refs.map(ref=>ref.reading.scrollWidth+18+iconSpace));
+      const columns=Math.max(1,Math.min(this._refs.length,Math.floor((available+6)/(required+6))));
+      compactStyle(grid,'grid-template-columns',`repeat(${columns},minmax(0,1fr))`);
+      // Let a final unpaired metric use its row instead of leaving an empty half-card.
+      for(const [index,ref] of this._refs.entries())compactStyle(ref.button,'grid-column',columns===2&&this._refs.length%2===1&&index===this._refs.length-1?'1 / -1':'auto');
     }
     setConfig(config) {
       validate(config);
@@ -713,6 +778,7 @@ for(const [type,constructor,name,description] of [
       });
       this._configure(config);
       if(config.columns===undefined || config.columns==='auto')this.shadowRoot.querySelector('.grid').style.gridTemplateColumns='repeat(auto-fit,minmax(min(90px,100%),1fr))';
+      this._layout();
     }
     static getStubConfig(hass) {
       const state = Object.values(hass?.states || {}).find(s => s.entity_id.startsWith('sensor.') && ['temperature','humidity','carbon_dioxide'].includes(s.attributes.device_class));
@@ -737,14 +803,15 @@ for(const [type,constructor,name,description] of [
         const status = level === 'critical' ? '위험' : level === 'warning' ? '주의' : '';
         compactText(ref.label,name);
         // Use HA's localized formatting when available; never append its unit twice.
-        compactText(ref.number,available ? this._hass.formatEntityState ? reading : state.state : '—');
-        compactText(ref.unit,available && !this._hass.formatEntityState ? state.attributes.unit_of_measurement || '' : '');
+        const parts=available?this._readingParts(state,reading):{number:'—',unit:'',prefix:false};
+        compactText(ref.number,parts.number);compactText(ref.unit,parts.unit);ref.reading.classList.toggle('unit-first',parts.prefix);
         compactText(ref.detail,available ? status : '확인 불가'); ref.detail.hidden = available && !status;
         compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || icons[state?.attributes.device_class] || 'mdi:gauge');
         compactAttr(ref.button,'data-level',level); compactProp(ref.button,'disabled',!state);
         compactAttr(ref.button,'aria-label',`${name} · ${reading}${status ? ' · ' + status : ''}`);
         compactProp(ref.button,'title',`${name} · ${reading}${status ? ' · ' + status : ''}`);
       }
+      this._layout();
     }
   }
   for (const [type,Constructor,name,description] of [
@@ -759,28 +826,31 @@ for(const [type,constructor,name,description] of [
 // Compact media playback: capability-aware controls, committed volume changes only.
 class CompactMediaRow extends HTMLElement {
   constructor() {
-    super(); this.attachShadow({mode:'open'}); this._busy=false; this._editingVolume=false;
+    super(); this.attachShadow({mode:'open'}); this._busy=new Set(); this._requestContext=0; this._editingVolume=false;
     this.shadowRoot.innerHTML=`<style>
       :host{display:block;container-type:inline-size}ha-card{padding:4px 10px;box-sizing:border-box;overflow:hidden}
       .main{display:flex;align-items:center;gap:4px;min-height:48px}.info{flex:1;min-width:0;text-align:left;padding-inline:4px}
       button{font:inherit;color:var(--primary-text-color);background:transparent;border:0;border-radius:8px;cursor:pointer;min-height:40px;min-width:40px;transition:background-color 150ms ease}
       button:hover:not(:disabled){background:var(--secondary-background-color)}button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}button[aria-busy=true]{cursor:progress;background:var(--secondary-background-color)}
+      input[aria-busy=true]{opacity:.65;cursor:progress}
       .name,.title,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.name{font-size:12px;color:var(--secondary-text-color)}.title{font-size:14px;line-height:20px}.state{font-size:12px;color:var(--secondary-text-color)}
       ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:after{content:'';position:absolute;width:4px;height:4px;border-radius:50%;background:currentColor;bottom:4px;left:calc(50% - 2px)}
-      .volume{display:flex;align-items:center;gap:8px;min-height:32px;padding-inline:4px}.volume ha-icon{margin:0;color:var(--secondary-text-color);width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
+      .volume{display:flex;align-items:center;gap:4px;min-height:32px;padding-inline:4px}.volume .mute{flex:none;min-width:32px;width:32px;min-height:32px;padding:0}.volume .mute:disabled{opacity:1}.mute[aria-pressed=true]{color:var(--primary-color)}.volume .mute:disabled:hover{background:transparent}.volume ha-icon{color:inherit;width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
       [hidden]{display:none!important}:host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding-inline:0}
-      @media(pointer:coarse){button{min-width:44px;min-height:44px}.volume{min-height:44px}.volume input{height:40px}}
+      @media(pointer:coarse){button{min-width:44px;min-height:44px}.volume{min-height:44px}.volume .mute{min-width:44px;min-height:44px}.volume input{height:40px}}
       @media(prefers-reduced-motion:reduce){button{transition:none}}
-    </style><ha-card><div class="main"><button class="info"><span class="name"></span><span class="title"></span><span class="state"></span></button><button class="play"><ha-icon></ha-icon></button><button class="next" aria-label="다음 곡" title="다음 곡"><ha-icon icon="mdi:skip-next"></ha-icon></button></div><div class="volume"><ha-icon icon="mdi:volume-medium"></ha-icon><input type="range" min="0" max="100" step="1" aria-label="음량"><output></output></div></ha-card>`;
+    </style><ha-card><div class="main"><button class="info"><span class="name"></span><span class="title"></span><span class="state"></span></button><button class="play"><ha-icon></ha-icon></button><button class="next" aria-label="다음 곡" title="다음 곡"><ha-icon icon="mdi:skip-next"></ha-icon></button></div><div class="volume"><button class="mute"><ha-icon icon="mdi:volume-medium"></ha-icon></button><input type="range" min="0" max="100" step="1" aria-label="음량"><output></output></div></ha-card>`;
     compactInteractions(this);
     this._q('.info').onclick=()=>{if(this._config)this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:this._config.entity},bubbles:true,composed:true}));};
     this._q('.play').onclick=()=>this._call(this._playAction());
     this._q('.next').onclick=()=>this._call('media_next_track');
+    this._q('.mute').onclick=()=>{const muted=this._state()?.attributes.is_volume_muted;if(typeof muted==='boolean')this._call('volume_mute',{is_volume_muted:!muted});};
     const volume=this._q('input');
-    volume.onpointerdown=()=>{this._editingVolume=true;this._volumeGestureChanged=false;this._volumeGestureStart=Number(volume.value);};
-    volume.oninput=()=>{this._editingVolume=true;this._volumeGestureChanged=true;this._showVolume(volume.value);};
-    volume.onchange=()=>{const value=Number(volume.value);this._editingVolume=false;this._volumeGestureChanged=false;this._commitVolume(value);};
+    volume.onpointerdown=event=>{if(this._isBusy('audio')){event.preventDefault();return;}this._editingVolume=true;this._volumeGestureChanged=false;this._volumeGestureStart=Number(volume.value);};
+    volume.onkeydown=event=>{if(this._isBusy('audio')&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key))event.preventDefault();};
+    volume.oninput=()=>{if(this._isBusy('audio')){this._editingVolume=false;this._render();return;}this._editingVolume=true;this._volumeGestureChanged=true;this._showVolume(volume.value);};
+    volume.onchange=()=>{const value=Number(volume.value);this._editingVolume=false;this._volumeGestureChanged=false;if(this._isBusy('audio')){this._render();return;}this._commitVolume(value);};
     const release=()=>{if(!this._volumeGestureChanged||Number(volume.value)===this._volumeGestureStart){this._editingVolume=false;this._render();}};
     volume.onpointerup=release;volume.onlostpointercapture=release;
     volume.onpointercancel=()=>{this._editingVolume=false;this._render();};
@@ -791,7 +861,7 @@ class CompactMediaRow extends HTMLElement {
     if(typeof config?.entity!=='string'||!/^media_player\.[a-zA-Z0-9_]+$/.test(config.entity))throw new Error('media_player 엔티티가 필요합니다.');
     for(const key of ['show_volume','show_next','embedded'])if(config[key]!==undefined&&typeof config[key]!=='boolean')throw new Error(`${key}는 true 또는 false여야 합니다.`);
     if(config.name!==undefined&&typeof config.name!=='string')throw new Error('name은 문자열이어야 합니다.');
-    if(this._config?.entity!==config.entity){this._editingVolume=false;this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
+    if(this._config?.entity!==config.entity){this._requestContext++;this._editingVolume=false;this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
     compactClearFeedback(this);
     this._config={...config};this.toggleAttribute('embedded',Boolean(config.embedded));this._render();
   }
@@ -801,10 +871,12 @@ class CompactMediaRow extends HTMLElement {
   getGridOptions(){return {columns:12,min_columns:6};}
   _state(){return this._hass?.states[this._config?.entity];}
   _supports(bit){return (Number(this._state()?.attributes.supported_features)&bit)!==0;}
+  _channel(service){return ['volume_set','volume_mute'].includes(service)?'audio':'transport';}
+  _isBusy(channel){return this._busy.has(`${this._config?.entity}:${channel}`);}
   _playAction(){const state=this._state()?.state;return state==='off'||state==='standby'?'turn_on':state==='playing'||state==='buffering'?'media_pause':'media_play';}
   _allowed(service){
     const state=this._state();if(!state||['unknown','unavailable'].includes(state.state))return false;
-    const bit={turn_on:128,media_pause:1,media_play:16384,media_next_track:32,volume_set:4}[service];
+    const bit={turn_on:128,media_pause:1,media_play:16384,media_next_track:32,volume_set:4,volume_mute:8}[service];
     return Boolean(bit&&this._supports(bit)&&(service==='turn_on'||!['off','standby'].includes(state.state)));
   }
   _showVolume(value){compactText(this._q('output'),`${Math.round(Number(value))}%`);compactAttr(this._q('input'),'aria-valuetext',`${Math.round(Number(value))}%`);}
@@ -814,7 +886,7 @@ class CompactMediaRow extends HTMLElement {
     compactText(this._q('.name'),name);compactText(this._q('.title'),offline?'확인 불가':a.media_title||name);
     this._q('.name').hidden=!a.media_title||offline;
     const labels={off:'꺼짐',on:'켜짐',idle:'대기',playing:'재생 중',paused:'일시정지',buffering:'버퍼링',standby:'대기'};
-    compactText(this._q('.state'),this._busy?'처리 중…':offline?'연결을 확인하세요':[a.media_artist,this._hass.formatEntityState?.(state)||labels[state.state]||state.state].filter(Boolean).join(' · '));
+    compactText(this._q('.state'),offline?'연결을 확인하세요':[a.media_artist,this._hass.formatEntityState?.(state)||labels[state.state]||state.state,a.is_volume_muted===true?'음소거':'',this._isBusy('audio')||this._isBusy('transport')?'처리 중…':''].filter(Boolean).join(' · '));
     compactProp(this._q('.info'),'title',`${name} · ${a.media_title||''} · ${a.media_artist||''}`);
     this._q('.play').classList.toggle('playing',!offline&&state.state==='playing');
     const action=this._playAction(),play=this._q('.play'),label={turn_on:'전원 켜기',media_pause:'일시정지',media_play:'재생'}[action];
@@ -822,28 +894,43 @@ class CompactMediaRow extends HTMLElement {
     play.hidden=!offline&&!this._supports(actionBit);compactAttr(play,'aria-label',`${name} ${label}`);compactProp(play,'title',label);
     compactAttr(play.querySelector('ha-icon'),'icon',{turn_on:'mdi:power',media_pause:'mdi:pause',media_play:'mdi:play'}[action]);
     const next=this._q('.next');next.hidden=this._config.show_next===false||!this._supports(32);
-    for(const [button,service] of [[play,action],[next,'media_next_track']]){compactProp(button,'disabled',this._busy||!this._allowed(service));compactAttr(button,'aria-busy',this._busy);}
+    for(const [button,service] of [[play,action],[next,'media_next_track']]){compactProp(button,'disabled',this._isBusy('transport')||!this._allowed(service));compactAttr(button,'aria-busy',this._isBusy('transport'));}
+    const mute=this._q('.mute'),muted=a.is_volume_muted===true,muteLabel=muted?'음소거 해제':'음소거',volumeSupported=this._supports(4),muteSupported=this._supports(8);
+    const muteParent=this._q(!volumeSupported&&muteSupported?'.main':'.volume');
+    if(mute.parentElement!==muteParent){if(muteParent===this._q('.volume'))muteParent.prepend(mute);else muteParent.append(mute);}
+    mute.hidden=this._config.show_volume===false||(!volumeSupported&&!muteSupported);
+    compactAttr(mute.querySelector('ha-icon'),'icon',muted?'mdi:volume-off':'mdi:volume-medium');
+    compactAttr(mute,'aria-label',`${name} ${muteLabel}`);compactProp(mute,'title',muteLabel);compactAttr(mute,'aria-pressed',muted);compactAttr(mute,'aria-busy',this._isBusy('audio'));
+    compactProp(mute,'disabled',this._isBusy('audio')||!this._allowed('volume_mute')||typeof a.is_volume_muted!=='boolean');
     const slider=this._q('input'),level=a.volume_level,valid=typeof level==='number'&&Number.isFinite(level)&&level>=0&&level<=1;
-    this._q('.volume').hidden=this._config.show_volume===false||!this._supports(4);
-    compactProp(slider,'disabled',this._busy||!this._allowed('volume_set')||!valid);compactAttr(slider,'aria-label',`${name} 음량`);
+    this._q('.volume').hidden=this._config.show_volume===false||!volumeSupported;
+    slider.hidden=!volumeSupported;this._q('output').hidden=!volumeSupported;
+    const audioBusy=this._isBusy('audio'),unusable=!this._allowed('volume_set')||!valid;
+    // Native disabled ranges lose focus. Pending requests keep the normal tab
+    // flow, while input guards prevent duplicate edits; offline still disables.
+    compactProp(slider,'disabled',unusable);
+    compactAttr(slider,'aria-disabled',unusable||audioBusy);compactAttr(slider,'aria-busy',audioBusy);compactAttr(slider,'aria-label',`${name} 음량${muted?' (음소거 중)':''}`);
     if(this._pendingVolume!==undefined&&valid&&Math.round(level*100)===this._pendingVolume){this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
     if(!this._editingVolume){compactProp(slider,'value',String(this._pendingVolume??(valid?Math.round(level*100):0)));this._showVolume(slider.value);if(!valid)compactText(this._q('output'),'—');}
   }
   async _commitVolume(value){
-    if(!Number.isFinite(value)||value<0||value>100||this._busy||!this._allowed('volume_set'))return;
+    if(!Number.isFinite(value)||value<0||value>100||this._isBusy('audio')||!this._allowed('volume_set'))return;
+    const context=this._requestContext,entity=this._config.entity;
     this._pendingVolume=value;clearTimeout(this._volumeTimer);
     this._volumeTimer=setTimeout(()=>{this._pendingVolume=undefined;this._render();},3000);
-    if(!await this._call('volume_set',{volume_level:value/100})){this._pendingVolume=undefined;clearTimeout(this._volumeTimer);this._render();}
+    if(!await this._call('volume_set',{volume_level:value/100})&&context===this._requestContext&&entity===this._config.entity){this._pendingVolume=undefined;clearTimeout(this._volumeTimer);this._render();}
   }
   async _call(service,data={}){
-    if(this._busy||!this._allowed(service))return false;
+    const channel=this._channel(service),entity=this._config?.entity,context=this._requestContext;
+    if(this._isBusy(channel)||!this._allowed(service))return false;
+    const token=`${entity}:${channel}`,hass=this._hass;
     const feedback=compactFeedback(this,'pending','변경 요청 중');
-    this._busy=true;this._render();
-    try{await this._hass.callService('media_player',service,{entity_id:this._config.entity,...data});compactFeedback(this,'success','요청 전달됨',feedback);return true;}
-    catch(error){compactFeedback(this,'error','요청 실패',feedback);this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'미디어 변경 실패: '+(error?.message||error)},bubbles:true,composed:true}));return false;}
-    finally{this._busy=false;this._render();}
+    this._busy.add(token);this._render();
+    try{await hass.callService('media_player',service,{entity_id:entity,...data});if(context===this._requestContext)compactFeedback(this,'success','요청 전달됨',feedback);return true;}
+    catch(error){if(context===this._requestContext){compactFeedback(this,'error','요청 실패',feedback);this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'미디어 변경 실패: '+(error?.message||error)},bubbles:true,composed:true}));}return false;}
+    finally{this._busy.delete(token);this._render();}
   }
-  disconnectedCallback(){compactClearFeedback(this);clearTimeout(this._volumeTimer);this._pendingVolume=undefined;this._editingVolume=false;}
+  disconnectedCallback(){this._requestContext++;compactClearFeedback(this);clearTimeout(this._volumeTimer);this._pendingVolume=undefined;this._editingVolume=false;}
 }
 if(!customElements.get('compact-media-row'))customElements.define('compact-media-row',CompactMediaRow);
 window.customCards=window.customCards||[];
@@ -860,16 +947,19 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
   const entity=(name,label,domain,required=true)=>field(name,label,{entity:domain?{domain}:{}},required);
   const select=(name,label,options)=>field(name,label,{select:{mode:'dropdown',options:options.map(([value,label])=>({value,label}))}});
   const columns=max=>select('columns','열 수',[['auto','자동'],...Array.from({length:max},(_,i)=>[String(i+1),`${i+1}열`])]);
+  const flatSchema=schema=>schema.flatMap(item=>item.schema&&(!item.name||item.flatten)?flatSchema(item.schema):[item]);
+  const display=fields=>({type:'expandable',name:'',flatten:true,title:'표시 설정',schema:fields});
+  const grid=fields=>({type:'grid',name:'',flatten:true,column_min_width:'90px',schema:fields});
   const labels={entity:'엔티티',lookup:'이름으로 센서 찾기',heading:'제목',note:'메모',climate:'냉난방',comparison:'사용량 비교',navigate:'페이지 이동',light:'조명',cover:'커튼',media:'미디어'};
   class CompactCardEditor extends HTMLElement {
     constructor(kind){
-      super();this._kind=kind;this._forms=[];this.attachShadow({mode:'open'});
+      super();this._kind=kind;this._forms=[];this._haDisplayOpen=new Set();this.attachShadow({mode:'open'});
       this.shadowRoot.innerHTML=`<style>
         :host{display:block;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit)}
         .root{display:grid;gap:12px}.list{display:grid;gap:8px}details{border:1px solid var(--divider-color,#ddd);border-radius:10px;padding:8px}summary{cursor:pointer;font-size:14px;font-weight:500;overflow-wrap:anywhere;min-height:32px;align-content:center}details>.content{display:grid;gap:10px;padding-top:8px}
         .toolbar,.add{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:flex-end}.toolbar button{min-width:36px}.add select{flex:1;min-width:130px}.heading{font-size:14px;font-weight:500;margin:0}.hint{font-size:12px;color:var(--secondary-text-color);margin:0;line-height:1.5}
         button,input,textarea,select{font:inherit;color:var(--primary-text-color);box-sizing:border-box}button{border:1px solid var(--divider-color,#ddd);background:var(--card-background-color,transparent);border-radius:7px;padding:6px 10px;cursor:pointer;min-height:36px}button:hover:not(:disabled){background:var(--secondary-background-color,#eee)}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
-        .native{display:grid;gap:10px}.native label{display:grid;gap:5px;font-size:13px}.native input,.native textarea,.native select,.add select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.native input[type=checkbox]{width:24px;height:24px;min-height:24px}.content>label,.subsection>label{display:grid;gap:5px;font-size:13px}.content>label>select,.subsection>label>input:not([type=checkbox]),.subsection>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.subsection{display:grid;gap:8px;border-top:1px solid var(--divider-color,#ddd);padding-top:10px}
+        .native{display:grid;gap:10px;min-width:0}.native-grid{grid-template-columns:repeat(auto-fit,minmax(min(90px,100%),1fr));align-items:start}.native label{min-width:0}.display{background:transparent}.display summary{font-size:13px;color:var(--secondary-text-color)}.native label{display:grid;gap:5px;font-size:13px}.native input,.native textarea,.native select,.add select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.native input[type=checkbox]{width:24px;height:24px;min-height:24px}.content>label,.subsection>label{display:grid;gap:5px;font-size:13px}.content>label>select,.subsection>label>input:not([type=checkbox]),.subsection>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.subsection{display:grid;gap:8px;border-top:1px solid var(--divider-color,#ddd);padding-top:10px}
         @media(pointer:coarse){button{min-height:44px;min-width:44px}}
       </style><div class="root"></div>`;
     }
@@ -877,7 +967,7 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       const next=clone(config||{});if(JSON.stringify(next)===JSON.stringify(this._config))return;
       this._config=next;this._render();
     }
-    set hass(value){const initial=!this._hass;this._hass=value;for(const ref of this._forms)ref.form.hass=value;if(initial&&this._config&&!customElements.get('ha-form'))this._render();}
+    set hass(value){const initial=!this._hass;this._hass=value;for(const ref of this._forms)ref.form.hass=value;if(initial&&this._config&&!customElements.get('ha-form'))this._render();else this._refreshSummaries();}
     _make(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
     _button(label,action,disabled=false){const button=this._make('button',null,label);button.type='button';button.disabled=disabled;button.onclick=action;return button;}
     _commit(change,rebuild=false){
@@ -885,19 +975,54 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       this._config=next;
       if(rebuild)this._render();else {
         for(const ref of this._forms)ref.form.data=ref.data();
-        for(const row of this.shadowRoot.querySelectorAll('details[data-path]')){
-          const path=JSON.parse(row.dataset.path),item=at(next,path);
-          const title=item?.name||item?.entity||item?.find_name||(item?.value!==undefined?`${item.value} · ${item.level||''}`:row.dataset.label);
-          row.querySelector('summary').textContent=`${Number(path.at(-1))+1}. ${title}`;
-          for(const button of row.querySelectorAll(':scope > .content > .toolbar > button'))button.setAttribute('aria-label',`${title} ${button.textContent}`);
-        }
+        this._refreshSummaries();this._refreshActions();
       }
       this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:clone(next)},bubbles:true,composed:true}));
+    }
+    _title(item,path,fallback){
+      if(path.at(-2)==='thresholds'&&item?.value!==undefined){
+        const sensor=at(this._config,path.slice(0,-2));
+        const unit=this._hass?.states[sensor?.entity]?.attributes.unit_of_measurement||'';
+        return `${item.value}${unit} ${item.direction==='below'?'이하':'이상'} · ${{warning:'주의',critical:'위험'}[item.level]||item.level||''}`;
+      }
+      return item?.name||item?.entity||item?.find_name||fallback;
+    }
+    _refreshSummaries(){
+      for(const row of this.shadowRoot.querySelectorAll('details[data-path]')){
+        const path=JSON.parse(row.dataset.path),title=this._title(at(this._config,path),path,row.dataset.label);
+        row.querySelector('summary').textContent=`${Number(path.at(-1))+1}. ${title}`;
+        for(const button of row.querySelectorAll(':scope > .content > .toolbar > button'))button.setAttribute('aria-label',`${title} ${button.textContent}`);
+      }
+    }
+    _remapPath(path){
+      const move=this._moving;if(!move||!move.path.every((key,index)=>path[index]===key))return path;
+      const index=move.path.length,result=[...path];
+      if(result[index]===move.from)result[index]=move.to;else if(result[index]===move.to)result[index]=move.from;
+      return result;
+    }
+    _move(path,index,offset){
+      this._moving={path,from:index,to:index+offset};this._focusAfter={path:[...path,index+offset],action:offset<0?'up':'down'};
+      this._commit(next=>{const items=at(next,path);[items[index],items[index+offset]]=[items[index+offset],items[index]];},true);
+    }
+    _restoreReorderFocus(){
+      if(!this._focusAfter)return;
+      const {path,action}=this._focusAfter;this._focusAfter=undefined;
+      const row=[...this.shadowRoot.querySelectorAll('details[data-path]')].find(node=>node.dataset.path===JSON.stringify(path));
+      const button=row?.querySelector(`:scope > .content > .toolbar > button[data-move=${action}]`);
+      (button&&!button.disabled?button:row?.querySelector('summary'))?.focus();
+    }
+    _refreshActions(){
+      for(const section of this.shadowRoot.querySelectorAll('[data-action-path]')){
+        const path=JSON.parse(section.dataset.actionPath),item=at(this._config,path);
+        const dedicated=['light','switch','select'].includes((item?.entity||'').split('.')[0]);
+        if(section.dataset.dedicated===String(dedicated))continue;
+        this._forms=this._forms.filter(ref=>!section.contains(ref.form));this._action(null,path,item,section);
+      }
     }
     _update(path,values,schema){
       this._commit(next=>{
         const target=at(next,path);
-        for(const item of schema){
+        for(const item of flatSchema(schema)){
           if(!Object.prototype.hasOwnProperty.call(values,item.name))continue;
           let value=clone(values[item.name]);
           if(item.name==='columns'&&value!=='auto'&&value!==undefined&&value!==null&&value!=='')value=Number(value);
@@ -908,11 +1033,13 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
     _form(parent,path,schema){
       const data=()=>{
         const source=at(this._config,path)||{},result={};
-        for(const item of schema){if(source[item.name]!==undefined)result[item.name]=item.name==='columns'?String(source[item.name]):clone(source[item.name]);else if(item.name==='columns')result[item.name]='auto';else if(['show_volume','show_next'].includes(item.name))result[item.name]=true;}
+        for(const item of flatSchema(schema)){if(source[item.name]!==undefined)result[item.name]=item.name==='columns'?String(source[item.name]):clone(source[item.name]);else if(item.name==='columns')result[item.name]='auto';else if(['show_volume','show_next'].includes(item.name))result[item.name]=true;}
         return result;
       };
       if(!customElements.get('ha-form')){this._nativeForm(parent,path,schema,data);return;}
+      schema=schema.map(item=>item.type==='expandable'?{...item,expanded:this._haDisplayOpen.has(JSON.stringify(path))}:item);
       const form=this._make('ha-form');form.dataset.path=JSON.stringify(path);form.hass=this._hass;form.schema=schema;
+      form.addEventListener('expanded-changed',event=>{if(typeof event.detail?.expanded!=='boolean'||!event.composedPath().some(node=>node.localName==='ha-form-expandable'))return;this._haDisplayOpen[event.detail.expanded?'add':'delete'](JSON.stringify(path));for(const item of schema)if(item.type==='expandable')item.expanded=event.detail.expanded;});
       form.computeLabel=item=>item.label||item.name;form.data=data();
       form.addEventListener('value-changed',event=>{event.stopPropagation();if(event.target!==form||!event.detail?.value)return;this._update(path,event.detail.value,schema);});
       this._forms.push({form,data});parent.append(form);
@@ -920,6 +1047,13 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
     _nativeForm(parent,path,schema,data){
       const form=this._make('div','native');form.dataset.path=JSON.stringify(path);parent.append(form);
       for(const item of schema){
+        if(item.schema){
+          if(item.type==='expandable'){
+            const details=this._make('details','display');details.dataset.displayPath=JSON.stringify(path);details.open=this._openDisplay?.has(details.dataset.displayPath)||false;
+            details.append(this._make('summary',null,item.title));const content=this._make('div','content');details.append(content);form.append(details);this._nativeForm(content,path,item.schema,data);
+          }else {this._nativeForm(form,path,item.schema,data);form.lastElementChild.classList.add('native-grid');}
+          continue;
+        }
         const label=this._make('label',null,item.label),selector=item.selector,value=data()[item.name];let input;
         if(selector.select){input=this._make('select');if(!item.required){const empty=this._make('option',null,'기본값');empty.value='';input.append(empty);}for(const option of selector.select.options){const node=this._make('option',null,option.label);node.value=option.value;input.append(node);}input.value=value??'';}
         else {input=this._make(selector.text?.multiline?'textarea':'input');if(selector.text?.multiline){input.rows=4;input.value=value??'';}else {input.type=selector.boolean?'checkbox':selector.number?'number':'text';if(selector.boolean)input.checked=value??false;else if(selector.target)input.value=Array.isArray(value?.entity_id)?value.entity_id.join(', '):value?.entity_id||'';else input.value=value??'';if(selector.number)input.step='any';}}
@@ -953,10 +1087,10 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       const entries=at(this._config,path)||[];
       entries.forEach((item,index)=>{
         const row=this._make('details');row.dataset.path=JSON.stringify([...path,index]);row.dataset.label=`${label} ${index+1}`;row.open=this._openDetails?.has(row.dataset.path)||(!this._openDetails?.size&&index===0);
-        const title=item.name||item.entity||item.find_name||(item.value!==undefined?`${item.value} · ${item.level||''}`:`${label} ${index+1}`);
+        const title=this._title(item,[...path,index],`${label} ${index+1}`);
         row.append(this._make('summary',null,`${index+1}. ${title}`));
         const content=this._make('div','content'),toolbar=this._make('div','toolbar');
-        for(const [text,offset] of [['위로',-1],['아래로',1]]){const button=this._button(text,()=>this._commit(next=>{const items=at(next,path);[items[index],items[index+offset]]=[items[index+offset],items[index]];},true),index+offset<0||index+offset>=entries.length);button.setAttribute('aria-label',`${title} ${text}`);toolbar.append(button);}
+        for(const [text,offset] of [['위로',-1],['아래로',1]]){const button=this._button(text,()=>this._move(path,index,offset),index+offset<0||index+offset>=entries.length);button.dataset.move=offset<0?'up':'down';button.setAttribute('aria-label',`${title} ${text}`);toolbar.append(button);}
         const remove=this._button('삭제',()=>this._commit(next=>{at(next,path).splice(index,1);},true),entries.length<=min);remove.setAttribute('aria-label',`${title} 삭제`);toolbar.append(remove);content.append(toolbar);row.append(content);list.append(row);
         renderItem(content,[...path,index],item);
       });
@@ -977,26 +1111,30 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       },true);label.append(input);parent.append(label);
       if(type==='heading'){
         this._form(parent,path,[text('name','제목',true)]);
-        this._list(parent,[...path,'badges'],'배지',(body,p)=>this._form(body,p,[entity('entity','센서'),text('name','표시 이름')]),()=>({entity:this._first('sensor','sensor.example')}));return;
+        this._list(parent,[...path,'badges'],'배지',(body,p)=>this._form(body,p,[entity('entity','센서'),display([text('name','표시 이름')])]),()=>({entity:this._first('sensor','sensor.example')}));return;
       }
       if(type==='note'){this._form(parent,path,[field('name','메모',{text:{multiline:true}},true)]);return;}
       if(type==='comparison'){
-        this._list(parent,[...path,'rows'],'비교 항목',(body,p)=>this._form(body,p,[text('name','항목 이름'),entity('entity','이번 달 센서','sensor'),entity('previous','지난달 센서','sensor')]),()=>({name:'사용량',entity:this._first('sensor','sensor.current'),previous:this._first('sensor','sensor.previous')}),1);return;
+        this._list(parent,[...path,'rows'],'비교 항목',(body,p)=>this._form(body,p,[text('name','항목 이름'),entity('entity','이번 달 누적 센서','sensor'),entity('previous','지난달 전체 센서','sensor')]),()=>({name:'사용량',entity:this._first('sensor','sensor.current'),previous:this._first('sensor','sensor.previous')}),1);return;
       }
       if(type==='navigate'){this._form(parent,path,[text('name','표시 이름',true),text('navigation_path','로컬 이동 경로 (예: /energy)',true),field('icon','아이콘',{icon:{}})]);return;}
-      if(type==='lookup'){this._form(parent,path,[text('find_name','센서의 정확한 이름',true),text('domain','도메인 (기본 sensor)'),text('name','표시 이름'),field('icon','아이콘',{icon:{}})]);return;}
+      if(type==='lookup'){this._form(parent,path,[text('find_name','센서의 정확한 이름',true),text('domain','도메인 (기본 sensor)'),display([text('name','표시 이름'),field('icon','아이콘',{icon:{}})])]);return;}
       const domain={climate:'climate',light:'light',cover:'cover',media:'media_player'}[type];
-      const fields=[entity('entity','엔티티',domain),text('name','표시 이름')];
-      if(type==='entity')fields.push(field('icon','아이콘',{icon:{}}));
+      const fields=[entity('entity','엔티티',domain),display([text('name','표시 이름'),...(type==='entity'?[field('icon','아이콘',{icon:{}})]:[])])];
       if(type==='media')fields.push(field('show_volume','음량 표시',{boolean:{}}),field('show_next','다음 곡 표시',{boolean:{}}));
       this._form(parent,path,fields);
       if(type==='entity')this._action(parent,path,item);
     }
-    _action(parent,path,item){
-      const section=this._section(parent,'실행 버튼'),label=this._make('label',null,' 실행 버튼 사용'),enabled=this._make('input');enabled.type='checkbox';enabled.checked=Boolean(item.tap_action);enabled.setAttribute('aria-label','실행 버튼 사용');label.prepend(enabled);section.append(label);
-      enabled.onchange=()=>this._commit(next=>{const target=at(next,path);if(enabled.checked)target.tap_action={action:'perform-action',perform_action:'script.turn_on'};else delete target.tap_action;},true);
+    _action(parent,path,item,existing){
+      const section=existing||this._section(parent,'실행 버튼');
+      if(existing){section.replaceChildren();section.append(this._make('p','heading','실행 버튼'));}
+      section.dataset.actionPath=JSON.stringify(path);
+      const dedicated=['light','switch','select'].includes((item.entity||'').split('.')[0]);section.dataset.dedicated=String(dedicated);
+      if(dedicated){section.append(this._make('p','hint','이 엔티티는 전용 제어를 사용합니다. 기존 YAML 실행 설정은 보존됩니다.'));return;}
+      const label=this._make('label',null,' 실행 버튼 사용'),enabled=this._make('input');enabled.type='checkbox';enabled.checked=Boolean(item.tap_action);enabled.setAttribute('aria-label','실행 버튼 사용');label.prepend(enabled);section.append(label);
+      enabled.onchange=()=>this._commit(next=>{const target=at(next,path);if(enabled.checked)target.tap_action={action:'perform-action',perform_action:({button:'button.press',input_button:'input_button.press'}[(target.entity||'').split('.')[0]]||'script.turn_on')};else delete target.tap_action;},true);
       if(!item.tap_action)return;
-      section.append(this._make('p','hint','light · switch · select는 전용 제어를 사용합니다. 실행 버튼은 다른 엔티티에서 표시됩니다.'));
+      section.append(this._make('p','hint','실행할 액션을 지정하세요. 대상을 생략하면 항목의 엔티티를 사용합니다.'));
       this._form(section,[...path,'tap_action'],[text('perform_action','실행할 액션 (예: button.press)',true),field('target','대상 (생략하면 항목의 엔티티)',{target:{}})]);
       this._confirmation(section,[...path,'tap_action'],'confirmation',item.tap_action.confirmation,true);
       this._dataFields(section,[...path,'tap_action','data']);
@@ -1026,10 +1164,15 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       }));
     }
     _render(){
-      if(!this._config)return;this._openDetails=new Set([...this.shadowRoot.querySelectorAll('details[open]')].map(node=>node.dataset.path));if(this._openNext){this._openDetails.add(this._openNext);this._openNext=undefined;}const root=this.shadowRoot.querySelector('.root');root.replaceChildren();this._forms=[];
+      if(!this._config)return;
+      this._openDetails=new Set([...this.shadowRoot.querySelectorAll('details[data-path][open]')].map(node=>JSON.stringify(this._remapPath(JSON.parse(node.dataset.path)))));
+      this._openDisplay=new Set([...this.shadowRoot.querySelectorAll('details[data-display-path][open]')].map(node=>JSON.stringify(this._remapPath(JSON.parse(node.dataset.displayPath)))));
+      this._haDisplayOpen=new Set([...this._haDisplayOpen].map(path=>JSON.stringify(this._remapPath(JSON.parse(path)))));
+      this._moving=undefined;if(this._openNext){this._openDetails.add(this._openNext);this._openNext=undefined;}
+      const root=this.shadowRoot.querySelector('.root');root.replaceChildren();this._forms=[];
       if(['compact-climate-row','compact-light-row','compact-cover-row','compact-media-row'].includes(this._kind)){
         const domain={'compact-climate-row':'climate','compact-light-row':'light','compact-cover-row':'cover','compact-media-row':'media_player'}[this._kind];
-        const schema=[entity('entity','엔티티',domain),text('name','표시 이름')];
+        const schema=[entity('entity','엔티티',domain),display([text('name','표시 이름')])];
         if(this._kind==='compact-media-row')schema.push(field('show_volume','음량 표시',{boolean:{}}),field('show_next','다음 곡 표시',{boolean:{}}));
         this._form(root,[],schema);return;
       }
@@ -1037,10 +1180,11 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       this._form(root,[],home?[columns(2)]:[text('name','패널 이름'),columns(4)]);
       this._list(root,['items'],'항목',(body,path,item)=>{
         if(home){this._homeItem(body,path,item);return;}
-        this._form(body,path,[entity('entity','엔티티',this._kind==='compact-scene-panel'?['scene','script']:'sensor'),text('name','표시 이름'),field('icon','아이콘',{icon:{}})]);
+        this._form(body,path,[entity('entity','엔티티',this._kind==='compact-scene-panel'?['scene','script']:'sensor'),display([text('name','표시 이름'),field('icon','아이콘',{icon:{}})])]);
         if(this._kind==='compact-scene-panel')this._confirmation(body,path,'confirmation',item.confirmation);
-        else this._list(body,[...path,'thresholds'],'임계값',(section,p)=>this._form(section,p,[field('value','기준값',{number:{mode:'box',step:'any'}},true),select('direction','비교 방향',[['above','이상'],['below','이하']]),select('level','강조 수준',[['warning','주의'],['critical','위험']])]),()=>({value:0,direction:'above',level:'warning'}));
+        else this._list(body,[...path,'thresholds'],'임계값',(section,p)=>this._form(section,p,[grid([field('value','기준값',{number:{mode:'box',step:'any'}},true),select('direction','비교 방향',[['above','이상'],['below','이하']]),select('level','강조 수준',[['warning','주의'],['critical','위험']])])]),()=>({value:0,direction:'above',level:'warning'}));
       },type=>this._defaultItem(type),home?0:1);
+      this._restoreReorderFocus();
     }
   }
   for(const type of ['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row']){

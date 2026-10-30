@@ -19,7 +19,7 @@ items:
     name: CO₂
 ```
 
-엔티티 ID를 실제 환경에 맞게 변경하세요. 기존 `compact-cards.js` 리소스에 포함되어 별도 파일 설치가 필요 없습니다. 이 카드는 독립 카드로 사용하며 설정은 YAML로 작성합니다.
+엔티티 ID를 실제 환경에 맞게 변경하세요. 기존 `compact-cards.js` 리소스에 포함되어 별도 파일 설치가 필요 없습니다. 이 카드는 독립 카드로 사용하며 시각적 편집기 또는 YAML로 설정합니다.
 
 ## 옵션
 
@@ -37,7 +37,7 @@ items:
 | `thresholds[].direction` | 예, 조건을 넣을 때 | — | `above`(이상, ≥) 또는 `below`(이하, ≤) |
 | `thresholds[].level` | 예, 조건을 넣을 때 | — | `warning`(주의) 또는 `critical`(위험) |
 
-`columns: auto`는 카드 너비에 맞춰 배치합니다. 자동 환경 셀은 작은 영역에 값을 표시하도록 구성되며, 360px 이하에서는 장식 아이콘을 숨겨 값의 공간을 확보합니다. 제목을 생략하면 추가 제목 행이 생기지 않습니다. 긴 이름은 말줄임하고 전체 이름과 값은 툴팁 및 접근성 이름으로 제공합니다. 긴 단위나 큰 글자를 사용한다면 고정 `columns: 1` 또는 `2`를 선택할 수 있습니다.
+`columns: auto`는 카드 너비에 맞춰 배치합니다. 자동 배치는 실제 값의 표시 너비도 확인하여 긴 숫자를 중간에 나누지 않도록 열 수를 조정합니다. 두 열에서 마지막 홀수 항목은 남은 행 너비를 사용합니다. 자동 환경 셀은 작은 영역에 값을 표시하도록 구성되며, 360px 이하에서는 장식 아이콘을 숨겨 값의 공간을 확보합니다. 제목을 생략하면 추가 제목 행이 생기지 않습니다. 긴 이름은 말줄임하고 전체 이름과 값은 툴팁 및 접근성 이름으로 제공합니다. 긴 단위나 큰 글자를 사용한다면 고정 `columns: 1` 또는 `2`를 선택할 수 있습니다.
 
 ## 임계값 설정
 
@@ -76,11 +76,13 @@ items:
 
 ## 값 표시와 조작
 
-- Home Assistant가 제공하는 지역화된 값 표시를 우선 사용하며 단위를 중복해서 붙이지 않습니다.
+- Home Assistant가 제공하는 지역화된 값 표시를 우선 사용하며 단위를 중복해서 붙이지 않습니다. 숫자의 지역별 소수점·묶음 구분과 줄바꿈 없는 공백을 유지하고, 인식되는 단위는 작은 글자로 구분합니다. 앞에 오는 통화 단위도 표시 순서를 유지합니다.
 - 없는 엔티티, `unknown`, `unavailable`, 빈 값, 숫자가 아닌 값은 `—`와 `확인 불가`로 표시합니다. 이전 임계값 색상도 해제합니다.
 - 엔티티가 존재하면 연결 불가 상태에서도 상세 정보를 열 수 있습니다. 엔티티가 없으면 해당 셀은 비활성화됩니다.
 - 임계값은 표시 상태에만 사용됩니다. 자동화·알림 전송·기기 제어를 실행하거나 과거 데이터를 조회하지 않습니다.
 - 버튼 높이는 최소 44px이며 키보드 포커스와 동작 줄이기 설정을 지원합니다.
+
+![320px에서 긴 숫자를 유지하는 예시](../images/compact-environment-long.jpg)
 
 ## English
 
@@ -88,4 +90,4 @@ Use `custom:compact-environment-panel` with a nonempty `items` list of numeric `
 
 Each threshold requires numeric `value`, `direction: above/below` (inclusive ≥/≤), and `level: warning/critical`. Critical takes precedence when several conditions match. Thresholds compare the raw numeric state in the sensor's own units; there is no unit conversion or built-in health standard. Examples are configuration examples, not universal limits.
 
-Press a reading for more-info. Missing, unknown, unavailable, empty, and nonnumeric values show a fallback and clear threshold styling. Existing unavailable entities can still open more-info. Thresholds only affect presentation; they do not send alerts, run automations, or retrieve historical data. Configuration uses YAML.
+Press a reading for more-info. Missing, unknown, unavailable, empty, and nonnumeric values show a fallback and clear threshold styling. Existing unavailable entities can still open more-info. Thresholds only affect presentation; they do not send alerts, run automations, or retrieve historical data. Numeric tokens do not split across lines, localized grouping is preserved, and recognized units have smaller type. Automatic columns adapt to measured reading width. Use the visual editor or YAML.
