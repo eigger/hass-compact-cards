@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add standalone compact image and camera thumbnail rows with visual editors, fit controls, accessible image descriptions, load/retry feedback and tap-to-open native details (native picture card dialog for static URLs). No inline live playback. Cover entity recovery and lifecycle races with tests; document that live HA playback still needs verification.
+
 - Replace dotted request outlines and pending/success card-edge flashes with subtle control dimming across cards. Remove button shrink/rebound effects while retaining keyboard focus, duplicate-request guards, actual-state colors and error feedback.
 
 - Keep climate rows at their content height, including editor previews, and wrap mode controls only when their measured widths need another line. Preserve all icon-only modes and 44px coarse-pointer targets instead of forcing extra rows at fixed breakpoints.

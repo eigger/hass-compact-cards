@@ -1,0 +1,12 @@
+# Standalone thumbnail rows; replace paths and entity IDs.
+type: grid
+columns: 2
+square: false
+cards:
+  - type: custom:compact-image-card
+    image: /local/floor-plan.png
+    name: 우리 집
+    alt_text: 방과 출입구를 보여주는 집 평면도
+  - type: custom:compact-camera-card
+    entity: camera.front_door
+    name: 현관

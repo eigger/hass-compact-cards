@@ -1,6 +1,6 @@
 # 시각적 카드 편집기 / Visual card editor
 
-7종 카드 모두 Home Assistant 카드 편집 화면에서 설정할 수 있습니다. YAML 편집도 계속 사용할 수 있으며 두 편집 방식은 같은 카드 설정을 사용합니다.
+9종 카드 모두 Home Assistant 카드 편집 화면에서 설정할 수 있습니다. YAML 편집도 계속 사용할 수 있으며 두 편집 방식은 같은 카드 설정을 사용합니다.
 
 ![환경 카드 시각 편집 예시](../images/visual-editor.jpg)
 
@@ -22,6 +22,8 @@
 | `compact-climate-row` | 냉난방 엔티티, 표시 이름 |
 | `compact-light-row` | 조명 엔티티, 표시 이름 |
 | `compact-cover-row` | 커튼 엔티티, 표시 이름 |
+| `compact-image-card` | 이미지 URL 또는 image 엔티티, 대체 텍스트, 표시 이름, 채우기/전체 보기 |
+| `compact-camera-card` | camera 엔티티, 표시 이름, 채우기/전체 보기 |
 | `compact-media-row` | 미디어 엔티티, 표시 이름, 음량·다음 곡 표시 |
 | `compact-home-panel` | 자동/1/2열, 일반 엔티티·센서 이름 검색·제목·메모·냉난방·조명·커튼·미디어·사용량 비교·페이지 이동, 항목 순서 |
 | `compact-scene-panel` | 패널 이름, 자동/1~4열, 장면·스크립트 엔티티, 이름·아이콘, 실행 전 확인 메시지, 항목 순서 |
@@ -53,10 +55,12 @@ Home Assistant 기본 폼을 사용하여 엔티티·아이콘·대상 선택기
 
 ## English
 
-All seven cards expose Home Assistant visual configuration editors. Pick a Compact card, choose an entity, edit its optional name, and save with Home Assistant. Panels provide expandable items with add, remove and reorder controls; reordering keeps the moved item expanded and restores keyboard focus. Optional names/icons live in expandable display settings. Threshold summaries include the sensor unit, direction and localized severity, and their inputs adapt to available width. Home panels include headings/badges, notes, entity lookup, embedded controls, navigation, comparison rows and action buttons. Scene panels expose confirmations. Environment panels expose numeric thresholds, comparison directions and warning levels.
+All nine cards expose Home Assistant visual configuration editors. Pick a Compact card, choose an entity, edit its optional name, and save with Home Assistant. Panels provide expandable items with add, remove and reorder controls; reordering keeps the moved item expanded and restores keyboard focus. Optional names/icons live in expandable display settings. Threshold summaries include the sensor unit, direction and localized severity, and their inputs adapt to available width. Home panels include headings/badges, notes, entity lookup, embedded controls, navigation, comparison rows and action buttons. Scene panels expose confirmations. Environment panels expose numeric thresholds, comparison directions and warning levels.
 
 Native HA entity, icon and target selectors are used when available; native inputs provide a fallback without frontend helpers. Media visibility fields reflect their default `true` values. Unknown YAML fields and nested action data survive edits, and incoming configurations are never mutated. Primitive action data has typed fields; existing arrays and nested objects are preserved and remain editable in YAML. The editor emits `config-changed` without calling device services. Dashboard persistence belongs to Home Assistant.
 
 Home-panel plain entity items provide a name-tap action selector for default details, `more-info`, `toggle`, and (without dedicated right-hand controls) `perform-action`. Toggle requires an explicit item entity; dedicated right-hand controls keep their behavior. Support is limited to these tap actions, not hold/double-tap or the complete HA action schema.
 
 Implementation follows the official [custom card editor API](https://contributors.home-assistant.io/frontend/custom-ui/card-editor/) and the native [ha-form component](https://github.com/home-assistant/frontend/blob/dev/src/components/ha-form/ha-form.ts). DOM tests cover config events, immutable round trips, nested lists, add/remove/reorder, selector bootstrap and fallback fields; live HA integration and real browser rendering require separate verification.
+
+이미지·카메라는 독립 카드입니다. 이미지 URL과 이미지 엔티티는 하나만 지정하세요. 미디어 소스 선택·업로드와 홈 패널 내 삽입은 지원하지 않습니다. / Image and camera are standalone cards. Choose either an image URL or image entity. Media-source selection/upload and embedding in the home panel are not supported.

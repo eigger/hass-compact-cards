@@ -1,5 +1,5 @@
 // Compact Cards: Home Assistant dashboard cards.
-// Local Home Assistant card. No dependencies or external network requests.
+// Local Home Assistant cards. No external runtime dependencies; configured images may use HTTP(S).
 function compactText(el, value) { const text=String(value ?? '');if(el.textContent!==text)el.textContent=text; }
 function compactAttr(el, key, value) { const text=String(value);if(el.getAttribute(key)!==text)el.setAttribute(key,text); }
 function compactProp(el, key, value) { if(el[key]!==value)el[key]=value; }
@@ -1031,6 +1031,128 @@ if(!customElements.get('compact-media-row'))customElements.define('compact-media
 window.customCards=window.customCards||[];
 if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.push({type:'compact-media-row',name:'Compact media row',description:'곡 정보와 재생·음량을 간결하게 제어'});
 
+// Picture surfaces share compact chrome; HA owns camera authentication and playback.
+function compactImageSource(value) {
+  if (typeof value !== 'string' || !value.trim()) return false;
+  return value.startsWith('/') && !value.startsWith('//') && !value.includes('\\') || /^https?:\/\/[^\s]+$/i.test(value);
+}
+class CompactPictureCard extends HTMLElement {
+  constructor(camera=false) {
+    super();this._camera=camera;this._epoch=0;this.attachShadow({mode:'open'});
+    this.shadowRoot.innerHTML=`<style>
+      :host{display:block;container-type:inline-size}ha-card{display:flex;align-items:center;gap:8px;padding:6px;overflow:hidden;color:var(--primary-text-color);box-sizing:border-box}
+      .surface{position:relative;flex:0 0 96px;width:96px;aspect-ratio:16 / 9;background:var(--secondary-background-color);overflow:hidden;border-radius:8px;cursor:pointer}.surface:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
+      .surface>img{width:100%;height:100%;object-fit:var(--picture-fit,cover);display:block}
+      .surface>img[hidden],.message[hidden],.native[hidden],button[hidden]{display:none}
+      .native{width:100%;height:100%;--ha-card-border-width:0;--ha-card-border-radius:0;--ha-card-box-shadow:none;--ha-card-background:transparent}
+      .message{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:4px;color:var(--secondary-text-color);font-size:11px;line-height:1.3}
+      footer{display:flex;align-items:center;gap:4px;min-height:44px;flex:1;min-width:0;padding:0 2px}.retry{padding:4px}.state:empty{display:none}dialog{width:min(900px,90vw);max-height:90vh;box-sizing:border-box;border:1px solid var(--divider-color);border-radius:14px;background:var(--card-background-color);color:var(--primary-text-color);padding:12px}dialog::backdrop{background:#0008}dialog header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}dialog .full{overflow:auto;max-height:75vh}
+      button{font:inherit;color:inherit;background:transparent;border:0;border-radius:6px;min-height:36px;cursor:pointer;touch-action:manipulation}
+      button:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}button:disabled{cursor:default}
+      .info{text-align:left;min-width:0;flex:1;padding:4px 2px}.name{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .state{display:block;font-size:12px;color:var(--secondary-text-color);padding-top:2px}.retry{font-size:13px;color:var(--primary-color)}
+      @container(max-width:240px){.surface{flex-basis:72px;width:72px}footer{flex-wrap:wrap}.info{flex-basis:100%;width:100%}.retry{margin-left:auto}}
+      @media(pointer:coarse){button{min-height:44px;min-width:44px}}
+    </style><ha-card><div class="surface"><div class="native"></div><div class="message" role="status" aria-live="polite"></div></div><footer><button class="info" type="button"><span class="name"></span><span class="state"></span></button><button class="retry" type="button">재시도</button></footer></ha-card><dialog aria-label="이미지 크게 보기"><header><span class="dialog-title"></span><button type="button" class="close" aria-label="닫기">닫기</button></header><div class="full"></div></dialog>`;
+    this._surface=this.shadowRoot.querySelector('.surface');this._native=this.shadowRoot.querySelector('.native');this._message=this.shadowRoot.querySelector('.message');
+    this._info=this.shadowRoot.querySelector('.info');this._retry=this.shadowRoot.querySelector('.retry');
+    this._dialog=this.shadowRoot.querySelector('dialog');
+    this.shadowRoot.querySelector('.close').onclick=()=>this._dialog.close();
+    this._dialog.addEventListener('close',()=>this.shadowRoot.querySelector('.full').replaceChildren());
+    this._info.onclick=()=>this._open();
+    if(!camera){this._surface.setAttribute('role','button');this._surface.tabIndex=0;this._surface.onclick=()=>this._open();this._surface.onkeydown=event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();this._open();}};}
+
+    this._retry.onclick=()=>{this._reset();this._render();};
+    compactInteractions(this);
+  }
+  setConfig(config) {
+    const domain=this._camera?'camera':'image';
+    if(this._camera || config?.entity!==undefined) {
+      if(typeof config?.entity!=='string'||!new RegExp(`^${domain}\\.[a-z0-9_]+$`).test(config.entity))throw new Error(`${domain} 엔티티가 필요합니다.`);
+    }
+    if(!this._camera && ((config?.entity && config?.image) || (!config?.entity && !compactImageSource(config?.image))))throw new Error('image URL 또는 image 엔티티 중 하나를 지정하세요.');
+    if(config?.image!==undefined && (this._camera || !compactImageSource(config.image)))throw new Error('image는 /local/ 경로 또는 HTTP(S) URL이어야 합니다.');
+    for(const key of ['name','alt_text'])if(config[key]!==undefined&&typeof config[key]!=='string')throw new Error(`${key}는 문자열이어야 합니다.`);
+    if(config.fit_mode!==undefined&&!['cover','contain'].includes(config.fit_mode))throw new Error('fit_mode는 cover 또는 contain이어야 합니다.');
+    const ratio='16:9';
+    if(config.camera_view!==undefined&&config.camera_view!=='auto')throw new Error('컴팩트 카드는 미리보기만 지원합니다. camera_view를 생략하세요.');
+    this._config={...config,aspect_ratio:ratio,fit_mode:config.fit_mode??(this._camera?'cover':'contain')};this._reset();this._render();
+  }
+  set hass(value){this._hass=value;this._render();}
+  getCardSize(){return 1;}
+  getGridOptions(){return {columns:12,min_columns:6,min_rows:1};}
+  connectedCallback(){this._render();}
+  disconnectedCallback(){this._reset();}
+  _reset(){this._info?.removeAttribute('aria-busy');if(this._dialog?.open)this._dialog.close();this._opening=false;this._epoch++;this._loading=false;this._failed=false;this._url=undefined;this._child=undefined;this._native.replaceChildren();this._img?.remove();this._img=undefined;}
+  _status(message,retry=false){compactText(this._message,message);this._message.hidden=!message;this._retry.hidden=!retry;}
+  _render(){
+    if(!this._config)return;
+    const c=this._config,state=this._hass?.states[c.entity],name=c.name||state?.attributes.friendly_name||(this._camera?'카메라':'이미지');
+    compactStyle(this._surface,'--picture-fit',c.fit_mode);
+    compactText(this.shadowRoot.querySelector('.name'),name);this._info.disabled=Boolean(c.entity&&!state);compactAttr(this._info,'aria-label',`${name} 크게 보기`);compactAttr(this._surface,'aria-label',`${name} 크게 보기`);
+    const unavailable=c.entity&&(!state||['unavailable','unknown',...(this._camera?['off']:[])].includes(state.state));
+    compactText(this.shadowRoot.querySelector('.state'),unavailable?'확인 불가':this._camera?'카메라':c.entity?'이미지':'');
+    if(unavailable){if(this._child||this._img||this._loading||this._failed)this._reset();this._native.hidden=true;this._status(!state?'엔티티 없음':'사용 불가');return;}
+    if(this._camera){
+      this._native.hidden=false;
+      if(this._child){this._child.hass=this._hass;this._status('');return;}
+      if(!this.isConnected||!this._hass)return;
+      if(this._failed||this._loading)return;
+      this._loadCamera();return;
+    }
+    this._native.hidden=true;
+    let url=c.image;
+    if(c.entity){const token=state.attributes.access_token;url=token?`/api/image_proxy/${c.entity}?token=${encodeURIComponent(token)}&state=${encodeURIComponent(state.state)}`:state.attributes.entity_picture;}
+    if(!compactImageSource(url)){this._img?.remove();this._img=undefined;this._url=undefined;this._status('이미지 주소를 확인할 수 없습니다.');return;}
+    url=this._hass?.hassUrl?this._hass.hassUrl(url):url;
+    if(this._url===url){if(this._img)this._img.alt=c.alt_text??name;return;}
+    this._img?.remove();this._url=url;this._status('불러오는 중…');
+    const img=document.createElement('img');this._img=img;img.alt=c.alt_text??name;img.hidden=true;img.decoding='async';
+    img.onload=()=>{if(this._img!==img)return;img.hidden=false;this._status('');};
+    img.onerror=()=>{if(this._img!==img)return;img.hidden=true;this._status('이미지 없음',true);};
+    this._surface.prepend(img);img.src=url;
+  }
+  async _open(){
+    const c=this._config;if(!c||this._opening)return;
+    if(c.entity){if(this._hass?.states[c.entity])this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:c.entity},bubbles:true,composed:true}));return;}
+    const epoch=this._epoch;this._opening=true;this._info.setAttribute('aria-busy','true');
+    try{
+      if(!window.loadCardHelpers)throw new Error('HA runtime required');
+      const helpers=await window.loadCardHelpers();if(epoch!==this._epoch||!this.isConnected)return;
+      const child=helpers.createCardElement({type:'picture',image:c.image,alt_text:c.alt_text??c.name??'이미지',tap_action:{action:'none'},hold_action:{action:'none'}});child.hass=this._hass;
+      this.shadowRoot.querySelector('.full').replaceChildren(child);compactText(this.shadowRoot.querySelector('.dialog-title'),c.name||'이미지');this._dialog.showModal();
+    }catch(error){if(epoch===this._epoch)this._status('확대 실패',true);}
+    finally{if(epoch===this._epoch){this._opening=false;this._info.removeAttribute('aria-busy');}}
+  }
+  async _loadCamera(){
+    const epoch=this._epoch;this._loading=true;this._status('불러오는 중…');
+    try {
+      if(!window.loadCardHelpers)throw new Error('Home Assistant 카드 도우미가 필요합니다.');
+      const helpers=await window.loadCardHelpers();
+      if(epoch!==this._epoch||!this.isConnected)return;
+      const c=this._config;
+      const child=helpers.createCardElement({type:'picture-entity',entity:c.entity,camera_view:'auto',aspect_ratio:c.aspect_ratio,fit_mode:c.fit_mode,show_name:false,show_state:false,tap_action:{action:'more-info'},hold_action:{action:'none'},double_tap_action:{action:'none'}});
+      child.hass=this._hass;this._child=child;this._native.replaceChildren(child);this._status('');
+    }catch(error){if(epoch===this._epoch){this._failed=true;this._status('연결 실패',true);}}
+    finally{if(epoch===this._epoch)this._loading=false;}
+  }
+}
+class CompactImageCard extends CompactPictureCard {
+  constructor(){super(false);}
+  static getStubConfig(hass){const entity=Object.keys(hass?.states||{}).find(id=>id.startsWith('image.'));return entity?{entity}:{image:'/local/example.jpg',alt_text:'이미지'};}
+}
+class CompactCameraCard extends CompactPictureCard {
+  constructor(){super(true);}
+  static getStubConfig(hass){return {entity:Object.keys(hass?.states||{}).find(id=>id.startsWith('camera.'))||'camera.front_door',camera_view:'auto'};}
+}
+for(const [type,Constructor,name,description] of [
+  ['compact-image-card',CompactImageCard,'Compact image card','사진·평면도·이미지 엔티티를 표시'],
+  ['compact-camera-card',CompactCameraCard,'Compact camera card','카메라 썸네일을 누르면 기본 상세 화면으로 확대']
+]){
+  if(!customElements.get(type))customElements.define(type,Constructor);
+  if(!window.customCards.some(card=>card.type===type))window.customCards.push({type,name,description});
+}
+
 // Visual configuration: HA forms where available, native fields as a loading fallback.
 // All edits copy configuration and emit the complete config; card services are never called.
 (() => {
@@ -1125,13 +1247,22 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
     _update(path,values,schema){
       this._commit(next=>{
         const target=at(next,path);
+        const imageSource=this._kind==='compact-image-card'&&path.length===0;
+        const changedEntity=imageSource&&values.entity&&values.entity!==target.entity;
+        const changedImage=imageSource&&values.image&&values.image!==target.image;
         for(const item of flatSchema(schema)){
           if(!Object.prototype.hasOwnProperty.call(values,item.name))continue;
           let value=clone(values[item.name]);
           if(item.name==='columns'&&value!=='auto'&&value!==undefined&&value!==null&&value!=='')value=Number(value);
           if(value===undefined||value===null||value==='')delete target[item.name];else target[item.name]=value;
         }
+        if(changedEntity)delete target.image;else if(changedImage)delete target.entity;
       });
+      if(this._kind==='compact-image-card'&&path.length===0){
+        for(const input of this.shadowRoot.querySelectorAll('input[data-field="image"],input[data-field="entity"]')){
+          if(input!==this.shadowRoot.activeElement)input.value=this._config[input.dataset.field]??'';
+        }
+      }
     }
     _form(parent,path,schema){
       const data=()=>{
@@ -1298,6 +1429,12 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       this._haDisplayOpen=new Set([...this._haDisplayOpen].map(path=>JSON.stringify(this._remapPath(JSON.parse(path)))));
       this._moving=undefined;if(this._openNext){this._openDetails.add(this._openNext);this._openNext=undefined;}
       const root=this.shadowRoot.querySelector('.root');root.replaceChildren();this._forms=[];
+      if(['compact-image-card','compact-camera-card'].includes(this._kind)){
+        const camera=this._kind==='compact-camera-card';
+        const schema=camera?[entity('entity','카메라 엔티티','camera')]:[text('image','이미지 URL (/local/ 또는 HTTP(S))'),entity('entity','이미지 엔티티 (URL과 택일)','image',false),text('alt_text','대체 텍스트')];
+        schema.push(display([text('name','표시 이름'),select('fit_mode','이미지 맞춤',[['cover',camera?'영역 채우기 (기본)':'영역 채우기'],['contain',camera?'전체 보기':'전체 보기 (기본)']])]));
+        this._form(root,[],schema);return;
+      }
       if(['compact-climate-row','compact-light-row','compact-cover-row','compact-media-row'].includes(this._kind)){
         const domain={'compact-climate-row':'climate','compact-light-row':'light','compact-cover-row':'cover','compact-media-row':'media_player'}[this._kind];
         const schema=[entity('entity','엔티티',domain),display([text('name','표시 이름')])];
@@ -1315,7 +1452,7 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       this._restoreReorderFocus();
     }
   }
-  for(const type of ['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row']){
+  for(const type of ['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row','compact-image-card','compact-camera-card']){
     const tag=`${type}-editor`;
     if(!customElements.get(tag))customElements.define(tag,class extends CompactCardEditor{constructor(){super(type);}});
     customElements.get(type).getConfigElement=async()=>{
@@ -1332,7 +1469,7 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
 
 // Direct help from Home Assistant's card picker/editor to each illustrated guide.
 for(const card of window.customCards) {
-  if(['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row'].includes(card.type)) {
+  if(['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row','compact-image-card','compact-camera-card'].includes(card.type)) {
     card.documentationURL=`https://github.com/eigger/hass-compact-cards/blob/main/docs/${card.type}.md`;
     card.preview=true;
   }
