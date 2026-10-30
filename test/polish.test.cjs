@@ -92,6 +92,33 @@ test('a lock recovering from unavailable or going unavailable does not pop',t=>{
   hass.states['lock.a'].state='locked';card.hass=hass;assert.equal(icon.classList.contains('pop'),false);
   hass.states['lock.a'].state='unavailable';card.hass=hass;assert.equal(icon.classList.contains('pop'),false);
 });
+test('shared style has no pressed-button background and hover backgrounds are limited to hover devices',t=>{
+  const src=readFileSync('compact-cards.js','utf8');
+  assert.equal(/button:active:not\(:disabled\)\{background/.test(src),false);
+  assert.equal(src.includes(':host{-webkit-tap-highlight-color:transparent}'),true);
+  for(const m of src.matchAll(/button:hover[^{]*\{/g))assert.equal(src.slice(Math.max(0,m.index-20),m.index),'@media(hover:hover){');
+});
+test('pending controls do not dim while a request is in flight',t=>{
+  const src=readFileSync('compact-cards.js','utf8');
+  assert.equal(/aria-busy=true\][^{]*\{[^}]*opacity:\.65/.test(src),false);
+  assert.equal(src.includes('button[aria-busy=true]:disabled,select[aria-busy=true]:disabled,input[aria-busy=true]:disabled{opacity:1}'),true);
+});
+test('climate +/- buttons that are limited keep their dimming while a mode request is pending',async t=>{
+  const {card,hass}=setup(t,'compact-climate-row',{entity:'climate.room'},{'climate.room':state('climate.room','cool',{hvac_modes:['off','cool'],temperature:30,max_temp:30,min_temp:16,supported_features:1})});
+  let resolve;hass.callService=()=>new Promise(done=>resolve=done);
+  const pending=card._perform('set_hvac_mode',{hvac_mode:'off'});
+  assert.equal(card.shadowRoot.querySelector('.plus').getAttribute('aria-busy'),'false');
+  assert.equal(card.shadowRoot.querySelector('.minus').getAttribute('aria-busy'),'true');
+  resolve();await pending;
+});
+test('media volume slider that is unusable keeps its dimming while mute is pending',async t=>{
+  const {window,card,hass}=setup(t,'compact-media-row',{entity:'media_player.room'},{'media_player.room':state('media_player.room','playing',{supported_features:4|8,is_volume_muted:false})});
+  let resolve;hass.callService=()=>new Promise(done=>resolve=done);
+  const pending=card._call('volume_mute',{is_volume_muted:true});
+  const slider=card.shadowRoot.querySelector('input');
+  assert.equal(slider.disabled,true);assert.equal(slider.getAttribute('aria-busy'),'false');
+  resolve();await pending;
+});
 test('scene script icon pulses only while the script runs',t=>{
   const {card,hass}=setup(t,'compact-scene-panel',{items:[{entity:'script.go'}]},{'script.go':state('script.go','on')});
   const icon=card.shadowRoot.querySelector('ha-icon');assert.equal(icon.dataset.motion,'pulse');
@@ -110,7 +137,7 @@ test('light power label describes the available action, and canceled slider rest
   assert.equal(card._brightness.input.value,'40');hass.states['light.room'].state='off';card.hass=hass;assert.equal(card._toggle.getAttribute('aria-label'),'거실 켜기');
 });
 
-test('home toggle dims only its controls while pending and waits for HA state before showing on',async t=>{
+test('home toggle blocks only its controls without dimming while pending and waits for HA state before showing on',async t=>{
   const {window,card,hass,calls}=setup(t,'compact-home-panel',{items:[
     {entity:'switch.purifier',name:'전원',tap_action:{action:'toggle'}},
     {entity:'switch.other',name:'다른 기기',tap_action:{action:'toggle'}}
@@ -121,7 +148,7 @@ test('home toggle dims only its controls while pending and waits for HA state be
   const pending=card._toggle(ref);
   assert.equal(ref.label.getAttribute('aria-busy'),'true');assert.equal(ref.control.getAttribute('aria-busy'),'true');
   assert.equal(ref.label.disabled,true);assert.equal(ref.control.disabled,true);assert.equal(other.label.disabled,false);
-  for(const button of [ref.label,ref.control]){const style=window.getComputedStyle(button);assert.equal(Number(style.opacity),.65);assert.equal(style.cursor,'progress');assert.doesNotMatch(style.outline,/dotted|dashed/);}
+  for(const button of [ref.label,ref.control]){const style=window.getComputedStyle(button);assert.equal(Number(style.opacity),1);assert.equal(style.cursor,'progress');assert.doesNotMatch(style.outline,/dotted|dashed/);}
   assert.equal(ref.control.getAttribute('aria-checked'),'false');assert.equal(ref.row.style.getPropertyValue('--entity-color'),offColor);
   await card._toggle(ref);assert.equal(calls.length,1);
   resolve();await pending;

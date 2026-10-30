@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove the blue pressed-button background, hover backgrounds on touch devices and the mobile tap highlight, and stop dimming buttons while a request is pending, so presses no longer flash or flicker.
+
 ## 0.2.6 — 2026-10-30
 
 - Make icon motion subtler: slower fan rotation, smaller pulse and sway, and gentler lock pop, door shake and equalizer bars.

@@ -102,9 +102,11 @@ function compactInteractions(host) {
     output{flex:none}
     ${skins[type]||''}
     button{touch-action:manipulation;transition:background-color 150ms ease,color 150ms ease,opacity 150ms ease}
-    button:active:not(:disabled){background:color-mix(in srgb,var(--primary-color) 12%,transparent)}
+    :host{-webkit-tap-highlight-color:transparent}
     /* Request feedback stays on the affected controls; state colors come from HA. */
-    button[aria-busy=true],select[aria-busy=true],input[aria-busy=true]{cursor:progress;opacity:.65}
+    /* Pending requests block duplicates but keep the control steady so presses do not flicker. */
+    button[aria-busy=true],select[aria-busy=true],input[aria-busy=true]{cursor:progress}
+    button[aria-busy=true]:disabled,select[aria-busy=true]:disabled,input[aria-busy=true]:disabled{opacity:1}
     :host([data-feedback=error]) ha-card{box-shadow:inset 0 2px var(--error-color,#db4437)}
     input[type=range]{appearance:none;background:transparent}
     input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--primary-color) 0 var(--compact-fill,0%),var(--compact-control-surface) var(--compact-fill,0%) 100%);border:1px solid var(--divider-color)}
@@ -124,7 +126,7 @@ function compactInteractions(host) {
     @keyframes compact-fan{to{transform:rotate(360deg)}}
     @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
     @keyframes compact-dry{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
-    @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}.motion,.pop,.shake{animation:none!important}}`;
+    @media(prefers-reduced-motion:reduce){button{transition:none!important}.motion,.pop,.shake{animation:none!important}}`;
   const status=document.createElement('span');status.className='compact-feedback';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   host.shadowRoot.append(style,status);host._feedbackText=status;
 }
@@ -271,7 +273,7 @@ class CompactClimateRow extends HTMLElement {
     for (const b of container.children) {
       const pressed=!offline && b.dataset.mode === s?.state;
       compactProp(b,'disabled',offline || this._busy);
-      compactAttr(b,'aria-busy',this._busy);
+      compactAttr(b,'aria-busy',this._busy && !offline);
       compactAttr(b,'aria-disabled',offline || this._busy);
       compactAttr(b,'aria-pressed',pressed);
       const i=b.querySelector('ha-icon');
@@ -285,9 +287,9 @@ class CompactClimateRow extends HTMLElement {
     const supported = (Number(a.supported_features) & 1) !== 0;
     compactText(this.shadowRoot.querySelector('output'),valid ? `${t}°` : '—');
     const minus=this.shadowRoot.querySelector('.minus'),plus=this.shadowRoot.querySelector('.plus');
-    compactProp(minus,'disabled',offline || this._busy || !valid || !supported || (a.min_temp != null && t <= a.min_temp));
-    compactProp(plus,'disabled',offline || this._busy || !valid || !supported || (a.max_temp != null && t >= a.max_temp));
-    for(const button of [minus,plus]){compactAttr(button,'aria-busy',this._busy);compactAttr(button,'aria-disabled',button.disabled || this._busy);}
+    const limits=[[minus,offline || !valid || !supported || (a.min_temp != null && t <= a.min_temp)],[plus,offline || !valid || !supported || (a.max_temp != null && t >= a.max_temp)]];
+    // Only controls that are otherwise usable show the pending state, so unusable ones never flicker.
+    for(const [button,limited] of limits){compactProp(button,'disabled',limited || this._busy);compactAttr(button,'aria-busy',this._busy && !limited);compactAttr(button,'aria-disabled',limited || this._busy);}
     this._layout();
   }
   _step(direction) {
@@ -524,7 +526,7 @@ class CompactHomePanel extends HTMLElement {
       compactProp(ref.label,'title',ref.name.textContent);
       const tapToggle=item.tap_action?.action==='toggle',tapBusy=tapToggle&&this._busy.has(item.entity);
       compactProp(ref.label,'disabled',tapToggle ? offline||tapBusy : !state);
-      compactAttr(ref.label,'aria-busy',tapBusy);
+      compactAttr(ref.label,'aria-busy',tapBusy&&!offline);
       compactAttr(ref.label,'aria-label',`${ref.name.textContent}${tapToggle?' 켜기/끄기':''}`);
       compactStyle(ref.row,'--entity-color',compactStateColor(state));
       const domain=state?.entity_id.split('.')[0];
@@ -538,7 +540,7 @@ class CompactHomePanel extends HTMLElement {
       if (ref.value){compactText(ref.value,this._format(state));compactProp(ref.value,'title',ref.value.textContent);}
       if (ref.control) {
         compactProp(ref.control,'disabled',offline || this._busy.has(item.entity));
-        compactAttr(ref.control,'aria-busy',this._busy.has(item.entity));
+        compactAttr(ref.control,'aria-busy',this._busy.has(item.entity)&&!offline);
         compactAttr(ref.control,'aria-disabled',offline || this._busy.has(item.entity));
         compactAttr(ref.control,'aria-label',`${ref.name.textContent} ${['light','switch'].includes(domain)?'켜기/끄기':'실행'}`);
         if (ref.control.getAttribute('role') === 'switch') compactAttr(ref.control,'aria-checked',state?.state==='on');
@@ -547,7 +549,7 @@ class CompactHomePanel extends HTMLElement {
         const options=state?.attributes.options || [];
         if (ref.optionsKey!==JSON.stringify(options)) {ref.optionsKey=JSON.stringify(options);ref.select.replaceChildren(...options.map(value=>{const o=this._make('option',null,value);o.value=value;return o;}));}
         if(!this._busy.has(item.entity))compactProp(ref.select,'value',state?.state || '');
-        compactProp(ref.select,'disabled',offline || this._busy.has(item.entity));compactAttr(ref.select,'aria-busy',this._busy.has(item.entity));compactAttr(ref.select,'aria-label',ref.name.textContent);
+        compactProp(ref.select,'disabled',offline || this._busy.has(item.entity));compactAttr(ref.select,'aria-busy',this._busy.has(item.entity)&&!offline);compactAttr(ref.select,'aria-label',ref.name.textContent);
       }
     }
   }
@@ -598,10 +600,10 @@ class CompactControlRow extends HTMLElement {
       ha-card{box-sizing:border-box;padding:6px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:56px}
       button,input{font:inherit;color:var(--primary-text-color)}
       button{border:0;background:transparent;cursor:pointer;border-radius:8px;min-width:36px;min-height:36px;padding:6px;display:grid;place-items:center}
-      button:hover{background:var(--secondary-background-color)}
+      @media(hover:hover){button:hover:not(:disabled){background:var(--secondary-background-color)}}
       button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}
-      input[aria-busy=true]{opacity:.65;cursor:progress}
+      input[aria-busy=true]{cursor:progress}
       .info{display:block;justify-items:normal;align-items:normal;flex:1 1 84px;min-width:0;text-align:left;padding:2px 0}
       .name,.state{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
       .name{font-size:14px}.state{font-size:12px;color:var(--secondary-text-color);margin-top:2px}
@@ -681,7 +683,7 @@ class CompactControlRow extends HTMLElement {
     // Native disabled blurs a focused range. Pending requests keep focus while
     // event guards block edits; truly unavailable controls remain disabled.
     ref.input.disabled=disabled||!visible;ref.busy=busy;
-    compactAttr(ref.input,'aria-disabled',ref.input.disabled||busy);compactAttr(ref.input,'aria-busy',busy);
+    compactAttr(ref.input,'aria-disabled',ref.input.disabled||busy);compactAttr(ref.input,'aria-busy',busy&&!ref.input.disabled);
     if(!this._editing.has(ref.key)) {
       if(ref.pending?.entity===this._config.entity) {
         if(value===ref.pending.value){clearTimeout(ref.timer);ref.pending=undefined;}
@@ -745,7 +747,7 @@ class CompactLightRow extends CompactControlRow {
     if(!this._config || !this._hass || !this._toggle)return;
     const state=this._state(),a=state?.attributes || {},offline=this._offline(state),busy=this._busy.has(this._config.entity);
     this._renderInfo(state);
-    compactProp(this._toggle,'disabled',offline||busy);compactAttr(this._toggle,'aria-busy',busy);compactAttr(this._toggle,'aria-pressed',state?.state==='on');
+    compactProp(this._toggle,'disabled',offline||busy);compactAttr(this._toggle,'aria-busy',busy&&!offline);compactAttr(this._toggle,'aria-pressed',state?.state==='on');
     compactAttr(this._toggle,'aria-label',`${this._config.name||a.friendly_name||this._config.entity} ${state?.state==='on'?'끄기':'켜기'}`);
     const modes=Array.isArray(a.supported_color_modes)?a.supported_color_modes:[];
     const brightness=modes.some(mode=>['brightness','color_temp','hs','xy','rgb','rgbw','rgbww','white'].includes(mode));
@@ -775,7 +777,7 @@ class CompactCoverRow extends CompactControlRow {
     for(const [button,bit] of [[this._open,1],[this._stop,8],[this._close,2]]) {
       button.hidden=!(features&bit);
       button.disabled=offline || (button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
-      compactAttr(button,'aria-busy',button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
+      compactAttr(button,'aria-busy',!offline&&(button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy));
     }
     this._open.classList.toggle('moving',!offline&&state.state==='opening');this._close.classList.toggle('moving',!offline&&state.state==='closing');
     this._syncSlider(this._position,a.current_position,Boolean(features&4),offline,busy);
@@ -801,14 +803,14 @@ for(const [type,constructor,name,description] of [
       border:1px solid var(--divider-color);border-radius:var(--ha-card-border-radius,10px);
       background:transparent;color:var(--primary-text-color);font:inherit;text-align:left;cursor:pointer;
       transition:background-color 120ms ease}
-    button:hover:not(:disabled){background:var(--secondary-background-color)}
+    @media(hover:hover){button:hover:not(:disabled){background:var(--secondary-background-color)}}
     button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px}
     button:disabled{cursor:default;opacity:.55}
     button[aria-busy=true]{cursor:progress}
     ha-icon{--mdc-icon-size:20px;flex:none;width:20px;height:20px;color:var(--primary-color)}
     .copy{flex:1;min-width:0}.label{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .detail{display:block;font-size:11px;color:var(--secondary-text-color);margin-top:2px}
-    @media(prefers-reduced-motion:reduce){button{transition:none}button:active:not(:disabled){transform:none}}
+    .detail{display:block;font-size:11px;color:var(--secondary-text-color);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    @media(prefers-reduced-motion:reduce){button{transition:none}}
   `;
   const make = (tag, cls, text) => {
     const node = document.createElement(tag);
@@ -895,7 +897,7 @@ for(const [type,constructor,name,description] of [
         compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || (ref.item.entity.startsWith('scene.') ? 'mdi:palette-outline' : 'mdi:play'));
         compactMotion(ref.icon,running?'pulse':'');
         compactProp(ref.button,'disabled',!available || busy || running);
-        compactAttr(ref.button,'aria-busy',busy);
+        compactAttr(ref.button,'aria-busy',busy&&available&&!running);
         compactAttr(ref.button,'aria-label',`${name} · ${ref.detail.textContent}`);
         compactProp(ref.button,'title',`${name} · ${ref.detail.textContent}`);
       }
@@ -1006,9 +1008,9 @@ class CompactMediaRow extends HTMLElement {
       :host{display:block;container-type:inline-size}ha-card{padding:4px 10px;box-sizing:border-box;overflow:hidden}
       .main{display:flex;align-items:center;gap:4px;min-height:48px}.info{flex:1;min-width:0;text-align:left;padding-inline:4px}
       button{font:inherit;color:var(--primary-text-color);background:transparent;border:0;border-radius:8px;cursor:pointer;min-height:40px;min-width:40px;transition:background-color 150ms ease}
-      button:hover:not(:disabled){background:var(--secondary-background-color)}button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
+      @media(hover:hover){button:hover:not(:disabled){background:var(--secondary-background-color)}}button:focus-visible,input:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
       button:disabled,input:disabled{opacity:.4;cursor:default}
-      input[aria-busy=true]{opacity:.65;cursor:progress}
+      input[aria-busy=true]{cursor:progress}
       .name,.title,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.name{font-size:12px;color:var(--secondary-text-color)}.title{font-size:14px;line-height:20px}.state{font-size:12px;color:var(--secondary-text-color)}
       ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:before,.play.playing:after{content:'';position:absolute;width:2px;height:7px;border-radius:1px;background:currentColor;bottom:3px;transform-origin:bottom;animation:compact-eq .9s ease-in-out infinite}.play.playing:before{left:calc(50% - 5px);box-shadow:8px 0 currentColor}.play.playing:after{left:calc(50% - 1px);animation-delay:-.45s}@keyframes compact-eq{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}@media(prefers-reduced-motion:reduce){.play.playing:before,.play.playing:after{animation:none}}
       .volume{display:flex;align-items:center;gap:4px;min-height:32px;padding-inline:4px}.volume .mute{flex:none;min-width:32px;width:32px;min-height:32px;padding:0}.volume .mute:disabled:not([aria-busy=true]){opacity:1}.mute[aria-pressed=true]{color:var(--primary-color)}.volume .mute:disabled:hover{background:transparent}.volume ha-icon{color:inherit;width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
@@ -1069,13 +1071,13 @@ class CompactMediaRow extends HTMLElement {
     play.hidden=!offline&&!this._supports(actionBit);compactAttr(play,'aria-label',`${name} ${label}`);compactProp(play,'title',label);
     compactAttr(play.querySelector('ha-icon'),'icon',{turn_on:'mdi:power',media_pause:'mdi:pause',media_play:'mdi:play'}[action]);
     const next=this._q('.next');next.hidden=this._config.show_next===false||!this._supports(32);
-    for(const [button,service] of [[play,action],[next,'media_next_track']]){compactProp(button,'disabled',this._isBusy('transport')||!this._allowed(service));compactAttr(button,'aria-busy',this._isBusy('transport'));}
+    for(const [button,service] of [[play,action],[next,'media_next_track']]){compactProp(button,'disabled',this._isBusy('transport')||!this._allowed(service));compactAttr(button,'aria-busy',this._isBusy('transport')&&this._allowed(service));}
     const mute=this._q('.mute'),muted=a.is_volume_muted===true,muteLabel=muted?'음소거 해제':'음소거',volumeSupported=this._supports(4),muteSupported=this._supports(8);
     const muteParent=this._q(!volumeSupported&&muteSupported?'.main':'.volume');
     if(mute.parentElement!==muteParent){if(muteParent===this._q('.volume'))muteParent.prepend(mute);else muteParent.append(mute);}
     mute.hidden=this._config.show_volume===false||(!volumeSupported&&!muteSupported);
     compactAttr(mute.querySelector('ha-icon'),'icon',muted?'mdi:volume-off':'mdi:volume-medium');
-    compactAttr(mute,'aria-label',`${name} ${muteLabel}`);compactProp(mute,'title',muteLabel);compactAttr(mute,'aria-pressed',muted);compactAttr(mute,'aria-busy',this._isBusy('audio'));
+    compactAttr(mute,'aria-label',`${name} ${muteLabel}`);compactProp(mute,'title',muteLabel);compactAttr(mute,'aria-pressed',muted);compactAttr(mute,'aria-busy',this._isBusy('audio')&&this._allowed('volume_mute')&&typeof a.is_volume_muted==='boolean');
     compactProp(mute,'disabled',this._isBusy('audio')||!this._allowed('volume_mute')||typeof a.is_volume_muted!=='boolean');
     const slider=this._q('input'),level=a.volume_level,valid=typeof level==='number'&&Number.isFinite(level)&&level>=0&&level<=1;
     this._q('.volume').hidden=this._config.show_volume===false||!volumeSupported;
@@ -1084,7 +1086,7 @@ class CompactMediaRow extends HTMLElement {
     // Native disabled ranges lose focus. Pending requests keep the normal tab
     // flow, while input guards prevent duplicate edits; offline still disables.
     compactProp(slider,'disabled',unusable);
-    compactAttr(slider,'aria-disabled',unusable||audioBusy);compactAttr(slider,'aria-busy',audioBusy);compactAttr(slider,'aria-label',`${name} 음량${muted?' (음소거 중)':''}`);
+    compactAttr(slider,'aria-disabled',unusable||audioBusy);compactAttr(slider,'aria-busy',audioBusy&&!unusable);compactAttr(slider,'aria-label',`${name} 음량${muted?' (음소거 중)':''}`);
     if(this._pendingVolume!==undefined&&valid&&Math.round(level*100)===this._pendingVolume){this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
     if(!this._editingVolume){compactProp(slider,'value',String(this._pendingVolume??(valid?Math.round(level*100):0)));this._showVolume(slider.value);if(!valid)compactText(this._q('output'),'—');}
   }
@@ -1255,7 +1257,7 @@ for(const [type,Constructor,name,description] of [
         :host{display:block;color:var(--primary-text-color);font-family:var(--paper-font-body1_-_font-family,inherit)}
         .root{display:grid;gap:12px}.list{display:grid;gap:8px}details{border:1px solid var(--divider-color,#ddd);border-radius:10px;padding:8px}summary{cursor:pointer;font-size:14px;font-weight:500;overflow-wrap:anywhere;min-height:32px;align-content:center}details>.content{display:grid;gap:10px;padding-top:8px}
         .toolbar,.add{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:flex-end}.toolbar button{min-width:36px}.add select{flex:1;min-width:130px}.heading{font-size:14px;font-weight:500;margin:0}.hint{font-size:12px;color:var(--secondary-text-color);margin:0;line-height:1.5}
-        button,input,textarea,select{font:inherit;color:var(--primary-text-color);box-sizing:border-box}button{border:1px solid var(--divider-color,#ddd);background:var(--card-background-color,transparent);border-radius:7px;padding:6px 10px;cursor:pointer;min-height:36px}button:hover:not(:disabled){background:var(--secondary-background-color,#eee)}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
+        button,input,textarea,select{font:inherit;color:var(--primary-text-color);box-sizing:border-box}button{border:1px solid var(--divider-color,#ddd);background:var(--card-background-color,transparent);border-radius:7px;padding:6px 10px;cursor:pointer;min-height:36px}@media(hover:hover){button:hover:not(:disabled){background:var(--secondary-background-color,#eee)}}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
         .native{display:grid;gap:10px;min-width:0}.native-grid{grid-template-columns:repeat(auto-fit,minmax(min(90px,100%),1fr));align-items:start}.native label{min-width:0}.display{background:transparent}.display summary{font-size:13px;color:var(--secondary-text-color)}.native label{display:grid;gap:5px;font-size:13px}.native input,.native textarea,.native select,.add select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.native input[type=checkbox]{width:24px;height:24px;min-height:24px}.content>label,.subsection>label{display:grid;gap:5px;font-size:13px}.content>label>select,.subsection>label>input:not([type=checkbox]),.subsection>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.subsection{display:grid;gap:8px;border-top:1px solid var(--divider-color,#ddd);padding-top:10px}
         .subsection>label>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}
         @media(pointer:coarse){button{min-height:44px;min-width:44px}}
