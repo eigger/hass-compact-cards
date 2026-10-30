@@ -526,7 +526,7 @@ class CompactHomePanel extends HTMLElement {
       compactProp(ref.label,'title',ref.name.textContent);
       const tapToggle=item.tap_action?.action==='toggle',tapBusy=tapToggle&&this._busy.has(item.entity);
       compactProp(ref.label,'disabled',tapToggle ? offline||tapBusy : !state);
-      compactAttr(ref.label,'aria-busy',tapBusy);
+      compactAttr(ref.label,'aria-busy',tapBusy&&!offline);
       compactAttr(ref.label,'aria-label',`${ref.name.textContent}${tapToggle?' 켜기/끄기':''}`);
       compactStyle(ref.row,'--entity-color',compactStateColor(state));
       const domain=state?.entity_id.split('.')[0];
@@ -540,7 +540,7 @@ class CompactHomePanel extends HTMLElement {
       if (ref.value){compactText(ref.value,this._format(state));compactProp(ref.value,'title',ref.value.textContent);}
       if (ref.control) {
         compactProp(ref.control,'disabled',offline || this._busy.has(item.entity));
-        compactAttr(ref.control,'aria-busy',this._busy.has(item.entity));
+        compactAttr(ref.control,'aria-busy',this._busy.has(item.entity)&&!offline);
         compactAttr(ref.control,'aria-disabled',offline || this._busy.has(item.entity));
         compactAttr(ref.control,'aria-label',`${ref.name.textContent} ${['light','switch'].includes(domain)?'켜기/끄기':'실행'}`);
         if (ref.control.getAttribute('role') === 'switch') compactAttr(ref.control,'aria-checked',state?.state==='on');
@@ -549,7 +549,7 @@ class CompactHomePanel extends HTMLElement {
         const options=state?.attributes.options || [];
         if (ref.optionsKey!==JSON.stringify(options)) {ref.optionsKey=JSON.stringify(options);ref.select.replaceChildren(...options.map(value=>{const o=this._make('option',null,value);o.value=value;return o;}));}
         if(!this._busy.has(item.entity))compactProp(ref.select,'value',state?.state || '');
-        compactProp(ref.select,'disabled',offline || this._busy.has(item.entity));compactAttr(ref.select,'aria-busy',this._busy.has(item.entity));compactAttr(ref.select,'aria-label',ref.name.textContent);
+        compactProp(ref.select,'disabled',offline || this._busy.has(item.entity));compactAttr(ref.select,'aria-busy',this._busy.has(item.entity)&&!offline);compactAttr(ref.select,'aria-label',ref.name.textContent);
       }
     }
   }
@@ -683,7 +683,7 @@ class CompactControlRow extends HTMLElement {
     // Native disabled blurs a focused range. Pending requests keep focus while
     // event guards block edits; truly unavailable controls remain disabled.
     ref.input.disabled=disabled||!visible;ref.busy=busy;
-    compactAttr(ref.input,'aria-disabled',ref.input.disabled||busy);compactAttr(ref.input,'aria-busy',busy);
+    compactAttr(ref.input,'aria-disabled',ref.input.disabled||busy);compactAttr(ref.input,'aria-busy',busy&&!ref.input.disabled);
     if(!this._editing.has(ref.key)) {
       if(ref.pending?.entity===this._config.entity) {
         if(value===ref.pending.value){clearTimeout(ref.timer);ref.pending=undefined;}
@@ -747,7 +747,7 @@ class CompactLightRow extends CompactControlRow {
     if(!this._config || !this._hass || !this._toggle)return;
     const state=this._state(),a=state?.attributes || {},offline=this._offline(state),busy=this._busy.has(this._config.entity);
     this._renderInfo(state);
-    compactProp(this._toggle,'disabled',offline||busy);compactAttr(this._toggle,'aria-busy',busy);compactAttr(this._toggle,'aria-pressed',state?.state==='on');
+    compactProp(this._toggle,'disabled',offline||busy);compactAttr(this._toggle,'aria-busy',busy&&!offline);compactAttr(this._toggle,'aria-pressed',state?.state==='on');
     compactAttr(this._toggle,'aria-label',`${this._config.name||a.friendly_name||this._config.entity} ${state?.state==='on'?'끄기':'켜기'}`);
     const modes=Array.isArray(a.supported_color_modes)?a.supported_color_modes:[];
     const brightness=modes.some(mode=>['brightness','color_temp','hs','xy','rgb','rgbw','rgbww','white'].includes(mode));
@@ -777,7 +777,7 @@ class CompactCoverRow extends CompactControlRow {
     for(const [button,bit] of [[this._open,1],[this._stop,8],[this._close,2]]) {
       button.hidden=!(features&bit);
       button.disabled=offline || (button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
-      compactAttr(button,'aria-busy',button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy);
+      compactAttr(button,'aria-busy',!offline&&(button===this._stop?this._busy.has(`${this._config.entity}:stop`):busy));
     }
     this._open.classList.toggle('moving',!offline&&state.state==='opening');this._close.classList.toggle('moving',!offline&&state.state==='closing');
     this._syncSlider(this._position,a.current_position,Boolean(features&4),offline,busy);
@@ -897,7 +897,7 @@ for(const [type,constructor,name,description] of [
         compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || (ref.item.entity.startsWith('scene.') ? 'mdi:palette-outline' : 'mdi:play'));
         compactMotion(ref.icon,running?'pulse':'');
         compactProp(ref.button,'disabled',!available || busy || running);
-        compactAttr(ref.button,'aria-busy',busy);
+        compactAttr(ref.button,'aria-busy',busy&&available);
         compactAttr(ref.button,'aria-label',`${name} · ${ref.detail.textContent}`);
         compactProp(ref.button,'title',`${name} · ${ref.detail.textContent}`);
       }
@@ -1086,7 +1086,7 @@ class CompactMediaRow extends HTMLElement {
     // Native disabled ranges lose focus. Pending requests keep the normal tab
     // flow, while input guards prevent duplicate edits; offline still disables.
     compactProp(slider,'disabled',unusable);
-    compactAttr(slider,'aria-disabled',unusable||audioBusy);compactAttr(slider,'aria-busy',audioBusy);compactAttr(slider,'aria-label',`${name} 음량${muted?' (음소거 중)':''}`);
+    compactAttr(slider,'aria-disabled',unusable||audioBusy);compactAttr(slider,'aria-busy',audioBusy&&!unusable);compactAttr(slider,'aria-label',`${name} 음량${muted?' (음소거 중)':''}`);
     if(this._pendingVolume!==undefined&&valid&&Math.round(level*100)===this._pendingVolume){this._pendingVolume=undefined;clearTimeout(this._volumeTimer);}
     if(!this._editingVolume){compactProp(slider,'value',String(this._pendingVolume??(valid?Math.round(level*100):0)));this._showVolume(slider.value);if(!valid)compactText(this._q('output'),'—');}
   }

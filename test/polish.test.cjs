@@ -111,6 +111,14 @@ test('climate +/- buttons that are limited keep their dimming while a mode reque
   assert.equal(card.shadowRoot.querySelector('.minus').getAttribute('aria-busy'),'true');
   resolve();await pending;
 });
+test('media volume slider that is unusable keeps its dimming while mute is pending',async t=>{
+  const {window,card,hass}=setup(t,'compact-media-row',{entity:'media_player.room'},{'media_player.room':state('media_player.room','playing',{supported_features:4|8,is_volume_muted:false})});
+  let resolve;hass.callService=()=>new Promise(done=>resolve=done);
+  const pending=card._call('volume_mute',{is_volume_muted:true});
+  const slider=card.shadowRoot.querySelector('input');
+  assert.equal(slider.disabled,true);assert.equal(slider.getAttribute('aria-busy'),'false');
+  resolve();await pending;
+});
 test('scene script icon pulses only while the script runs',t=>{
   const {card,hass}=setup(t,'compact-scene-panel',{items:[{entity:'script.go'}]},{'script.go':state('script.go','on')});
   const icon=card.shadowRoot.querySelector('ha-icon');assert.equal(icon.dataset.motion,'pulse');
