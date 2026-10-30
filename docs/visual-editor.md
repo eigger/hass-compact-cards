@@ -35,7 +35,8 @@
 - **메모**: 여러 줄 텍스트를 입력합니다.
 - **사용량 비교**: 각 행의 이름, 이번 달 누적 센서, 지난달 전체 센서를 선택합니다. 비교 행을 추가·삭제·재정렬할 수 있습니다.
 - **페이지 이동**: `/energy`처럼 Home Assistant 내부 경로를 입력하고 아이콘을 선택합니다.
-- **실행 버튼**: 일반 엔티티 항목에서 실행 버튼을 활성화하고 `button.press`, `script.turn_on` 같은 액션 이름과 대상을 지정합니다. 대상 생략 시 항목 엔티티를 사용합니다. 실행 전 확인 메시지도 설정할 수 있습니다. `light`, `switch`, `select`는 전용 제어가 우선하므로 별도의 실행 버튼 설정을 표시하지 않습니다. 기존 YAML의 `tap_action`과 그 안의 추가 필드는 보존됩니다.
+- **이름 터치 동작**: 일반 엔티티 항목에서 기본 상세 정보, 명시적 상세 정보(`more-info`), 켜기/끄기 전환(`toggle`)을 선택합니다. `toggle`은 항목에 명시한 `entity` 자체를 전환합니다. 오른쪽 전용 토글·옵션 선택은 유지되며, `find_name`만 사용하는 상태 표시 항목에는 토글을 적용할 수 없습니다. [홈 패널 가이드](compact-home-panel.md#이름-터치-동작)에 동작과 확인 메시지 예제가 있습니다.
+- **서비스 실행 버튼**: 전용 제어가 없는 일반 항목에서는 `perform-action`을 선택하고 `button.press`, `script.turn_on` 같은 액션 이름과 대상을 지정합니다. 대상 생략 시 항목 엔티티를 사용합니다. 실행 전 확인 메시지도 설정할 수 있습니다. `light`, `switch`, `select`는 오른쪽 전용 제어가 우선합니다. 기존 YAML의 `tap_action`과 그 안의 추가 필드는 보존됩니다.
 - **액션 데이터**: 키별로 문자열·숫자·참/거짓 값을 추가·편집·삭제합니다. 이미 YAML로 작성한 배열이나 중첩 객체는 보존되며, 구조화된 데이터의 세부 편집은 YAML에서 합니다.
 
 ## 작은 화면에서 빠르게 설정하기
@@ -48,10 +49,14 @@
 
 Home Assistant 기본 폼을 사용하여 엔티티·아이콘·대상 선택기를 제공합니다. 폼이 아직 로드되지 않았으면 Home Assistant의 카드 헬퍼로 기본 편집기를 먼저 불러옵니다. 헬퍼가 없는 환경에서는 기본 입력 필드와 엔티티 제안 목록으로 동작하며, 대상 입력은 엔티티 ID를 쉼표로 구분합니다. 폼 없이 대상 엔티티를 바꾸더라도 기존 장치·영역 대상은 유지됩니다.
 
+이름 터치 동작은 `toggle`, `more-info`, `perform-action` 범위에서 제공합니다. 길게 누르기·두 번 누르기나 Home Assistant의 전체 액션 스키마를 지원한다는 뜻은 아닙니다.
+
 ## English
 
 All seven cards expose Home Assistant visual configuration editors. Pick a Compact card, choose an entity, edit its optional name, and save with Home Assistant. Panels provide expandable items with add, remove and reorder controls; reordering keeps the moved item expanded and restores keyboard focus. Optional names/icons live in expandable display settings. Threshold summaries include the sensor unit, direction and localized severity, and their inputs adapt to available width. Home panels include headings/badges, notes, entity lookup, embedded controls, navigation, comparison rows and action buttons. Scene panels expose confirmations. Environment panels expose numeric thresholds, comparison directions and warning levels.
 
 Native HA entity, icon and target selectors are used when available; native inputs provide a fallback without frontend helpers. Media visibility fields reflect their default `true` values. Unknown YAML fields and nested action data survive edits, and incoming configurations are never mutated. Primitive action data has typed fields; existing arrays and nested objects are preserved and remain editable in YAML. The editor emits `config-changed` without calling device services. Dashboard persistence belongs to Home Assistant.
+
+Home-panel plain entity items provide a name-tap action selector for default details, `more-info`, `toggle`, and (without dedicated right-hand controls) `perform-action`. Toggle requires an explicit item entity; dedicated right-hand controls keep their behavior. Support is limited to these tap actions, not hold/double-tap or the complete HA action schema.
 
 Implementation follows the official [custom card editor API](https://contributors.home-assistant.io/frontend/custom-ui/card-editor/) and the native [ha-form component](https://github.com/home-assistant/frontend/blob/dev/src/components/ha-form/ha-form.ts). DOM tests cover config events, immutable round trips, nested lists, add/remove/reorder, selector bootstrap and fallback fields; live HA integration and real browser rendering require separate verification.

@@ -187,3 +187,75 @@ test('native HA display expansion follows the moved item through schema state',a
   assert.equal(form(['items',1]).schema.find(group=>group.type==='expandable').expanded,true);
   assert.equal(form(['items',0]).schema.find(group=>group.type==='expandable').expanded,false);
 });
+
+test('home editor round-trips explicit toggle and more-info actions while preserving YAML extras',async t=>{
+  const original={items:[{entity:'script.night',future:'keep',tap_action:{action:'toggle',confirmation:{text:'Continue?'},target:{area_id:'room'},data:{nested:[1,2]},future:{enabled:true}}}]};
+  const {window,editor,events,form}=await setup(t,'compact-home-panel',original);const main=form(['items',0]);
+  const select=()=>editor.shadowRoot.querySelector('select[aria-label="이름 터치 동작"]');
+  assert.equal(select().value,'toggle');assert.equal(editor.shadowRoot.querySelector('input[aria-label="실행 버튼 사용"]'),null);assert.equal(events.length,0);
+  for(const action of ['more-info','toggle','perform-action']){
+    const input=select();input.focus();input.value=action;input.dispatchEvent(new window.Event('change'));
+    assert.equal(editor._config.items[0].tap_action.action,action);assert.equal(editor.shadowRoot.activeElement,select());assert.equal(form(['items',0]),main);
+    assert.deepEqual(plain(editor._config.items[0].tap_action.future),{enabled:true});assert.deepEqual(plain(editor._config.items[0].tap_action.data),{nested:[1,2]});assert.equal(editor._config.items[0].tap_action.target.area_id,'room');
+  }
+  assert.equal(editor._config.items[0].tap_action.perform_action,'script.turn_on');assert.ok(editor.shadowRoot.querySelector('input[aria-label="실행 버튼 사용"]').checked);
+  assert.equal(original.items[0].tap_action.action,'toggle');assert.equal(original.items[0].tap_action.perform_action,undefined);
+  select().value='default';select().dispatchEvent(new window.Event('change'));assert.equal(editor._config.items[0].tap_action,undefined);assert.equal(editor._config.items[0].future,'keep');
+});
+
+test('dedicated controls expose name tap actions and preserve existing service configuration',async t=>{
+  const original={items:[{entity:'light.room',tap_action:{action:'perform-action',perform_action:'light.turn_on',data:{brightness:77},future:'keep'}}]};
+  const {window,editor,events}=await setup(t,'compact-home-panel',original,false);
+  const select=()=>editor.shadowRoot.querySelector('select[aria-label="이름 터치 동작"]');
+  assert.equal(select().value,'perform-action');assert.equal(editor.shadowRoot.querySelector('input[aria-label="실행 버튼 사용"]'),null);assert.equal(events.length,0);
+  select().value='more-info';select().dispatchEvent(new window.Event('change'));
+  assert.equal(editor._config.items[0].tap_action.action,'more-info');assert.equal(editor._config.items[0].tap_action.perform_action,'light.turn_on');assert.equal(editor._config.items[0].tap_action.data.brightness,77);assert.equal(editor._config.items[0].tap_action.future,'keep');
+  assert.equal([...select().options].some(option=>option.value==='perform-action'),false);
+  const entity=editor.shadowRoot.querySelector('input[data-field=entity]');entity.focus();entity.value='script.night';entity.dispatchEvent(new window.Event('input'));
+  assert.equal(editor.shadowRoot.activeElement,entity);assert.equal(editor.shadowRoot.querySelector('input[data-field=entity]'),entity);assert.equal([...select().options].some(option=>option.value==='perform-action'),true);assert.equal(select().value,'more-info');
+  entity.value='select.mode';entity.dispatchEvent(new window.Event('input'));assert.equal(editor.shadowRoot.activeElement,entity);assert.equal([...select().options].some(option=>option.value==='perform-action'),false);assert.equal(editor._config.items[0].tap_action.future,'keep');
+});
+
+test('legacy service checkbox updates only the action section and retains focus across enable and disable',async t=>{
+  const {window,editor,form}=await setup(t,'compact-home-panel',{items:[{entity:'button.doorbell',future:{x:1}}]});const main=form(['items',0]);
+  let enabled=editor.shadowRoot.querySelector('input[aria-label="실행 버튼 사용"]');enabled.focus();enabled.checked=true;enabled.dispatchEvent(new window.Event('change'));
+  assert.equal(editor._config.items[0].tap_action.perform_action,'button.press');assert.equal(form(['items',0]),main);assert.equal(editor.shadowRoot.activeElement,editor.shadowRoot.querySelector('input[aria-label="실행 버튼 사용"]'));
+  enabled=editor.shadowRoot.activeElement;enabled.checked=false;enabled.dispatchEvent(new window.Event('change'));
+  assert.equal(editor._config.items[0].tap_action,undefined);assert.equal(form(['items',0]),main);assert.equal(editor.shadowRoot.activeElement,editor.shadowRoot.querySelector('input[aria-label="실행 버튼 사용"]'));assert.deepEqual(plain(editor._config.items[0].future),{x:1});
+});
+
+test('explicit name toggle exposes confirmation even when the entity has a dedicated control',async t=>{
+  const {window,editor,form}=await setup(t,'compact-home-panel',{items:[{entity:'light.room',tap_action:{action:'toggle',future:'keep'}}]});
+  const check=editor.shadowRoot.querySelector('input[aria-label="확인 메시지 사용"]');assert.ok(check);check.checked=true;check.dispatchEvent(new window.Event('change'));
+  assert.equal(editor._config.items[0].tap_action.action,'toggle');assert.equal(editor._config.items[0].tap_action.confirmation.text,'실행할까요?');assert.equal(editor._config.items[0].tap_action.future,'keep');assert.ok(form(['items',0,'tap_action','confirmation']));
+});
+
+test('item type conversion normalizes incompatible name toggles and every emitted config renders',async t=>{
+  const original={items:[{entity:'light.room',name:'Room',tap_action:{action:'toggle',confirmation:{text:'Sure?'},future:{keep:[1,2]}}}]};
+  const {window,editor,events}=await setup(t,'compact-home-panel',original,false);
+  const card=window.document.createElement('compact-home-panel');
+  for(const type of ['lookup','climate','heading','note','comparison','navigate','light','cover','media']){
+    editor.setConfig(original);events.length=0;
+    let chooser=editor.shadowRoot.querySelector('select[aria-label="항목 유형"]');chooser.value=type;chooser.dispatchEvent(new window.Event('change'));
+    assert.equal(events.length,1);assert.equal(events[0].detail.config.items[0].tap_action.action,'more-info');assert.deepEqual(plain(events[0].detail.config.items[0].tap_action.future),{keep:[1,2]});assert.equal(events[0].detail.config.items[0].tap_action.confirmation.text,'Sure?');
+    assert.doesNotThrow(()=>card.setConfig(events[0].detail.config),`${type} conversion must remain valid`);
+    chooser=editor.shadowRoot.querySelector('select[aria-label="항목 유형"]');chooser.value='entity';chooser.dispatchEvent(new window.Event('change'));
+    assert.equal(events.at(-1).detail.config.items[0].tap_action.action,'more-info');assert.doesNotThrow(()=>card.setConfig(events.at(-1).detail.config));
+  }
+  assert.equal(original.items[0].tap_action.action,'toggle');
+});
+
+test('toggle selection requires a valid explicit entity and validity updates without losing input focus',async t=>{
+  const {window,editor,events}=await setup(t,'compact-home-panel',{items:[{entity:'',find_name:'Room',future:'keep'}]},false);
+  // An explicit entity form also covers draft IDs while the user is typing.
+  editor.setConfig({items:[{entity:'',future:'keep'}]});events.length=0;
+  const select=()=>editor.shadowRoot.querySelector('select[aria-label="이름 터치 동작"]');
+  const input=editor.shadowRoot.querySelector('input[data-field=entity]');input.focus();
+  for(const value of ['', 'light.', 'light.room', 'missing-space value', 'switch.room']){
+    input.value=value;input.dispatchEvent(new window.Event('input'));
+    const allowed=['light.room','switch.room'].includes(value);
+    assert.equal(select().querySelector('option[value=toggle]').disabled,!allowed);assert.equal(editor.shadowRoot.querySelector('input[data-field=entity]'),input);assert.equal(editor.shadowRoot.activeElement,input);
+    if(!allowed){const count=events.length;select().value='toggle';select().dispatchEvent(new window.Event('change'));assert.equal(events.length,count);assert.equal(editor._config.items[0].tap_action,undefined);assert.equal(select().value,'default');}
+  }
+  select().value='toggle';select().dispatchEvent(new window.Event('change'));assert.equal(editor._config.items[0].tap_action.action,'toggle');assert.equal(editor._config.items[0].future,'keep');
+});

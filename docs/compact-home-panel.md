@@ -68,11 +68,48 @@ items:
 | `entity` | 엔티티 ID. 이름 검색을 사용하지 않는 일반 항목에 필요 |
 | `name` | 선택. 표시 이름. 생략하면 엔티티 이름 또는 ID |
 | `icon` | 선택. `mdi:...` 아이콘. 생략하면 엔티티 아이콘 또는 도메인·센서 종류에 맞는 기본 아이콘 |
-| `tap_action` | 선택. 아래의 서비스 실행 설정 |
+| `tap_action` | 선택. 이름 터치 동작 또는 오른쪽 서비스 실행 버튼 설정 |
 
 `type`을 생략한 `light.*` / `switch.*`는 전원 토글을 표시합니다. `select.*`는 옵션 선택을 표시하고, 나머지는 상태를 표시합니다. 밝기·색온도까지 조작하려면 일반 조명 항목 대신 `type: light`를 사용하세요. `input_select.*`는 이 전용 선택 제어의 대상이 아닙니다.
 
-일반 항목의 이름을 누르면 상세 정보가 열립니다. 없는 엔티티와 `unknown` / `unavailable` 상태에서는 제어를 비활성화합니다.
+기본적으로 일반 항목의 이름을 누르면 상세 정보가 열립니다. `tap_action.action: toggle`을 지정하면 이름을 눌러 해당 엔티티를 전환하고, `more-info`를 지정하면 상세 정보를 엽니다. 오른쪽 전용 토글·옵션 선택은 이름 터치 동작과 별개로 유지됩니다. 없는 엔티티와 `unknown` / `unavailable` 상태에서는 제어를 비활성화하지만, 존재하는 엔티티의 상세 정보는 상태를 확인할 수 없어도 열 수 있습니다.
+
+## 이름 터치 동작
+
+```yaml
+type: custom:compact-home-panel
+items:
+  - entity: switch.desk_light
+    name: 책상 조명
+    tap_action:
+      action: toggle
+      confirmation:
+        text: 책상 조명을 전환할까요?
+  - entity: sensor.room_temperature
+    name: 실내 온도
+    tap_action:
+      action: more-info
+```
+
+| `tap_action.action` | 이름을 눌렀을 때 | 오른쪽 조작 |
+| --- | --- | --- |
+| 생략 | 상세 정보 | 엔티티 종류에 따른 기본 제어 또는 상태 |
+| `more-info` | 상세 정보 | 기존 전용 제어 또는 상태 유지 |
+| `toggle` | 항목의 `entity`를 `homeassistant.toggle`로 전환 | 기존 전용 제어 또는 상태 유지 |
+| `perform-action` | 상세 정보 | 지원되는 일반 항목에 별도의 `실행` 버튼 |
+
+`toggle`은 `type`을 생략하고 `entity`를 명시한 일반 항목에 사용합니다. `find_name`만으로 찾는 항목에는 사용할 수 없습니다. 지정한 엔티티 자체가 전환 대상이며, 별도 `target`이나 `data`로 대상을 바꾸지 않습니다. 해당 엔티티에서 토글 서비스를 지원해야 합니다.
+
+`toggle`의 선택적 `confirmation.text`는 이름과 오른쪽 전용 토글 양쪽에 적용됩니다. 확인을 취소하면 전환하지 않으며, 요청 중 중복 전환과 연결 불가 상태의 전환을 막습니다. `more-info`는 기기 제어 서비스를 호출하지 않고 존재하는 엔티티의 상세 정보를 엽니다.
+
+<details>
+<summary>UI에서 이름 터치 동작 선택하기</summary>
+
+![홈 패널의 토글 터치 동작 편집 예시](../images/compact-home-editor.jpg)
+
+실제 카드 코드와 모의 상태를 사용하는 로컬 편집 예시입니다.
+
+</details>
 
 ## 이름으로 센서 찾기
 
@@ -157,14 +194,16 @@ items:
 
 | 필드 | 설명 |
 | --- | --- |
-| `tap_action.action` | 필수. `perform-action` |
-| `tap_action.perform_action` | 필수. `domain.service` 형식의 서비스 이름 |
-| `tap_action.target` | 선택. Home Assistant 대상 객체. 생략하면 항목의 `entity` |
-| `tap_action.data` | 선택. 서비스 데이터 객체. 기본 빈 객체 |
+| `tap_action.action` | 이 실행 버튼 예제에서는 `perform-action`. 이름 터치는 위의 `toggle`, `more-info`도 지원 |
+| `tap_action.perform_action` | `perform-action`일 때 필수. `domain.service` 형식의 서비스 이름 |
+| `tap_action.target` | `perform-action`의 선택 항목. Home Assistant 대상 객체. 생략하면 항목의 `entity` |
+| `tap_action.data` | `perform-action`의 선택 항목. 서비스 데이터 객체. 기본 빈 객체 |
 | `tap_action.confirmation` | 선택. 확인을 요청하는 객체 |
 | `tap_action.confirmation.text` | 선택. 확인 메시지. 생략하면 기본 확인 문구 |
 
-이 설정은 일반 항목 오른쪽에 `실행` 버튼을 추가합니다. `light` / `switch` / `select`의 일반 항목은 전용 제어가 우선하므로 `tap_action`을 사용하지 않습니다. 이름은 실행 버튼과 별도로 상세 정보를 엽니다. 이 패널은 `toggle`, `navigate`, `more-info` 같은 다른 `tap_action.action` 값과 길게 누르기 설정을 제공하지 않습니다.
+이 설정은 일반 항목 오른쪽에 `실행` 버튼을 추가합니다. `light` / `switch` / `select`의 일반 항목은 오른쪽 전용 제어가 우선하므로 별도의 서비스 실행 버튼을 추가하지 않습니다. `perform-action`에서 이름은 실행 버튼과 별도로 상세 정보를 엽니다.
+
+이 패널의 지원 범위는 `toggle`, `more-info`, `perform-action`입니다. Home Assistant의 전체 액션 스키마를 구현하지 않으며 `tap_action.action: navigate`, 길게 누르기, 두 번 누르기는 지원하지 않습니다. 탐색은 아래의 `type: navigate` 항목을 사용하세요.
 
 일반 항목의 `unknown` 상태는 실행할 수 없습니다. 한 번도 실행하지 않은 장면도 바로 실행하려면 전용 [장면 패널](scene-environment.md)을 사용하세요.
 
@@ -191,6 +230,6 @@ items:
 
 Use `custom:compact-home-panel` with an `items` array. Optional `columns` accepts `auto` (default), `1`, or `2`; automatic entity rows collapse to one column at 380px. Full-width headings, notes, select controls, comparisons, navigation, and `type: climate/light/cover` rows keep their own layouts.
 
-Plain light/switch entities show toggles, `select.*` shows an option selector, and other entities show state. Names open more-info. Use `find_name` with optional `domain` for read-only exact-name lookup; duplicates are unavailable. Headings accept named entity badges. Notes are plain text.
+Plain light/switch entities show toggles, `select.*` shows an option selector, and other entities show state. Names open more-info by default, including with legacy `perform-action` configurations. Explicit `tap_action.action: toggle` makes the name call `homeassistant.toggle` for that item's own explicit `entity`; name-only lookup cannot toggle. Optional toggle confirmation applies to both the name and the dedicated right-hand toggle. Explicit `more-info` opens details without calling a service, including for an existing unknown/unavailable entity. Right-hand dedicated controls remain separate. Use `find_name` with optional `domain` for read-only exact-name lookup; duplicates are unavailable. Headings accept named entity badges. Notes are plain text.
 
-Comparisons require existing numeric `entity` and `previous` sensors with identical units. They compare current sensor values, do not fetch history or create monthly sensors, and cannot calculate percentage change from a zero or negative previous value. Service buttons accept `perform-action`, a `domain.service` name, optional `target`, `data`, and confirmation text. Navigation accepts local paths only. Controls show busy feedback, disable duplicate requests, and report failures. The representative image uses mocked local preview data.
+Comparisons require existing numeric `entity` and `previous` sensors with identical units. They compare current sensor values, do not fetch history or create monthly sensors, and cannot calculate percentage change from a zero or negative previous value. Service buttons accept `perform-action`, a `domain.service` name, optional `target`, `data`, and confirmation text. Supported tap actions are limited to `toggle`, `more-info`, and `perform-action`; hold/double-tap and the full HA action schema are not implemented. Navigation uses `type: navigate` with local paths only. Controls show busy feedback, disable duplicate requests, and report failures. The representative image uses mocked local preview data.

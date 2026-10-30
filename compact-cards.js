@@ -327,7 +327,12 @@ class CompactHomePanel extends HTMLElement {
       if (item.type === 'comparison' && (!Array.isArray(item.rows) || item.rows.some(r => !r || typeof r.entity !== 'string' || typeof r.previous !== 'string'))) fail('rows에 entity와 previous가 필요합니다.');
       if (item.type === 'navigate' && (typeof item.navigation_path !== 'string' || !item.navigation_path.startsWith('/') || item.navigation_path.startsWith('//') || /[\\\\\s]/.test(item.navigation_path))) fail('navigation_path는 로컬 경로여야 합니다.');
       if (!item.type && typeof item.entity !== 'string' && typeof item.find_name !== 'string') fail('entity 또는 find_name이 필요합니다.');
-      if (item.tap_action && (item.tap_action.action !== 'perform-action' || typeof item.tap_action.perform_action !== 'string' || !/^[a-z_]+\.[a-z0-9_]+$/.test(item.tap_action.perform_action))) fail('tap_action에 perform-action과 domain.service 형식의 perform_action이 필요합니다.');
+      if (item.tap_action) {
+        const action=item.tap_action;
+        if (!['toggle','more-info','perform-action'].includes(action.action)) fail('tap_action.action은 toggle, more-info, perform-action 중 하나여야 합니다.');
+        if (action.action==='perform-action' && (typeof action.perform_action!=='string' || !/^[a-z_]+\.[a-z0-9_]+$/.test(action.perform_action))) fail('perform-action에 domain.service 형식의 perform_action이 필요합니다.');
+        if (action.action==='toggle' && (typeof item.entity!=='string' || !/^[a-z_]+\.[a-z0-9_]+$/.test(item.entity) || item.type)) fail('toggle은 entity를 지정한 일반 항목에 사용할 수 있습니다.');
+      }
     }
     const key=JSON.stringify(config);if(this._configKey===key)return;this._configKey=key;
     compactClearFeedback(this);
@@ -390,11 +395,11 @@ class CompactHomePanel extends HTMLElement {
         const go=()=>{const p=item.navigation_path;if (p?.startsWith('/')&&!p.startsWith('//')) {history.pushState(null,'',p);window.dispatchEvent(new Event('location-changed'));}};
         label.onclick=go;value.onclick=go;icon.setAttribute('icon',item.icon || 'mdi:chevron-right');
       } else {
-        label.onclick=()=>this._more(ref.state);
+        label.onclick=()=>this._tap(ref);
         const domain=(item.entity || '').split('.')[0];
         if (['light','switch'].includes(domain)) {
           const toggle=this._make('button','switch');toggle.setAttribute('role','switch');toggle.append(this._make('span','track'));
-          toggle.onclick=()=>this._call(ref,'homeassistant','toggle',{entity_id:item.entity});ref.control=toggle;row.append(toggle);
+          toggle.onclick=()=>this._toggle(ref);ref.control=toggle;row.append(toggle);
         } else if (domain === 'select') {
           const select=this._make('select');select.onchange=()=>this._call(ref,'select','select_option',{entity_id:item.entity,option:select.value});ref.select=select;row.append(select);
         } else if (item.tap_action?.action === 'perform-action') {
@@ -425,6 +430,10 @@ class CompactHomePanel extends HTMLElement {
       const offline=!state || ['unknown','unavailable'].includes(state.state);
       compactText(ref.name,item.name || state?.attributes.friendly_name || item.entity || item.find_name);
       compactProp(ref.label,'title',ref.name.textContent);
+      const tapToggle=item.tap_action?.action==='toggle',tapBusy=tapToggle&&this._busy.has(item.entity);
+      compactProp(ref.label,'disabled',tapToggle ? offline||tapBusy : !state);
+      compactAttr(ref.label,'aria-busy',tapBusy);
+      compactAttr(ref.label,'aria-label',`${ref.name.textContent}${tapToggle?' 켜기/끄기':''}`);
       compactStyle(ref.row,'--entity-color',compactStateColor(state));
       const domain=state?.entity_id.split('.')[0];
       const icons={light:'mdi:lightbulb-outline',switch:'mdi:power',lock:'mdi:lock-outline',select:'mdi:tune',button:'mdi:gesture-tap-button',script:'mdi:play',input_button:'mdi:gesture-tap-button'};
@@ -446,9 +455,23 @@ class CompactHomePanel extends HTMLElement {
       }
     }
   }
+  _confirmAction(action) {
+    return !action?.confirmation || window.confirm(action.confirmation.text || '실행할까요?');
+  }
+  _tap(ref) {
+    if (ref.item.tap_action?.action==='toggle') return this._toggle(ref);
+    if (ref.item.tap_action?.action==='more-info' && !this._confirmAction(ref.item.tap_action)) return;
+    this._more(ref.state);
+  }
+  _toggle(ref) {
+    const state=this._hass?.states[ref.item.entity];
+    if (!state || ['unknown','unavailable'].includes(state.state) || this._busy.has(ref.item.entity)) return;
+    if (ref.item.tap_action?.action==='toggle' && !this._confirmAction(ref.item.tap_action)) return;
+    return this._call(ref,'homeassistant','toggle',{entity_id:ref.item.entity});
+  }
   async _command(ref) {
     const action=ref.item.tap_action;
-    if (action.confirmation && !window.confirm(action.confirmation.text || '실행할까요?')) return;
+    if (!this._confirmAction(action)) return;
     const service=action.perform_action?.split('.');
     if (service?.length===2) await this._call(ref,service[0],service[1],action.data || {},action.target || {entity_id:ref.item.entity});
   }
@@ -1017,6 +1040,7 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
         .toolbar,.add{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:flex-end}.toolbar button{min-width:36px}.add select{flex:1;min-width:130px}.heading{font-size:14px;font-weight:500;margin:0}.hint{font-size:12px;color:var(--secondary-text-color);margin:0;line-height:1.5}
         button,input,textarea,select{font:inherit;color:var(--primary-text-color);box-sizing:border-box}button{border:1px solid var(--divider-color,#ddd);background:var(--card-background-color,transparent);border-radius:7px;padding:6px 10px;cursor:pointer;min-height:36px}button:hover:not(:disabled){background:var(--secondary-background-color,#eee)}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
         .native{display:grid;gap:10px;min-width:0}.native-grid{grid-template-columns:repeat(auto-fit,minmax(min(90px,100%),1fr));align-items:start}.native label{min-width:0}.display{background:transparent}.display summary{font-size:13px;color:var(--secondary-text-color)}.native label{display:grid;gap:5px;font-size:13px}.native input,.native textarea,.native select,.add select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.native input[type=checkbox]{width:24px;height:24px;min-height:24px}.content>label,.subsection>label{display:grid;gap:5px;font-size:13px}.content>label>select,.subsection>label>input:not([type=checkbox]),.subsection>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}.subsection{display:grid;gap:8px;border-top:1px solid var(--divider-color,#ddd);padding-top:10px}
+        .subsection>label>select{width:100%;border:1px solid var(--divider-color,#ddd);border-radius:6px;background:var(--card-background-color,transparent);min-height:40px;padding:7px}
         @media(pointer:coarse){button{min-height:44px;min-width:44px}}
       </style><div class="root"></div>`;
     }
@@ -1068,12 +1092,19 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       const button=row?.querySelector(`:scope > .content > .toolbar > button[data-move=${action}]`);
       (button&&!button.disabled?button:row?.querySelector('summary'))?.focus();
     }
+    _canToggle(item){return !item?.type&&typeof item?.entity==='string'&&/^[a-z_]+\.[a-z0-9_]+$/.test(item.entity);}
     _refreshActions(){
       for(const section of this.shadowRoot.querySelectorAll('[data-action-path]')){
         const path=JSON.parse(section.dataset.actionPath),item=at(this._config,path);
         const dedicated=['light','switch','select'].includes((item?.entity||'').split('.')[0]);
-        if(section.dataset.dedicated===String(dedicated))continue;
+        const mode=item?.tap_action?.action||'default';
+        const toggle=section.querySelector('select[aria-label="이름 터치 동작"] option[value=toggle]');
+        if(toggle)toggle.disabled=!this._canToggle(item);
+        if(section.dataset.dedicated===String(dedicated)&&section.dataset.actionMode===mode)continue;
+        const focused=this.shadowRoot.activeElement;
+        const focusLabel=section.contains(focused)?focused.getAttribute('aria-label'):undefined;
         this._forms=this._forms.filter(ref=>!section.contains(ref.form));this._action(null,path,item,section);
+        if(focusLabel){const replacement=[...section.querySelectorAll('[aria-label]')].find(node=>node.getAttribute('aria-label')===focusLabel);(replacement||section.querySelector('select'))?.focus();}
       }
     }
     _update(path,values,schema){
@@ -1164,6 +1195,7 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
         if(original.name!==undefined)value.name=original.name;
         if(input.value==='entity'||input.value==='lookup')delete value.type;
         if(input.value==='lookup')delete value.entity;else {delete value.find_name;if(original.find_name)delete value.domain;}
+        if(value.tap_action?.action==='toggle'&&!this._canToggle(value))value.tap_action={...value.tap_action,action:'more-info'};
         put(next,path,value);
       },true);label.append(input);parent.append(label);
       if(type==='heading'){
@@ -1183,15 +1215,39 @@ if(!window.customCards.some(c=>c.type==='compact-media-row'))window.customCards.
       if(type==='entity')this._action(parent,path,item);
     }
     _action(parent,path,item,existing){
-      const section=existing||this._section(parent,'실행 버튼');
-      if(existing){section.replaceChildren();section.append(this._make('p','heading','실행 버튼'));}
+      const section=existing||this._section(parent,'터치 동작');
+      if(existing){section.replaceChildren();section.append(this._make('p','heading','터치 동작'));}
       section.dataset.actionPath=JSON.stringify(path);
       const dedicated=['light','switch','select'].includes((item.entity||'').split('.')[0]);section.dataset.dedicated=String(dedicated);
-      if(dedicated){section.append(this._make('p','hint','이 엔티티는 전용 제어를 사용합니다. 기존 YAML 실행 설정은 보존됩니다.'));return;}
+      const mode=item.tap_action?.action||'default';section.dataset.actionMode=mode;
+      const actionLabel=this._make('label',null,'이름 터치 동작'),actionSelect=this._make('select');actionSelect.setAttribute('aria-label','이름 터치 동작');
+      const options=[['default','기본 (상세 정보)'],['more-info','상세 정보'],['toggle','켜기/끄기 전환']];
+      if(!dedicated)options.push(['perform-action','서비스 실행 버튼']);
+      else if(mode==='perform-action')options.push(['perform-action','기존 서비스 설정 (전용 제어 우선)']);
+      if(!options.some(([value])=>value===mode))options.push([mode,`기존 설정 (${mode})`]);
+      for(const [value,label] of options){const option=this._make('option',null,label);option.value=value;option.disabled=value==='toggle'&&!this._canToggle(item);actionSelect.append(option);}actionSelect.value=mode;actionLabel.append(actionSelect);section.append(actionLabel);
+      const changeMode=value=>this._commit(next=>{
+        const target=at(next,path);
+        if(value==='toggle'&&!this._canToggle(target)){actionSelect.value=target.tap_action?.action||'default';return;}
+        if(value==='default'){delete target.tap_action;return;}
+        target.tap_action={...target.tap_action,action:value};
+        if(value==='perform-action'&&!target.tap_action.perform_action)target.tap_action.perform_action=({button:'button.press',input_button:'input_button.press'}[(target.entity||'').split('.')[0]]||'script.turn_on');
+      });
+      actionSelect.onchange=()=>changeMode(actionSelect.value);
+      if(dedicated){
+        section.append(this._make('p','hint','이름 터치와 별개로 오른쪽 전용 제어를 사용할 수 있습니다. 기존 서비스 설정은 보존되며 전용 제어가 우선합니다.'));
+        if(mode==='toggle')this._confirmation(section,[...path,'tap_action'],'confirmation',item.tap_action.confirmation,true);
+        return;
+      }
+      if(mode==='toggle'||mode==='more-info'){
+        section.append(this._make('p','hint',mode==='toggle'?'이름을 누르면 엔티티를 켜기/끄기로 전환합니다.':'이름을 누르면 엔티티 상세 정보를 엽니다.'));
+        if(mode==='toggle')this._confirmation(section,[...path,'tap_action'],'confirmation',item.tap_action.confirmation,true);
+        return;
+      }
       const label=this._make('label',null,' 실행 버튼 사용'),enabled=this._make('input');enabled.type='checkbox';enabled.checked=Boolean(item.tap_action);enabled.setAttribute('aria-label','실행 버튼 사용');label.prepend(enabled);section.append(label);
-      enabled.onchange=()=>this._commit(next=>{const target=at(next,path);if(enabled.checked)target.tap_action={action:'perform-action',perform_action:({button:'button.press',input_button:'input_button.press'}[(target.entity||'').split('.')[0]]||'script.turn_on')};else delete target.tap_action;},true);
-      if(!item.tap_action)return;
-      section.append(this._make('p','hint','실행할 액션을 지정하세요. 대상을 생략하면 항목의 엔티티를 사용합니다.'));
+      enabled.onchange=()=>changeMode(enabled.checked?'perform-action':'default');
+      if(mode!=='perform-action')return;
+      section.append(this._make('p','hint','이름은 상세 정보를 열고 오른쪽 실행 버튼이 서비스를 호출합니다. 대상을 생략하면 항목의 엔티티를 사용합니다.'));
       this._form(section,[...path,'tap_action'],[text('perform_action','실행할 액션 (예: button.press)',true),field('target','대상 (생략하면 항목의 엔티티)',{target:{}})]);
       this._confirmation(section,[...path,'tap_action'],'confirmation',item.tap_action.confirmation,true);
       this._dataFields(section,[...path,'tap_action','data']);
