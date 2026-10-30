@@ -8,8 +8,12 @@ function compactStyle(el, key, value) { if(el.style.getPropertyValue(key)!==valu
 function compactMotion(el, motion) { compactAttr(el,'data-motion',motion||'');if(el.classList.contains('motion')!==Boolean(motion))el.classList.toggle('motion',Boolean(motion)); }
 // One-shot effects restart on every state change and clean up after themselves.
 function compactFlash(el, cls) {
+  if(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches)return;
   el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);
-  el.addEventListener('animationend',event=>{if(event.target===el)el.classList.remove(cls);});
+  if(!el._flashEnd){
+    el._flashEnd=event=>{if(event.target===el)el.classList.remove('changed','pop','shake');};
+    el.addEventListener('animationend',el._flashEnd);el.addEventListener('animationcancel',el._flashEnd);
+  }
 }
 function compactEffectOf(state) {
   const domain=state.entity_id.split('.')[0];
@@ -531,8 +535,8 @@ class CompactHomePanel extends HTMLElement {
       compactProp(ref.icon,'stateObj',state);
       compactProp(ref.icon,'icon',item.icon || (!state?'mdi:help-circle-outline':undefined));
       compactMotion(ref.icon,offline?'':compactMotionOf(state));
-      if(ref.seen&&ref.lastState!==state?.state&&!offline&&!['unknown','unavailable',undefined].includes(ref.lastState)){compactFlash(ref.row,'changed');const effect=compactEffectOf(state);if(effect)compactFlash(ref.icon,effect);}
-      ref.seen=true;ref.lastState=state?.state;
+      if(state&&ref.lastEntity===state.entity_id&&ref.lastState!==state.state&&!offline&&!['unknown','unavailable'].includes(ref.lastState)){compactFlash(ref.row,'changed');const effect=compactEffectOf(state);if(effect)compactFlash(ref.icon,effect);}
+      ref.lastEntity=state?.entity_id;ref.lastState=state?.state;
       if (ref.value){compactText(ref.value,this._format(state));compactProp(ref.value,'title',ref.value.textContent);}
       if (ref.control) {
         compactProp(ref.control,'disabled',offline || this._busy.has(item.entity));

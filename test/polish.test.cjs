@@ -76,6 +76,24 @@ test('home panel flashes a changed row once and gives locks and open doors a one
   assert.deepEqual(rows().map(r=>r.classList.contains('changed')),[true,true,true]);
   assert.equal(icons()[0].classList.contains('pop'),true);assert.equal(icons()[1].classList.contains('shake'),true);assert.equal(icons()[2].classList.contains('pop')||icons()[2].classList.contains('shake'),false);
 });
+test('flash effects clean up on animationend only for their own element and are not re-added on unchanged renders',t=>{
+  const {window,card,hass}=setup(t,'compact-home-panel',{items:[{entity:'binary_sensor.b'},{entity:'light.l'}]},{'binary_sensor.b':state('binary_sensor.b','off',{device_class:'door'}),'light.l':state('light.l','off')});
+  const row=card.shadowRoot.querySelector('.row'),icon=row.querySelector('ha-state-icon');
+  hass.states['binary_sensor.b'].state='on';card.hass=hass;card.hass=hass;
+  assert.equal(row.classList.contains('changed'),true);assert.equal(icon.classList.contains('shake'),true);
+  icon.dispatchEvent(new window.Event('animationend',{bubbles:true}));
+  assert.equal(icon.classList.contains('shake'),false);assert.equal(row.classList.contains('changed'),true);
+  row.dispatchEvent(new window.Event('animationend',{bubbles:true}));assert.equal(row.classList.contains('changed'),false);
+  hass.states['binary_sensor.b'].state='off';hass.states['light.l'].state='on';card.hass=hass;
+  const rows=card.shadowRoot.querySelectorAll('.row');
+  assert.equal(rows[0].classList.contains('changed'),true);assert.equal(icon.classList.contains('shake'),false);
+  assert.equal(rows[1].classList.contains('changed'),true);assert.equal(rows[1].querySelector('ha-state-icon').classList.contains('pop'),false);
+});
+test('a change into unavailable does not flash',t=>{
+  const {card,hass}=setup(t,'compact-home-panel',{items:[{entity:'lock.a'}]},{'lock.a':state('lock.a','locked')});
+  hass.states['lock.a'].state='unavailable';card.hass=hass;
+  assert.equal(card.shadowRoot.querySelector('.row').classList.contains('changed'),false);
+});
 test('home panel does not flash when an entity merely recovers from unavailable',t=>{
   const {card,hass}=setup(t,'compact-home-panel',{items:[{entity:'lock.a'}]},{'lock.a':state('lock.a','unavailable')});
   hass.states['lock.a'].state='locked';card.hass=hass;
