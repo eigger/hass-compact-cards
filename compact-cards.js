@@ -4,6 +4,18 @@ function compactText(el, value) { const text=String(value ?? '');if(el.textConte
 function compactAttr(el, key, value) { const text=String(value);if(el.getAttribute(key)!==text)el.setAttribute(key,text); }
 function compactProp(el, key, value) { if(el[key]!==value)el[key]=value; }
 function compactStyle(el, key, value) { if(el.style.getPropertyValue(key)!==value)el.style.setProperty(key,value); }
+// Icons animate only while the device reports activity; reduced-motion users get a static icon.
+function compactMotion(el, motion) { compactAttr(el,'data-motion',motion||'');if(el.classList.contains('motion')!==Boolean(motion))el.classList.toggle('motion',Boolean(motion)); }
+function compactMotionOf(state) {
+  if(!state)return '';
+  const domain=state.entity_id.split('.')[0],value=state.state;
+  if(domain==='fan'&&value==='on')return 'fan';
+  if(domain==='vacuum'&&value==='cleaning')return 'sweep';
+  if((domain==='humidifier'||domain==='water_heater')&&value==='on')return 'pulse';
+  if(domain==='script'&&value==='on')return 'pulse';
+  if(domain==='climate'&&value!=='off'){const a=state.attributes.hvac_action;return a==='fan'?'fan':a==='drying'?'sweep':a==='heating'||a==='cooling'?'pulse':'';}
+  return '';
+}
 // Feedback describes a service request, never an assumed physical device state.
 function compactClearFeedback(host) {
   clearTimeout(host._feedbackTimer);host._feedbackTimer=undefined;
@@ -83,7 +95,13 @@ function compactInteractions(host) {
     .kelvin input::-webkit-slider-runnable-track{background:linear-gradient(90deg,#e5ba7b,#e9e7df,#afcfe5)}
     .kelvin input::-moz-range-track{background:linear-gradient(90deg,#e5ba7b,#e9e7df,#afcfe5)}
     .compact-feedback{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-    @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}}`;
+    ha-icon.motion[data-motion=fan],ha-state-icon.motion[data-motion=fan]{animation:compact-fan 2.6s linear infinite}
+    ha-icon.motion[data-motion=pulse],ha-state-icon.motion[data-motion=pulse]{animation:compact-breathe 2s ease-in-out infinite}
+    ha-icon.motion[data-motion=sweep],ha-state-icon.motion[data-motion=sweep]{animation:compact-dry 2.2s ease-in-out infinite}
+    @keyframes compact-fan{to{transform:rotate(360deg)}}
+    @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+    @keyframes compact-dry{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+    @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}.motion{animation:none!important}}`;
   const status=document.createElement('span');status.className='compact-feedback';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   host.shadowRoot.append(style,status);host._feedbackText=status;
 }
@@ -105,7 +123,7 @@ class CompactClimateRow extends HTMLElement {
         ha-icon.running[data-motion=heating],ha-icon.running[data-motion=cooling]{animation:compact-breathe 2s ease-in-out infinite}
         ha-icon.running[data-motion=drying]{animation:compact-dry 2.2s ease-in-out infinite}
         @keyframes compact-fan{to{transform:rotate(360deg)}}
-        @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+        @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
         @keyframes compact-dry{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
         @media(prefers-reduced-motion:reduce){button,output{transition:none!important}ha-icon.running{animation:none!important}}
         .info{flex:1;min-width:0;text-align:left;overflow:hidden}
@@ -237,7 +255,7 @@ class CompactClimateRow extends HTMLElement {
       compactAttr(b,'aria-disabled',offline || this._busy);
       compactAttr(b,'aria-pressed',pressed);
       const i=b.querySelector('ha-icon');
-      const action=pressed && s.state!=='off' ? a.hvac_action : undefined;
+      const action=pressed && s.state!=='off' ? (a.hvac_action ?? {heat:'heating',cool:'cooling',fan_only:'fan',dry:'drying'}[s.state]) : undefined;
       const motion=action==='fan' && b.dataset.mode!=='fan_only' ? 'cooling' : ['fan','heating','cooling','drying'].includes(action)?action:'';
       if(i.classList.contains('running')!==Boolean(motion))i.classList.toggle('running',Boolean(motion));
       compactAttr(i,'data-motion',motion);
@@ -494,6 +512,7 @@ class CompactHomePanel extends HTMLElement {
       compactProp(ref.icon,'hass',this._hass);
       compactProp(ref.icon,'stateObj',state);
       compactProp(ref.icon,'icon',item.icon || (!state?'mdi:help-circle-outline':undefined));
+      compactMotion(ref.icon,offline?'':compactMotionOf(state));
       if (ref.value){compactText(ref.value,this._format(state));compactProp(ref.value,'title',ref.value.textContent);}
       if (ref.control) {
         compactProp(ref.control,'disabled',offline || this._busy.has(item.entity));
@@ -852,6 +871,7 @@ for(const [type,constructor,name,description] of [
         compactText(ref.detail,busy ? '실행 요청 중…' : !available ? '확인 불가' : running ? '실행 중' : feedback==='success' ? '요청 전달됨' : feedback==='error' ? '요청 실패' : '실행');
         compactAttr(ref.button,'data-result',feedback||'');
         compactAttr(ref.icon,'icon',ref.item.icon || state?.attributes.icon || (ref.item.entity.startsWith('scene.') ? 'mdi:palette-outline' : 'mdi:play'));
+        compactMotion(ref.icon,running?'pulse':'');
         compactProp(ref.button,'disabled',!available || busy || running);
         compactAttr(ref.button,'aria-busy',busy);
         compactAttr(ref.button,'aria-label',`${name} · ${ref.detail.textContent}`);
