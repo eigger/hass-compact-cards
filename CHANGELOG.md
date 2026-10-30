@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make icon motion subtler: slower fan rotation, smaller pulse and sway, and gentler lock pop, door shake and equalizer bars.
+
 - Remove the home panel row background flash on state changes because it was clipped around icon surfaces. Lock pop, door shake and light glow icon effects are unchanged.
 
 ## 0.2.5 — 2026-10-30

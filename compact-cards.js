@@ -114,16 +114,16 @@ function compactInteractions(host) {
     .kelvin input::-webkit-slider-runnable-track{background:linear-gradient(90deg,#e5ba7b,#e9e7df,#afcfe5)}
     .kelvin input::-moz-range-track{background:linear-gradient(90deg,#e5ba7b,#e9e7df,#afcfe5)}
     .compact-feedback{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-    ha-icon.motion[data-motion=fan],ha-state-icon.motion[data-motion=fan]{animation:compact-fan 2.6s linear infinite}
-    ha-icon.motion[data-motion=pulse],ha-state-icon.motion[data-motion=pulse]{animation:compact-breathe 2s ease-in-out infinite}
-    ha-icon.motion[data-motion=sweep],ha-state-icon.motion[data-motion=sweep]{animation:compact-dry 2.2s ease-in-out infinite}
+    ha-icon.motion[data-motion=fan],ha-state-icon.motion[data-motion=fan]{animation:compact-fan 6s linear infinite}
+    ha-icon.motion[data-motion=pulse],ha-state-icon.motion[data-motion=pulse]{animation:compact-breathe 3s ease-in-out infinite}
+    ha-icon.motion[data-motion=sweep],ha-state-icon.motion[data-motion=sweep]{animation:compact-dry 3.2s ease-in-out infinite}
     ha-icon.motion[data-motion=glow],ha-state-icon.motion[data-motion=glow]{filter:drop-shadow(0 0 4px var(--entity-color,currentColor))}
     .pop{animation:compact-pop .5s cubic-bezier(.3,1.6,.5,1)}.shake{animation:compact-shake .5s ease-in-out}
-    @keyframes compact-pop{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
-    @keyframes compact-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-2px)}40%,80%{transform:translateX(2px)}}
+    @keyframes compact-pop{0%{transform:scale(.88)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+    @keyframes compact-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-1px)}40%,80%{transform:translateX(1px)}}
     @keyframes compact-fan{to{transform:rotate(360deg)}}
-    @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
-    @keyframes compact-dry{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+    @keyframes compact-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+    @keyframes compact-dry{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
     @media(prefers-reduced-motion:reduce){button{transition:none!important}button:active:not(:disabled){transform:none!important}.motion,.pop,.shake{animation:none!important}}`;
   const status=document.createElement('span');status.className='compact-feedback';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   host.shadowRoot.append(style,status);host._feedbackText=status;
@@ -142,9 +142,9 @@ class CompactClimateRow extends HTMLElement {
         button:disabled{opacity:.35;cursor:default}
         .modes button{transition:color 180ms ease,background-color 180ms ease}
         output{transition:color 180ms ease}
-        ha-icon.running[data-motion=fan]{animation:compact-fan 2.6s linear infinite}
-        ha-icon.running[data-motion=heating],ha-icon.running[data-motion=cooling]{animation:compact-breathe 2s ease-in-out infinite}
-        ha-icon.running[data-motion=drying]{animation:compact-dry 2.2s ease-in-out infinite}
+        ha-icon.running[data-motion=fan]{animation:compact-fan 6s linear infinite}
+        ha-icon.running[data-motion=heating],ha-icon.running[data-motion=cooling]{animation:compact-breathe 3s ease-in-out infinite}
+        ha-icon.running[data-motion=drying]{animation:compact-dry 3.2s ease-in-out infinite}
         @media(prefers-reduced-motion:reduce){button,output{transition:none!important}ha-icon.running{animation:none!important}}
         .info{flex:1;min-width:0;text-align:left;overflow:hidden}
         .name,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1010,7 +1010,7 @@ class CompactMediaRow extends HTMLElement {
       button:disabled,input:disabled{opacity:.4;cursor:default}
       input[aria-busy=true]{opacity:.65;cursor:progress}
       .name,.title,.state{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.name{font-size:12px;color:var(--secondary-text-color)}.title{font-size:14px;line-height:20px}.state{font-size:12px;color:var(--secondary-text-color)}
-      ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:before,.play.playing:after{content:'';position:absolute;width:2px;height:7px;border-radius:1px;background:currentColor;bottom:3px;transform-origin:bottom;animation:compact-eq .9s ease-in-out infinite}.play.playing:before{left:calc(50% - 5px);box-shadow:8px 0 currentColor}.play.playing:after{left:calc(50% - 1px);animation-delay:-.45s}@keyframes compact-eq{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}@media(prefers-reduced-motion:reduce){.play.playing:before,.play.playing:after{animation:none}}
+      ha-icon{display:block;width:20px;height:20px;--mdc-icon-size:20px;margin:auto}.play{color:var(--primary-color);position:relative}.play.playing:before,.play.playing:after{content:'';position:absolute;width:2px;height:7px;border-radius:1px;background:currentColor;bottom:3px;transform-origin:bottom;animation:compact-eq .9s ease-in-out infinite}.play.playing:before{left:calc(50% - 5px);box-shadow:8px 0 currentColor}.play.playing:after{left:calc(50% - 1px);animation-delay:-.45s}@keyframes compact-eq{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}@media(prefers-reduced-motion:reduce){.play.playing:before,.play.playing:after{animation:none}}
       .volume{display:flex;align-items:center;gap:4px;min-height:32px;padding-inline:4px}.volume .mute{flex:none;min-width:32px;width:32px;min-height:32px;padding:0}.volume .mute:disabled:not([aria-busy=true]){opacity:1}.mute[aria-pressed=true]{color:var(--primary-color)}.volume .mute:disabled:hover{background:transparent}.volume ha-icon{color:inherit;width:18px;--mdc-icon-size:18px}.volume input{flex:1;min-width:0;width:100%;height:28px;accent-color:var(--primary-color);cursor:pointer}.volume output{min-width:34px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--secondary-text-color)}
       [hidden]{display:none!important}:host([embedded]) ha-card{border:0;box-shadow:none;background:transparent;padding-inline:0}
       @media(pointer:coarse){button{min-width:44px;min-height:44px}.volume{min-height:44px}.volume .mute{min-width:44px;min-height:44px}.volume input{height:40px}}
