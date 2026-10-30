@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Compact picture cards preview</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:var(--primary-text-color);background:var(--primary-background-color);--primary-background-color:#f4f6f8;--card-background-color:white;--primary-text-color:#202b36;--secondary-text-color:#627080;--primary-color:#007c91;--divider-color:#dce2e8;--secondary-background-color:#e8edf2}
+:root.dark{color-scheme:dark;--primary-background-color:#10151c;--card-background-color:#1b242e;--primary-text-color:#edf2f7;--secondary-text-color:#a9b7c6;--primary-color:#63d2de;--divider-color:#344454;--secondary-background-color:#24313e}
+body{max-width:1040px;margin:32px auto;padding:0 16px}h1{font-size:24px;margin-bottom:8px}p{font-size:14px;color:var(--secondary-text-color);line-height:1.6}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}h2{font-size:14px;font-weight:500;margin:16px 0 8px}@media(max-width:640px){body{margin-top:16px}.grid{grid-template-columns:1fr}}
+</style>
+<h1>이미지와 카메라</h1><p>실제 카드 코드의 로컬 미리보기입니다. 카메라는 HA 런타임 없이 오류·사용 불가 상태만 표시하며 실제 영상 검증 화면이 아닙니다. <a href="?theme=dark">다크</a> · <a href="?">라이트</a></p><div class="grid" id="cards"></div>
+<script>
+if(new URLSearchParams(location.search).get('theme')==='dark')document.documentElement.classList.add('dark');
+customElements.define('ha-card',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:14px;overflow:hidden}</style><slot></slot>';}});
+</script><script src="../compact-cards.js"></script><script>
+const hass={states:{'camera.offline':{entity_id:'camera.offline',state:'unavailable',attributes:{friendly_name:'연결 끊긴 카메라'}},'camera.door':{entity_id:'camera.door',state:'idle',attributes:{friendly_name:'현관'}}},hassUrl:url=>url};
+for(const [title,type,config] of [
+ ['로컬 이미지 · 전체 보기','compact-image-card',{image:'/examples/floor-plan.svg',name:'우리 집 평면도',alt_text:'거실·침실과 출입구를 보여주는 평면도',fit_mode:'contain'}],
+ ['이미지 불러오기 실패 · 재시도','compact-image-card',{image:'/missing-image.jpg',name:'평면도'}],
+ ['HA 런타임 없음 · 재시도','compact-camera-card',{entity:'camera.door'}],
+ ['엔티티 사용 불가','compact-camera-card',{entity:'camera.offline'}]
+]){const section=document.createElement('section'),heading=document.createElement('h2'),card=document.createElement(type);heading.textContent=title;if(config.image?.startsWith('../'))config.image=new URL(config.image,location.href).href;card.setConfig(config);card.hass=hass;section.append(heading,card);document.querySelector('#cards').append(section);}
+</script></html>

@@ -15,13 +15,13 @@ Compact Home Assistant controls, arranged for a room. Read the state at a glance
 
 </details>
 
-Keep everyday controls close together: power, brightness, temperature, cover position and playback. Cards adapt to their available width and use Home Assistant theme colors. Configure them in the UI or YAML; all seven ship in one JavaScript file without a build step or external runtime libraries.
+Keep everyday controls close together: power, brightness, temperature, cover position and playback. Cards adapt to their available width and use Home Assistant theme colors. Configure them in the UI or YAML; all nine ship in one JavaScript file without a build step or external runtime libraries.
 
 [Showcase configuration](examples/showcase.yaml) · [Room dashboard guide](docs/showcase.md) · [Visual editor](docs/visual-editor.md)
 
 ## Cards and guides
 
-Each guide includes a card screenshot, options and YAML examples. Combine individual cards or embed controls in the home panel.
+Guides provide options and YAML examples; existing control guides also include screenshots. Combine individual cards or embed controls in the home panel.
 
 | Card / guide | Use | YAML type |
 | --- | --- | --- |
@@ -32,6 +32,8 @@ Each guide includes a card screenshot, options and YAML examples. Combine indivi
 | [Scenes](docs/compact-scene-panel.md) | Scene and script shortcuts | `custom:compact-scene-panel` |
 | [Environment](docs/compact-environment-panel.md) | Sensor readings and configured thresholds | `custom:compact-environment-panel` |
 | [Media](docs/compact-media-row.md) | Playback, mute and supported volume controls | `custom:compact-media-row` |
+| [Image](docs/compact-image-card.md) | Local/HTTP(S) images or image entities | `custom:compact-image-card` |
+| [Camera](docs/compact-camera-card.md) | Camera thumbnail; tap for native details | `custom:compact-camera-card` |
 
 [Interaction feedback](docs/polish.md) · [UX refinements](docs/ux-refinements.md) · [Light and cover setup](docs/light-cover.md) · [Scene and environment setup](docs/scene-environment.md)
 
@@ -88,7 +90,7 @@ items:
 
 Replace entity IDs with those in your installation. More examples are available in [examples/dashboard.yaml](examples/dashboard.yaml).
 
-All seven cards appear in the card picker and include a [visual configuration editor](docs/visual-editor.md). YAML configuration remains supported.
+All nine cards appear in the card picker and include a [visual configuration editor](docs/visual-editor.md). YAML configuration remains supported.
 
 Built-in control labels and notifications currently use Korean.
 

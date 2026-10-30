@@ -4,7 +4,7 @@ const {readFileSync}=require('node:fs');
 const {Window}=require('happy-dom');
 const source=readFileSync('compact-cards.js','utf8');
 const plain=value=>JSON.parse(JSON.stringify(value));
-const types=['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row'];
+const types=['compact-climate-row','compact-home-panel','compact-light-row','compact-cover-row','compact-scene-panel','compact-environment-panel','compact-media-row','compact-image-card','compact-camera-card'];
 async function setup(t,type,config,forms=true){
   const window=new Window({url:'http://homeassistant.local/'});if(forms)window.customElements.define('ha-form',class extends window.HTMLElement{});window.eval(source);
   const hass={states:{'sensor.room':{entity_id:'sensor.room',state:'22',attributes:{friendly_name:'Room'}},'scene.relax':{entity_id:'scene.relax',state:'unknown',attributes:{}}},callService:()=>assert.fail('configuration must not call services')};
@@ -17,9 +17,9 @@ async function setup(t,type,config,forms=true){
   return {window,editor,hass,events,form,change,add};
 }
 
-test('all seven card constructors provide visual editors with domain-aware fields',async t=>{
+test('all nine card constructors provide visual editors with domain-aware fields',async t=>{
   for(const type of types){
-    const config=type.endsWith('panel')?{type:`custom:${type}`,items:[{entity:type.includes('scene')?'scene.relax':'sensor.room'}]}:{type:`custom:${type}`,entity:`${type.includes('climate')?'climate':type.includes('light')?'light':type.includes('cover')?'cover':'media_player'}.room`};
+    const config=type==='compact-image-card'?{image:'/local/example.jpg'}:type==='compact-camera-card'?{entity:'camera.door'}:type.endsWith('panel')?{type:`custom:${type}`,items:[{entity:type.includes('scene')?'scene.relax':'sensor.room'}]}:{type:`custom:${type}`,entity:`${type.includes('climate')?'climate':type.includes('light')?'light':type.includes('cover')?'cover':'media_player'}.room`};
     const {editor,events,form}=await setup(t,type,config);
     assert.equal(editor.localName,`${type}-editor`);assert.equal(events.length,0);
     assert.ok(form([]));assert.equal(editor.shadowRoot.querySelector('textarea'),null);

@@ -15,13 +15,13 @@
 
 </details>
 
-전원·밝기·온도·커튼 위치·재생처럼 자주 쓰는 조작을 가까이 모읍니다. 카드 너비에 따라 배치를 조정하고 Home Assistant 테마 색상을 사용합니다. UI와 YAML 편집을 지원하며, 별도 빌드나 외부 런타임 라이브러리 없이 JavaScript 파일 하나에 7종 카드가 포함됩니다.
+전원·밝기·온도·커튼 위치·재생처럼 자주 쓰는 조작을 가까이 모읍니다. 카드 너비에 따라 배치를 조정하고 Home Assistant 테마 색상을 사용합니다. UI와 YAML 편집을 지원하며, 별도 빌드나 외부 런타임 라이브러리 없이 JavaScript 파일 하나에 9종 카드가 포함됩니다.
 
 [대시보드 구성 YAML](examples/showcase.yaml) · [방별 대시보드 가이드](docs/showcase.md) · [UI 설정 가이드](docs/visual-editor.md)
 
 ## 카드와 사용 가이드
 
-각 문서에서 카드 화면, 옵션, YAML 예제를 확인할 수 있습니다. 독립 카드를 조합하거나 홈 패널 안에 제어 행을 넣어 구성하세요.
+각 문서에서 옵션과 YAML 예제를 확인할 수 있습니다. 기존 제어 카드 가이드는 화면 예시도 제공합니다. 독립 카드를 조합하거나 홈 패널 안에 제어 행을 넣어 구성하세요.
 
 | 카드 / 가이드 | 용도 | YAML 유형 |
 | --- | --- | --- |
@@ -32,6 +32,8 @@
 | [장면](docs/compact-scene-panel.md) | 장면·스크립트 바로 실행 | `custom:compact-scene-panel` |
 | [환경](docs/compact-environment-panel.md) | 센서 값과 설정한 임계값 | `custom:compact-environment-panel` |
 | [미디어](docs/compact-media-row.md) | 재생·음소거·지원 음량 제어 | `custom:compact-media-row` |
+| [이미지](docs/compact-image-card.md) | 사진·평면도·이미지 엔티티 표시 | `custom:compact-image-card` |
+| [카메라](docs/compact-camera-card.md) | 작은 카메라 썸네일·터치하여 상세 보기 | `custom:compact-camera-card` |
 
 [조작감과 상태 표시](docs/polish.md) · [UX 개선 내용](docs/ux-refinements.md) · [조명·커튼 설정](docs/light-cover.md) · [장면·환경 설정](docs/scene-environment.md)
 
@@ -88,7 +90,7 @@ items:
 
 엔티티 ID는 실제 환경에 맞게 변경하세요. 추가 예제는 `examples/dashboard.yaml`에 있습니다.
 
-카드 추가 화면에서도 **Compact climate row**, **Compact home panel**을 선택할 수 있습니다. 7종 모두 [시각적 설정 편집기](docs/visual-editor.md)를 제공하며 YAML 편집도 지원합니다.
+카드 추가 화면에서도 **Compact climate row**, **Compact home panel**을 선택할 수 있습니다. 9종 모두 [시각적 설정 편집기](docs/visual-editor.md)를 제공하며 YAML 편집도 지원합니다.
 
 내장 제어 레이블과 알림은 현재 한국어로 표시됩니다.
 
