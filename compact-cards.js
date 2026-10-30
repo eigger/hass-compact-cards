@@ -92,8 +92,8 @@ class CompactClimateRow extends HTMLElement {
     this._busy = false;
     this.shadowRoot.innerHTML = `
       <style>
-        :host{display:block;height:100%;container-type:inline-size;--row-color:var(--primary-text-color)}
-        ha-card{height:100%;min-height:56px;box-sizing:border-box;display:grid;grid-template-columns:minmax(90px,1fr) auto auto;align-items:center;gap:6px;padding:6px 10px;overflow:hidden}
+        :host{display:block;container-type:inline-size;--row-color:var(--primary-text-color)}
+        ha-card{min-height:56px;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;align-content:start;gap:6px;padding:6px 10px;overflow:hidden}
         button{font:inherit;color:var(--row-color);background:transparent;border:0;border-radius:7px;min-height:36px;padding:4px;cursor:pointer;flex:none;touch-action:manipulation;position:relative}
         button:focus-visible{outline:2px solid var(--primary-color);outline-offset:-2px}
         button:disabled{opacity:.35;cursor:default}
@@ -117,9 +117,10 @@ class CompactClimateRow extends HTMLElement {
         .temperature{border-left:1px solid var(--divider-color);padding-left:5px}
         .temperature button{width:32px;font-size:18px}
         output{font-size:14px;font-variant-numeric:tabular-nums;min-width:39px;text-align:center;white-space:nowrap}
-        @container(max-width:380px){ha-card{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px;gap:2px 6px}.modes{grid-row:2;grid-column:1/-1;flex-wrap:wrap}.temperature{grid-column:2;grid-row:1;border:0;padding:0}}
-        @container(max-width:540px){ha-card.many-modes{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.many-modes .modes{grid-row:2;grid-column:1/-1;flex-wrap:wrap}.many-modes .temperature{grid-column:2;grid-row:1;border:0;padding:0}}
-        @media(pointer:coarse){button{min-height:44px}.modes button,.temperature button{width:44px}.modes{flex-wrap:wrap;max-width:100%}@container(max-width:640px){ha-card.many-modes{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.many-modes .modes{grid-row:2;grid-column:1/-1}.many-modes .temperature{grid-column:2;grid-row:1;border:0;padding:0}}@container(max-width:440px){ha-card{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}.modes{grid-row:2;grid-column:1/-1}.temperature{grid-column:2;grid-row:1;border:0;padding:0}}}
+        ha-card.wrap-modes{grid-template-columns:minmax(0,1fr) auto;gap:2px 6px}
+        .wrap-modes .modes{grid-row:2;grid-column:1/-1;flex-wrap:wrap;min-width:0;max-width:100%}
+        .wrap-modes .temperature{grid-column:2;grid-row:1}
+        @media(pointer:coarse){button{min-height:44px}.modes button,.temperature button{width:44px}}
         :host([embedded]) ha-card{min-height:48px;border:0;box-shadow:none;background:transparent;padding:4px 0}
       </style>
       <ha-card>
@@ -130,6 +131,10 @@ class CompactClimateRow extends HTMLElement {
         </div>
       </ha-card>`;
     compactInteractions(this);
+    if(typeof ResizeObserver==='function')this._resize=new ResizeObserver(()=>{
+      if(this._layoutFrame!==undefined)return;
+      this._layoutFrame=requestAnimationFrame(()=>{this._layoutFrame=undefined;this._layout();});
+    });
     this.shadowRoot.querySelector('.info').onclick = () => this.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: this._config.entity }, bubbles: true, composed: true }));
     this.shadowRoot.querySelector('.minus').onclick = () => this._step(-1);
     this.shadowRoot.querySelector('.plus').onclick = () => this._step(1);
@@ -143,8 +148,23 @@ class CompactClimateRow extends HTMLElement {
     this._render();
   }
   set hass(value) { this._hass = value; this._render(); }
-  disconnectedCallback(){compactClearFeedback(this);}
-  getCardSize() { return (this._hass?.states[this._config?.entity]?.attributes.hvac_modes?.length || 0) > 3 ? 2 : 1; }
+  connectedCallback(){this._resize?.observe(this);this._resize?.observe(this.shadowRoot.querySelector('.temperature'));this._layout();}
+  disconnectedCallback(){compactClearFeedback(this);this._resize?.disconnect();if(this._layoutFrame!==undefined)cancelAnimationFrame(this._layoutFrame);this._layoutFrame=undefined;}
+  _layout() {
+    const card=this.shadowRoot.querySelector('ha-card');
+    if(!card.clientWidth)return;
+    const styles=getComputedStyle(card),modes=this.shadowRoot.querySelector('.modes'),buttons=[...modes.children];
+    const gap=parseFloat(getComputedStyle(modes).columnGap)||0;
+    const modesWidth=buttons.reduce((width,button)=>width+button.getBoundingClientRect().width,0)+Math.max(0,buttons.length-1)*gap;
+    const available=card.clientWidth-(parseFloat(styles.paddingLeft)||0)-(parseFloat(styles.paddingRight)||0);
+    // Reserve a short readable name/current-temperature column; long captions retain their tooltip.
+    const required=72+modesWidth+this.shadowRoot.querySelector('.temperature').getBoundingClientRect().width+2*(parseFloat(styles.columnGap)||0);
+    card.classList.toggle('wrap-modes',required>available);
+  }
+  getCardSize() {
+    if(!this.shadowRoot.querySelector('ha-card').classList.contains('wrap-modes'))return 1;
+    return 1+Math.max(1,new Set([...this.shadowRoot.querySelector('.modes').children].map(button=>button.offsetTop)).size);
+  }
   static getStubConfig(hass) {
     return { entity: Object.keys(hass?.states || {}).find(id => id.startsWith('climate.')) || 'climate.living_room' };
   }
@@ -166,7 +186,10 @@ class CompactClimateRow extends HTMLElement {
     const offline = !s || ['unknown', 'unavailable'].includes(s.state);
     compactStyle(this.shadowRoot.querySelector('ha-card'),'--climate-color', this._modeColor(offline ? 'unavailable' : s.state));
     compactText(this.shadowRoot.querySelector('.name'),this._config.name || a.friendly_name || this._config.entity);
-    compactText(this.shadowRoot.querySelector('.state'),offline ? '확인 불가' : `${this._hass.formatEntityState?.(s) || s.state}${a.current_temperature != null ? ' · 현재 ' + a.current_temperature + '°' : ''}`);
+    compactText(this.shadowRoot.querySelector('.state'),offline ? '확인 불가' : `${a.current_temperature != null ? a.current_temperature + '° · ' : ''}${this._hass.formatEntityState?.(s) || s.state}`);
+    const description=`${this.shadowRoot.querySelector('.name').textContent}: ${!offline&&a.current_temperature!=null?'현재 ':''}${this.shadowRoot.querySelector('.state').textContent}`;
+    compactProp(this.shadowRoot.querySelector('.info'),'title',description);
+    compactAttr(this.shadowRoot.querySelector('.info'),'aria-label',description);
     const defs = { off:['mdi:power','끄기'], heat:['mdi:fire','난방'], cool:['mdi:snowflake','냉방'], dry:['mdi:water-percent','제습'], fan_only:['mdi:fan','송풍'], auto:['mdi:alpha-a-circle','자동'], heat_cool:['mdi:thermostat-auto','냉난방 자동'] };
     const modes = Array.isArray(a.hvac_modes) ? a.hvac_modes : [];
     this.shadowRoot.querySelector('ha-card').classList.toggle('many-modes',modes.length>3);
@@ -205,6 +228,7 @@ class CompactClimateRow extends HTMLElement {
     compactProp(minus,'disabled',offline || this._busy || !valid || !supported || (a.min_temp != null && t <= a.min_temp));
     compactProp(plus,'disabled',offline || this._busy || !valid || !supported || (a.max_temp != null && t >= a.max_temp));
     for(const button of [minus,plus]){compactAttr(button,'aria-busy',this._busy);compactAttr(button,'aria-disabled',button.disabled || this._busy);}
+    this._layout();
   }
   _step(direction) {
     const s = this._hass?.states[this._config.entity];
