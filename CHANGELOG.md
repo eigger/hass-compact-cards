@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Refine typography, active surfaces and slider rails without increasing card heights; replace README test-sheet previews with real room dashboard captures, matching YAML and a reproducible showcase guide.
+
 - Apply UX review refinements: direct mute controls, independent audio/transport requests, per-scene feedback, unbroken environmental numbers with smaller units, keyboard-friendly color temperature, compact cover labels, and focused/reorder-safe visual editing.
 
 - Clarify comparison periods directly beside values and retain icon-centered climate controls following the UX review.

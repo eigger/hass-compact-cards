@@ -41,3 +41,16 @@
 The showcase renders the real seven custom-card elements in coherent living-room, bedroom, and whole-home groups. Only HA's visual primitives and entity/service context are mocked. All resources are local. Use `theme=dark` for dark mode and `capture=true` to hide the theme switch while retaining the title and mock-data disclosure. Desktop layouts use three columns; narrow viewports reflow instead of scaling cards down.
 
 `examples/showcase.yaml` contains the same custom-card configurations for an HA Sections dashboard. Replace entity IDs with your own; it does not create mock entities. Representative images should be actual browser captures of this page, with capture context recorded. This is a demonstration, not live-device compatibility evidence.
+
+## 실제 카드의 시각 개선
+
+주요 값과 제목의 굵기를 정리하고, 선택한 조작과 색온도·밝기·음량 레일을 일관되게 표현했습니다. 환경·장면의 내부 칸은 반복 테두리를 줄였습니다. 이 스타일은 쇼케이스 전용이 아니라 실제 카드와 홈 패널에 적용됩니다. 냉난방은 아이콘 중심 구성을 유지합니다.
+
+320·390·760px의 실제 카드 너비에서 기존 버전과 높이를 비교하고, 밝은·어두운 테마의 숫자와 조작 영역을 검토했습니다. 쇼케이스의 2열 전원 항목은 `columns: 2` 설정으로 구성합니다.
+
+<details>
+<summary>390px 모바일 구성 보기</summary>
+
+![한 열로 재배치한 모바일 방별 대시보드](../images/showcase-mobile.jpg)
+
+</details>
