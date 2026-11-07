@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace the lock/unlock switch on home panel `lock` rows with a state button: the row shows the lock's state (e.g. Locked) and tapping it locks or unlocks. The unlock confirmation added in 0.2.8 is removed; a confirmation is asked only when `tap_action.confirmation` is configured.
+
 ## 0.2.8 — 2026-11-07
 
 - Add a switch to `lock` rows in the home panel (on while locked) that locks or unlocks the lock. Unlocking asks for confirmation, locks that need a code open more-info instead, and a configured `perform-action` button keeps priority over the switch. Tapping the row name still opens more-info.
