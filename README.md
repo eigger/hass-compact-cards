@@ -155,7 +155,7 @@ Before pushing a tag, record user impact and required actions in the [changelog]
 ## Troubleshooting
 
 - `Custom element doesn't exist`: Check the resource URL and JavaScript module type, then hard-refresh the browser. Avoid registering both HACS and manual installation resources.
-- `확인 불가` (unavailable): Check the entity ID and its state. Controls do not operate while the state is `unknown` or `unavailable`.
+- `확인 불가` (unavailable): Check the entity ID and its state. Controls do not operate while the state is `unknown` or `unavailable`, except that never-used buttons, scripts and scenes can be pressed while `unknown`.
 - Change failure notification: Use Home Assistant developer tools to check that the entity supports the requested service.
 
 ## Local development

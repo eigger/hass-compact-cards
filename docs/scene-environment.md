@@ -4,7 +4,7 @@
 
 ## 장면 빠른 실행
 
-`custom:compact-scene-panel`은 장면·스크립트를 한 번의 터치로 실행합니다. 항목별 `confirmation` 문자열을 지정하면 확인 후 실행합니다. 실행 요청 중에는 중복 실행을 막고 상태를 표시합니다. 실행 중인 스크립트는 다시 실행할 수 없습니다. 아직 실행한 적 없는 장면의 `unknown` 상태는 실행할 수 있지만, 없는 엔티티와 `unavailable`은 사용할 수 없습니다.
+`custom:compact-scene-panel`은 장면·스크립트를 한 번의 터치로 실행합니다. 항목별 `confirmation` 문자열을 지정하면 확인 후 실행합니다. 실행 요청 중에는 중복 실행을 막고 상태를 표시합니다. 실행 중인 스크립트는 다시 실행할 수 없습니다. 아직 실행한 적 없는 장면·스크립트의 `unknown` 상태는 실행할 수 있지만, 없는 엔티티와 `unavailable`은 사용할 수 없습니다.
 
 ```yaml
 type: custom:compact-scene-panel

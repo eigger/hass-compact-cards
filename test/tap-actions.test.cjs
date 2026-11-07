@@ -123,3 +123,19 @@ test('a lock with a configured perform-action keeps its command button',async t=
  const ref=card._refs[0];assert.equal(ref.control.getAttribute('role'),null);assert.equal(ref.control.textContent,'실행');
  ref.control.click();await flush();assert.deepEqual(calls[0].slice(0,2),['lock','open']);
 });
+
+test('never-run button, input_button, script and scene rows (state unknown) are pressable, but unavailable ones are not',async t=>{
+ const ids=['button.refresh','input_button.reset','script.night','scene.relax'];
+ const {card,hass,calls}=setup(t,ids.map(id=>({entity:id,tap_action:{action:'perform-action',perform_action:`${id.split('.')[0]}.${id.startsWith('button')||id.startsWith('input_button')?'press':'turn_on'}`,target:{entity_id:id}}})),Object.fromEntries(ids.map(id=>[id,state(id,'unknown')])));
+ for(const ref of card._refs){assert.equal(ref.control.disabled,false);assert.equal(ref.control.getAttribute('aria-disabled'),'false');assert.notEqual(ref.row.style.getPropertyValue('--entity-color'),'var(--state-unavailable-color)');ref.control.click();await flush();}
+ assert.deepEqual(calls.map(call=>call.slice(0,2)),[['button','press'],['input_button','press'],['script','turn_on'],['scene','turn_on']]);
+ for(const id of ids)hass.states[id]=state(id,'unavailable');card.hass=hass;
+ for(const ref of card._refs){assert.equal(ref.control.disabled,true);await ref.control.onclick();}
+ assert.equal(calls.length,4);
+});
+
+test('unknown toggle rows follow the same pressable rule in render and tap handlers',async t=>{
+ const {card,hass,calls}=setup(t,[{entity:'script.night',tap_action:{action:'toggle'}},{entity:'select.preset',tap_action:{action:'toggle'}}],{'script.night':state('script.night','unknown'),'select.preset':state('select.preset','unknown',{options:['Eco']})});
+ const [script,select]=card._refs;assert.equal(script.label.disabled,false);assert.equal(select.label.disabled,true);
+ script.label.click();await select.label.onclick();await flush();assert.deepEqual(calls.map(call=>call[2].entity_id),['script.night']);
+});

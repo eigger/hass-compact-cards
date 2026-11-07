@@ -155,7 +155,7 @@ HACS 형식은 [공식 배포 문서](https://hacs.dev/docs/publish/start/)를 �
 ## 문제 해결
 
 - `Custom element doesn't exist`: 리소스 URL과 JavaScript 모듈 유형을 확인하고 브라우저를 강력 새로고침하세요. HACS 설치와 수동 설치 리소스를 중복 등록하지 마세요.
-- `확인 불가`: 엔티티 ID와 상태를 확인하세요. `unknown`/`unavailable` 상태에서는 제어하지 않습니다.
+- `확인 불가`: 엔티티 ID와 상태를 확인하세요. `unknown`/`unavailable` 상태에서는 제어하지 않지만, 아직 실행하지 않은 버튼·스크립트·장면은 `unknown`이어도 실행할 수 있습니다.
 - 변경 실패 알림: 해당 엔티티에서 지원하는 서비스인지 Home Assistant 개발자 도구에서 확인하세요.
 
 ## 로컬 작업
