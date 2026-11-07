@@ -148,7 +148,7 @@ test('configuration reports invalid nested items before rendering', () => {
 
 test('commands preserve Home Assistant target separately from service data', async () => {
   const { hass, calls, card } = setup();
-  hass.states['button.test'] = state('button.test', 'unknown');
+  hass.states['button.test'] = state('button.test', 'unavailable');
   const config = { items: [{ entity: 'button.test', tap_action: {
     action: 'perform-action', perform_action: 'button.press',
     target: { device_id: 'device-123' }, data: {},

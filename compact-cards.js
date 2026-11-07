@@ -322,6 +322,11 @@ if (!window.customCards.some(c => c.type === 'compact-climate-row')) window.cust
 
 // Compact native-theme panels. Climate rows are included in this bundle.
 const compactNameIndexes = new WeakMap();
+// Buttons, scripts and scenes report `unknown` until first used; they are still pressable, so only `unavailable` counts as offline for them.
+function compactOffline(state) {
+  if (!state || state.state==='unavailable') return true;
+  return state.state==='unknown' && !['button','input_button','script','scene'].includes(state.entity_id.split('.')[0]);
+}
 function compactResolve(hass, item) {
   if (item.entity) return hass.states[item.entity];
   if (!item.find_name) return undefined;
@@ -337,7 +342,7 @@ function compactResolve(hass, item) {
   return index.get((item.domain || 'sensor') + ':' + item.find_name) || undefined;
 }
 function compactStateColor(state) {
-  if (!state || ['unknown','unavailable'].includes(state.state)) return 'var(--state-unavailable-color)';
+  if (compactOffline(state)) return 'var(--state-unavailable-color)';
   const domain = state.entity_id.split('.')[0];
   if (domain === 'sensor' || domain === 'select') return 'var(--secondary-text-color)';
   const active = domain === 'lock' ? state.state !== 'locked' : !['off','closed','not_home'].includes(state.state);
@@ -521,7 +526,7 @@ class CompactHomePanel extends HTMLElement {
       }
       if (item.type === 'navigate') continue;
       const state=compactResolve(this._hass,item);ref.state=state;
-      const offline=!state || ['unknown','unavailable'].includes(state.state);
+      const offline=compactOffline(state);
       compactText(ref.name,item.name || state?.attributes.friendly_name || item.entity || item.find_name);
       compactProp(ref.label,'title',ref.name.textContent);
       const tapToggle=item.tap_action?.action==='toggle',tapBusy=tapToggle&&this._busy.has(item.entity);
@@ -563,7 +568,7 @@ class CompactHomePanel extends HTMLElement {
   }
   _toggle(ref) {
     const state=this._hass?.states[ref.item.entity];
-    if (!state || ['unknown','unavailable'].includes(state.state) || this._busy.has(ref.item.entity)) return;
+    if (compactOffline(state) || this._busy.has(ref.item.entity)) return;
     if (ref.item.tap_action?.action==='toggle' && !this._confirmAction(ref.item.tap_action)) return;
     return this._call(ref,'homeassistant','toggle',{entity_id:ref.item.entity});
   }
@@ -575,7 +580,7 @@ class CompactHomePanel extends HTMLElement {
   }
   async _call(ref,domain,service,data,target) {
     const id=ref.item.entity,state=this._hass?.states[id];
-    if (!state || ['unknown','unavailable'].includes(state.state) || this._busy.has(id)) return;
+    if (compactOffline(state) || this._busy.has(id)) return;
     const feedback=compactFeedback(this,'pending','변경 요청 중');
     this._busy.add(id);this._render();
     try {await this._hass.callService(domain,service,data,undefined,target);compactFeedback(this,'success','요청 전달됨',feedback);}
@@ -881,8 +886,8 @@ for(const [type,constructor,name,description] of [
     }
     _bind(ref) { ref.button.onclick = () => this._activate(ref); }
     _available(state) {
-      // A scene that has never been activated legitimately has an unknown timestamp.
-      return state && state.state !== 'unavailable' && (state.entity_id.startsWith('scene.') || state.state !== 'unknown');
+      // A scene or script that has never been run legitimately reports `unknown`.
+      return !compactOffline(state);
     }
     _render() {
       if (!this._hass || !this._config) return;

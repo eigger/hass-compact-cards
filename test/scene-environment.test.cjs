@@ -24,6 +24,11 @@ test('scene allows never-activated scene, blocks unavailable and running scripts
   hass.states['script.night'] = state('script.night','off'); card.hass=hass; await card._activate(script);
   assert.equal(calls[1][0],'script');
 });
+test('scene panel allows a never-run script whose state is unknown',async () => {
+  const {card,calls} = setup('compact-scene-panel',{items:[{entity:'script.night'}]}, {'script.night':state('script.night','unknown')});
+  assert.equal(card._refs[0].button.disabled,false); assert.equal(card._refs[0].detail.textContent,'실행');
+  await card._activate(card._refs[0]); assert.deepEqual(calls[0].slice(0,2),['script','turn_on']);
+});
 test('scene confirmation cancels, duplicate requests are blocked, and errors release controls',async () => {
   const {window,card,hass,calls} = setup('compact-scene-panel',{items:[{entity:'scene.relax',confirmation:'실행?'}]}, {'scene.relax':state('scene.relax','unknown')});
   window.confirm = () => false; await card._activate(card._refs[0]); assert.equal(calls.length,0);
