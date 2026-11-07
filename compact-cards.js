@@ -372,7 +372,7 @@ class CompactHomePanel extends HTMLElement {
       button,select{touch-action:manipulation}button:disabled,select:disabled{opacity:.45;cursor:default}.label{display:flex;align-items:center;gap:9px;text-align:left;flex:1;min-width:0}
       .label span{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       ha-icon,ha-state-icon{--mdc-icon-size:18px;width:18px;height:18px;flex:none;color:var(--entity-color,var(--secondary-text-color))}
-      .value{font-size:14px;min-width:0;max-width:68%;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--entity-color,var(--primary-text-color));transition:color 180ms ease}
+      .value{font-size:14px;min-width:0;max-width:68%;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--entity-color,var(--primary-text-color));transition:color 180ms ease;cursor:pointer;touch-action:manipulation}
       .switch{min-width:42px;display:grid;place-items:center}.track{display:block;width:28px;height:16px;background:var(--disabled-color);border-radius:10px;position:relative;transition:background-color 180ms ease}
       .track:after{content:'';position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--card-background-color);transform:translateX(0);transition:transform 180ms cubic-bezier(.2,.8,.2,1)}
       .switch[aria-checked=true] .track{background:var(--entity-color)}.switch[aria-checked=true] .track:after{transform:translateX(12px)}
@@ -485,7 +485,7 @@ class CompactHomePanel extends HTMLElement {
           const select=this._make('select');select.onchange=()=>this._call(ref,'select','select_option',{entity_id:item.entity,option:select.value});ref.select=select;row.append(select);
         } else if (item.tap_action?.action === 'perform-action') {
           const button=this._make('button','command','실행');button.onclick=()=>this._command(ref);ref.control=button;row.append(button);
-        } else {ref.value=this._make('span','value');row.append(ref.value);}
+        } else {ref.value=this._make('span','value');ref.value.onclick=()=>{if(!label.disabled)this._tap(ref);};row.append(ref.value);}
       }
       (paired?pairGroup:body).append(row);this._refs.push(ref);
     }

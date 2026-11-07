@@ -87,3 +87,8 @@ test('more-info honors optional confirmation and name lookup without sending a s
  let text;window.confirm=message=>{text=message;return false;};card._refs[0].label.click();await flush();assert.equal(text,'상세 정보를 열까요?');assert.equal(info.length,0);
  window.confirm=()=>true;card._refs[0].label.click();await flush();assert.deepEqual(info,['sensor.room']);assert.equal(calls.length,0);
 });
+
+test('clicking the state value of a row runs the row tap action',async t=>{
+ const {card,info}=setup(t,[{entity:'lock.gas',tap_action:{action:'more-info'}}],{'lock.gas':state('lock.gas','locked')});
+ const ref=card._refs[0];ref.value.click();await flush();assert.deepEqual(info,['lock.gas']);
+});

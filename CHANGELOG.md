@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make the state text on the right of home panel rows clickable, with the same action as the row name (more-info by default), so tapping a lock or sensor state opens its details.
+
 ## 0.2.7 — 2026-10-30
 
 - Remove the blue pressed-button background, hover backgrounds on touch devices and the mobile tap highlight, and stop dimming buttons while a request is pending, so presses no longer flash or flicker.
