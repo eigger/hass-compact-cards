@@ -341,6 +341,9 @@ function compactResolve(hass, item) {
   }
   return index.get((item.domain || 'sensor') + ':' + item.find_name) || undefined;
 }
+function compactLockId(id) { return typeof id==='string' && id.startsWith('lock.'); }
+// Locking counts as locked so the switch reflects the requested state and a second press reverses it.
+function compactLocked(state) { return ['locked','locking'].includes(state?.state); }
 function compactStateColor(state) {
   if (compactOffline(state)) return 'var(--state-unavailable-color)';
   const domain = state.entity_id.split('.')[0];
@@ -483,7 +486,8 @@ class CompactHomePanel extends HTMLElement {
       } else {
         label.onclick=()=>this._tap(ref);
         const domain=(item.entity || '').split('.')[0];
-        if (['light','switch'].includes(domain)) {
+        // A configured perform-action button on a lock keeps priority so existing commands such as lock.open are not dropped.
+        if (['light','switch'].includes(domain) || (domain==='lock' && item.tap_action?.action!=='perform-action')) {
           const toggle=this._make('button','switch');toggle.setAttribute('role','switch');toggle.append(this._make('span','track'));
           toggle.onclick=()=>this._toggle(ref);ref.control=toggle;row.append(toggle);
         } else if (domain === 'select') {
@@ -532,7 +536,7 @@ class CompactHomePanel extends HTMLElement {
       const tapToggle=item.tap_action?.action==='toggle',tapBusy=tapToggle&&this._busy.has(item.entity);
       compactProp(ref.label,'disabled',tapToggle ? offline||tapBusy : !state);
       compactAttr(ref.label,'aria-busy',tapBusy&&!offline);
-      compactAttr(ref.label,'aria-label',`${ref.name.textContent}${tapToggle?' 켜기/끄기':''}`);
+      compactAttr(ref.label,'aria-label',`${ref.name.textContent}${tapToggle?(compactLockId(item.entity)?' 잠금/해제':' 켜기/끄기'):''}`);
       compactStyle(ref.row,'--entity-color',compactStateColor(state));
       const domain=state?.entity_id.split('.')[0];
       // HA resolves registry overrides, device classes and state-dependent icons.
@@ -547,8 +551,9 @@ class CompactHomePanel extends HTMLElement {
         compactProp(ref.control,'disabled',offline || this._busy.has(item.entity));
         compactAttr(ref.control,'aria-busy',this._busy.has(item.entity)&&!offline);
         compactAttr(ref.control,'aria-disabled',offline || this._busy.has(item.entity));
-        compactAttr(ref.control,'aria-label',`${ref.name.textContent} ${['light','switch'].includes(domain)?'켜기/끄기':'실행'}`);
-        if (ref.control.getAttribute('role') === 'switch') compactAttr(ref.control,'aria-checked',state?.state==='on');
+        const isSwitch=ref.control.getAttribute('role') === 'switch',lock=isSwitch&&compactLockId(item.entity);
+        compactAttr(ref.control,'aria-label',`${ref.name.textContent} ${lock?'잠금/해제':isSwitch?'켜기/끄기':'실행'}`);
+        if (isSwitch) compactAttr(ref.control,'aria-checked',lock?compactLocked(state):state?.state==='on');
       }
       if (ref.select) {
         const options=state?.attributes.options || [];
@@ -569,7 +574,17 @@ class CompactHomePanel extends HTMLElement {
   _toggle(ref) {
     const state=this._hass?.states[ref.item.entity];
     if (compactOffline(state) || this._busy.has(ref.item.entity)) return;
-    if (ref.item.tap_action?.action==='toggle' && !this._confirmAction(ref.item.tap_action)) return;
+    const lock=compactLockId(ref.item.entity),explicit=ref.item.tap_action?.action==='toggle';
+    // Locks that need a code go through HA's more-info dialog, which prompts for it, so no extra confirmation is asked first.
+    if (lock && state.attributes.code_format) return this._more(state);
+    if (explicit && !this._confirmAction(ref.item.tap_action)) return;
+    if (lock) {
+      // The switch is on while locked. Locking stays one tap; unlocking (which may open a door or a gas valve) is confirmed
+      // unless an explicit toggle confirmation was already accepted.
+      const unlock=compactLocked(state);
+      if (unlock && !(explicit && ref.item.tap_action.confirmation) && !window.confirm(`${ref.name.textContent} 잠금을 해제할까요?`)) return;
+      return this._call(ref,'lock',unlock?'unlock':'lock',{entity_id:ref.item.entity});
+    }
     return this._call(ref,'homeassistant','toggle',{entity_id:ref.item.entity});
   }
   async _command(ref) {

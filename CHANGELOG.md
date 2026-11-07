@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add a switch to `lock` rows in the home panel (on while locked) that locks or unlocks the lock. Unlocking asks for confirmation, locks that need a code open more-info instead, and a configured `perform-action` button keeps priority over the switch. Tapping the row name still opens more-info.
 - Fix home panel `button`, `input_button`, `script` and `scene` rows being disabled and greyed out while their state is `unknown` (never pressed yet), so buttons like a SMART refresh can be pressed for the first time. Toggle taps on these rows and never-run scripts in the scene panel follow the same rule.
 
 ## 0.2.7 — 2026-10-30

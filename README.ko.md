@@ -111,7 +111,7 @@ items:
 
 | 항목 | 필드와 동작 |
 | --- | --- |
-| 일반 엔티티 | `entity`, 선택적 `name`, `icon`. `light`/`switch`는 토글, `select`는 옵션 선택, 나머지는 상태 표시 |
+| 일반 엔티티 | `entity`, 선택적 `name`, `icon`. `light`/`switch`는 토글, `lock`은 잠금/해제 스위치(해제 시 확인), `select`는 옵션 선택, 나머지는 상태 표시 |
 | 이름으로 센서 찾기 | `find_name`, 선택적 `domain`(기본 `sensor`). 같은 도메인에 동일 이름이 여러 개면 확인 불가로 표시. 상태 표시용 |
 | `type: heading` | `name`, 선택적 `badges: [{entity: sensor.example, name: 온도}]` |
 | `type: note` | `name`에 메모 내용 |
@@ -121,7 +121,7 @@ items:
 
 사용량 비교는 두 센서의 현재 값과 단위를 비교합니다. 월별 통계를 직접 조회하거나 센서를 생성하지 않으므로, 이번 달 누적 센서와 지난달 전체 센서를 별도로 준비하세요.
 
-버튼이나 스크립트 실행은 일반 엔티티 항목에 `tap_action`을 추가합니다. `light`, `switch`, `select`는 전용 제어를 사용하므로 실행 버튼 설정이 적용되지 않습니다.
+버튼이나 스크립트 실행은 일반 엔티티 항목에 `tap_action`을 추가합니다. `light`, `switch`, `select`는 전용 제어를 사용하므로 실행 버튼 설정이 적용되지 않습니다. `perform-action` 실행 버튼을 지정한 `lock` 항목은 잠금 스위치 대신 그 버튼을 표시합니다.
 
 ```yaml
 type: custom:compact-home-panel

@@ -111,7 +111,7 @@ Set optional `columns` to `auto` (default), `1`, or `2` to control the ordinary 
 
 | Entry | Fields and behavior |
 | --- | --- |
-| Entity | `entity`, optional `name`, `icon`. `light`/`switch` provide toggles, `select` provides option selection, and other domains display state |
+| Entity | `entity`, optional `name`, `icon`. `light`/`switch` provide toggles, `lock` provides a lock/unlock switch (unlocking asks for confirmation), `select` provides option selection, and other domains display state |
 | Sensor lookup by name | `find_name`, optional `domain` (defaults to `sensor`). Duplicate names within a domain are shown as unavailable. For state display |
 | `type: heading` | `name`, optional `badges: [{entity: sensor.example, name: Temperature}]` |
 | `type: note` | Note text in `name` |
@@ -121,7 +121,7 @@ Set optional `columns` to `auto` (default), `1`, or `2` to control the ordinary 
 
 Usage comparisons read the current values and units of two sensors. They do not query monthly statistics or create sensors. Prepare a current-month cumulative sensor and a previous-month total sensor separately.
 
-To run a button or script, add `tap_action` to an entity entry. `light`, `switch` and `select` use their dedicated controls, so command button configuration does not apply to those domains.
+To run a button or script, add `tap_action` to an entity entry. `light`, `switch` and `select` use their dedicated controls, so command button configuration does not apply to those domains. A `lock` entry with a `perform-action` button shows that button instead of its lock switch.
 
 ```yaml
 type: custom:compact-home-panel
