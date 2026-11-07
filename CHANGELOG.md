@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.9 — 2026-11-07
+
 - Replace the lock/unlock switch on home panel `lock` rows with a state button: the row shows the lock's state (e.g. Locked) and tapping it locks or unlocks. The unlock confirmation added in 0.2.8 is removed; a confirmation is asked only when `tap_action.confirmation` is configured.
 
 ## 0.2.8 — 2026-11-07
