@@ -342,7 +342,7 @@ function compactResolve(hass, item) {
   return index.get((item.domain || 'sensor') + ':' + item.find_name) || undefined;
 }
 function compactLockId(id) { return typeof id==='string' && id.startsWith('lock.'); }
-// Locking counts as locked so the switch reflects the requested state and a second press reverses it.
+// Locking counts as locked so a second press while the lock is still locking unlocks it again.
 function compactLocked(state) { return ['locked','locking'].includes(state?.state); }
 function compactStateColor(state) {
   if (compactOffline(state)) return 'var(--state-unavailable-color)';
@@ -554,8 +554,8 @@ class CompactHomePanel extends HTMLElement {
         compactAttr(ref.control,'aria-busy',this._busy.has(item.entity)&&!offline);
         compactAttr(ref.control,'aria-disabled',offline || this._busy.has(item.entity));
         const isSwitch=ref.control.getAttribute('role') === 'switch';
-        // A lock's state button keeps its visible state text as its name, so only switches and command buttons get a generated label.
-        if (ref.control!==ref.value) compactAttr(ref.control,'aria-label',`${ref.name.textContent} ${isSwitch?'켜기/끄기':'실행'}`);
+        // A lock's state button is named by its row and its visible state text ("현관: 잠김"), so rows stay distinguishable.
+        compactAttr(ref.control,'aria-label',ref.control===ref.value?`${ref.name.textContent}: ${ref.value.textContent}`:`${ref.name.textContent} ${isSwitch?'켜기/끄기':'실행'}`);
         if (isSwitch) compactAttr(ref.control,'aria-checked',state?.state==='on');
       }
       if (ref.select) {
