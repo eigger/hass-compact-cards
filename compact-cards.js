@@ -342,7 +342,7 @@ function compactResolve(hass, item) {
   return index.get((item.domain || 'sensor') + ':' + item.find_name) || undefined;
 }
 function compactStateColor(state) {
-  if (!state || ['unknown','unavailable'].includes(state.state)) return 'var(--state-unavailable-color)';
+  if (compactOffline(state)) return 'var(--state-unavailable-color)';
   const domain = state.entity_id.split('.')[0];
   if (domain === 'sensor' || domain === 'select') return 'var(--secondary-text-color)';
   const active = domain === 'lock' ? state.state !== 'locked' : !['off','closed','not_home'].includes(state.state);
@@ -568,7 +568,7 @@ class CompactHomePanel extends HTMLElement {
   }
   _toggle(ref) {
     const state=this._hass?.states[ref.item.entity];
-    if (!state || ['unknown','unavailable'].includes(state.state) || this._busy.has(ref.item.entity)) return;
+    if (compactOffline(state) || this._busy.has(ref.item.entity)) return;
     if (ref.item.tap_action?.action==='toggle' && !this._confirmAction(ref.item.tap_action)) return;
     return this._call(ref,'homeassistant','toggle',{entity_id:ref.item.entity});
   }
@@ -886,8 +886,8 @@ for(const [type,constructor,name,description] of [
     }
     _bind(ref) { ref.button.onclick = () => this._activate(ref); }
     _available(state) {
-      // A scene that has never been activated legitimately has an unknown timestamp.
-      return state && state.state !== 'unavailable' && (state.entity_id.startsWith('scene.') || state.state !== 'unknown');
+      // A scene or script that has never been run legitimately reports `unknown`.
+      return !compactOffline(state);
     }
     _render() {
       if (!this._hass || !this._config) return;
