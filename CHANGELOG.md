@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a switch to `lock` rows in the home panel (on while locked) that locks or unlocks the lock. Tapping the row name still opens more-info.
+
 ## 0.2.7 — 2026-10-30
 
 - Remove the blue pressed-button background, hover backgrounds on touch devices and the mobile tap highlight, and stop dimming buttons while a request is pending, so presses no longer flash or flicker.

@@ -87,3 +87,12 @@ test('more-info honors optional confirmation and name lookup without sending a s
  let text;window.confirm=message=>{text=message;return false;};card._refs[0].label.click();await flush();assert.equal(text,'상세 정보를 열까요?');assert.equal(info.length,0);
  window.confirm=()=>true;card._refs[0].label.click();await flush();assert.deepEqual(info,['sensor.room']);assert.equal(calls.length,0);
 });
+
+test('lock rows get a switch that locks and unlocks',async t=>{
+ const id='lock.gas',{card,hass,calls,info}=setup(t,[{entity:id,tap_action:{action:'more-info'}}],{[id]:state(id,'locked')});
+ const ref=card._refs[0];assert.equal(ref.control.getAttribute('role'),'switch');assert.equal(ref.control.getAttribute('aria-checked'),'true');
+ ref.control.click();await flush();assert.deepEqual(calls[0].slice(0,2),['lock','unlock']);assert.equal(calls[0][2].entity_id,id);
+ hass.states[id]=state(id,'unlocked');card.hass=hass;assert.equal(ref.control.getAttribute('aria-checked'),'false');
+ ref.control.click();await flush();assert.deepEqual(calls[1].slice(0,2),['lock','lock']);
+ ref.label.click();assert.deepEqual(info,[id]);
+});
