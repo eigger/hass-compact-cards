@@ -60,7 +60,7 @@ items:
 - 장면 버튼은 `scene.turn_on`, 스크립트 버튼은 `script.turn_on`을 호출하며 해당 `entity_id`를 전달합니다.
 - 실행 요청 중에는 `실행 요청 중…`을 표시합니다. 같은 엔티티를 여러 버튼에 넣어도 요청 중에는 함께 비활성화됩니다.
 - 스크립트 상태가 `on`이면 `실행 중`을 표시하고 재실행을 막습니다. 스크립트가 끝나 `off`로 갱신되면 다시 사용할 수 있습니다.
-- 아직 실행하지 않은 장면의 `unknown`은 정상적인 초기 상태일 수 있으므로 실행을 허용합니다. 없는 엔티티, `unavailable`, `unknown`인 스크립트는 `확인 불가`로 표시하고 실행하지 않습니다.
+- 아직 실행하지 않은 장면·스크립트의 `unknown`은 정상적인 초기 상태일 수 있으므로 실행을 허용합니다. 없는 엔티티와 `unavailable`은 `확인 불가`로 표시하고 실행하지 않습니다.
 - 항목별로 요청 성공 시 `요청 전달됨`, 실패 시 `요청 실패`를 약 1.8초 표시합니다. 서로 다른 장면을 연달아 실행해도 각 항목의 결과는 독립적으로 유지됩니다.
 - 호출이 실패하면 알림을 표시하고 요청 중 상태를 해제합니다. 서비스 요청 완료는 장면의 모든 실제 기기 동작 완료를 뜻하지 않습니다.
 
@@ -72,4 +72,4 @@ items:
 
 Use `custom:compact-scene-panel` with a nonempty `items` list of `scene.*` or `script.*` entities. Each shortcut accepts optional `name`, `icon`, and a `confirmation` string. The panel accepts optional title `name` and `columns: auto` (default) or a fixed count from 1 to 4. Omit the title to save space.
 
-A shortcut calls the entity domain's `turn_on` with its entity ID. Pending requests and running scripts disable the corresponding shortcuts. A never-activated scene with state `unknown` remains usable; missing/unavailable entities and unknown scripts cannot run. Failures produce a notification. Request completion does not guarantee that every physical device has finished changing. Each item briefly retains its own accepted/error feedback during concurrent requests. Use the visual editor or YAML; arbitrary service data and targets are not options.
+A shortcut calls the entity domain's `turn_on` with its entity ID. Pending requests and running scripts disable the corresponding shortcuts. A never-run scene or script with state `unknown` remains usable; missing/unavailable entities cannot run. Failures produce a notification. Request completion does not guarantee that every physical device has finished changing. Each item briefly retains its own accepted/error feedback during concurrent requests. Use the visual editor or YAML; arbitrary service data and targets are not options.
