@@ -5,8 +5,10 @@
 [English](README.md) | **한국어**
 
 [![Release](https://img.shields.io/github/v/release/eigger/hass-compact-cards?style=flat)](https://github.com/eigger/hass-compact-cards/releases)
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat)](#설치)
-[![Check](https://img.shields.io/github/actions/workflow/status/eigger/hass-compact-cards/check.yml?branch=main&style=flat&label=Check)](https://github.com/eigger/hass-compact-cards/actions/workflows/check.yml)
+[![Marketplace Custom](https://img.shields.io/badge/Marketplace-Custom-41BDF5?style=flat)](#설치)
+[![Tests](https://img.shields.io/github/actions/workflow/status/eigger/hass-compact-cards/check.yml?branch=main&style=flat&label=Tests)](https://github.com/eigger/hass-compact-cards/actions/workflows/check.yml)
+[![License](https://img.shields.io/github/license/eigger/hass-compact-cards?style=flat)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/eigger/hass-compact-cards/latest/total?style=flat&label=Downloads)](https://github.com/eigger/hass-compact-cards/releases)
 
 ## 주요 기능
 
@@ -43,39 +45,18 @@
 
 ## 설치
 
-[![Home Assistant에서 대시보드 카드 저장소 열기](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=eigger&repository=hass-compact-cards&category=plugin)
+[![Home Assistant 마켓플레이스에서 카드 저장소 열기](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=eigger&repository=hass-compact-cards&category=plugin)
 
-Home Assistant 2026.11 이상에서는 **설정 → 마켓플레이스**에서 설치합니다.
+Home Assistant 2026.11 이상에서 마켓플레이스를 이용합니다.
 
-1. 위 배지로 저장소를 엽니다. 직접 추가하려면 **설정 → 마켓플레이스 → 링크에서 추가**에서 <https://github.com/eigger/hass-compact-cards>을 입력합니다. 안내가 표시되면 GitHub 계정을 연결합니다.
-2. **설치**를 선택하고 브라우저를 새로고침합니다. 마켓플레이스는 카드를 대시보드 리소스에 모듈로 추가합니다. 리소스를 YAML로 관리하는 경우 설치 화면에 표시된 항목을 직접 추가합니다. [대시보드 카드 설치 방식](https://contributors.home-assistant.io/marketplace/guides/dashboard/)
-3. 대시보드에서 카드를 추가하고 [빠른 시작](#빠른-시작)의 예제를 참고합니다.
-
-이전 Home Assistant에서 HACS를 사용하는 경우 아래 절차를 따릅니다.
-
-### HACS 설치
-
-[이 저장소](https://github.com/eigger/hass-compact-cards)를 HACS의 **사용자 지정 저장소(Custom repositories)** 로 설치할 수 있습니다. 기본 HACS 목록에 등록된 프로젝트는 아닙니다.
-
-1. HACS → 오른쪽 위 메뉴 → 사용자 지정 저장소를 엽니다.
-2. 이 프로젝트의 GitHub 저장소 URL을 입력하고 유형을 **Dashboard**로 선택합니다. 구버전 HACS에서는 **Lovelace** 또는 **Plugin**으로 표시될 수 있습니다.
-3. **Compact Cards**를 찾아 다운로드한 뒤 브라우저를 새로고침합니다.
-4. 설정 → 대시보드 → 리소스에서 아래 리소스가 등록되었는지 확인합니다. 없으면 JavaScript 모듈로 추가합니다. 리소스 메뉴는 고급 모드에서 표시될 수 있습니다.
-
-```yaml
-url: /hacsfiles/hass-compact-cards/compact-cards.js
-type: module
-```
-
-위 경로는 GitHub 저장소 이름이 `hass-compact-cards`인 경우입니다. 다른 이름으로 게시했다면 해당 경로도 변경하세요. `compact-cards.js` 하나에 모든 카드가 포함되어 있습니다.
+1. 위 배지를 누르거나 **설정 → 마켓플레이스 → 링크에서 추가**에 <https://github.com/eigger/hass-compact-cards> 주소를 입력합니다. 안내가 표시되면 GitHub 계정을 연결합니다.
+2. **설치**를 누르고 브라우저를 새로고침합니다. 리소스를 YAML로 관리한다면 설치 화면에 표시된 항목을 추가합니다.
+3. 대시보드에 카드를 추가합니다. [빠른 시작](#빠른-시작)
 
 ### 수동 설치
 
-1. `compact-cards.js`를 Home Assistant의 `/config/www/compact-cards.js`로 복사합니다. `www` 폴더가 없으면 생성합니다.
-2. 대시보드 리소스에 `/local/compact-cards.js`를 JavaScript 모듈로 등록합니다.
-3. 브라우저를 새로고침하고 카드 구성에 아래 예제를 사용합니다.
-
-리소스를 YAML로 관리하는 환경에서는 다음 항목을 기존 리소스 목록에 추가합니다.
+1. [최신 릴리스](https://github.com/eigger/hass-compact-cards/releases/latest)의 `compact-cards.js`를 `/config/www/`에 복사합니다. 폴더가 없다면 생성합니다.
+2. 대시보드 리소스에 아래 URL을 **JavaScript 모듈**로 추가하고 브라우저를 새로고침합니다. YAML로 관리한다면 기존 리소스 목록에 아래 항목을 추가합니다.
 
 ```yaml
 url: /local/compact-cards.js
@@ -163,14 +144,14 @@ items:
 
 ### 문제 해결
 
-- `Custom element doesn't exist`: 리소스 URL과 JavaScript 모듈 유형을 확인하고 브라우저를 강력 새로고침하세요. HACS 설치와 수동 설치 리소스를 중복 등록하지 마세요.
+- `Custom element doesn't exist`: 리소스 URL과 JavaScript 모듈 유형을 확인하고 브라우저를 강력 새로고침하세요. 마켓플레이스와 수동 설치 중 한 경로의 리소스만 등록하세요.
 - `확인 불가`: 엔티티 ID와 상태를 확인하세요. `unknown`/`unavailable` 상태에서는 제어하지 않지만, 아직 실행하지 않은 버튼·스크립트·장면은 `unknown`이어도 실행할 수 있습니다.
 - 변경 실패 알림: 해당 엔티티에서 지원하는 서비스인지 Home Assistant 개발자 도구에서 확인하세요.
 
 ### 개발
 
 - `compact-cards.js`: 외부 런타임 의존성이 없는 카드 번들
-- `hacs.json`: HACS 설치 메타데이터
+- `hacs.json`: 마켓플레이스 설치 메타데이터
 - `examples/dashboard.yaml`: 대시보드 카드 구성 예제
 - `npm run check`: JavaScript 문법 검사 (Node.js 필요)
 - `npm test`: DOM 기반 카드 동작 테스트
@@ -191,7 +172,7 @@ Dependabot은 npm과 GitHub Actions 의존성을 매주 검사합니다. 중앙 
 
 ### 배포
 
-HACS 형식은 [공식 배포 문서](https://hacs.dev/docs/publish/start/)를 기준으로 구성했습니다. `hacs.json`이 루트의 `compact-cards.js`를 설치 파일로 지정하므로 별도 빌드가 필요 없습니다.
+배포 형식은 [마켓플레이스 대시보드 카드 안내](https://contributors.home-assistant.io/marketplace/guides/dashboard/)를 따릅니다. `hacs.json`이 루트의 `compact-cards.js`를 설치 파일로 지정하므로 별도 빌드가 필요 없습니다.
 
 1. 프로젝트를 GitHub 저장소에 커밋하고 푸시합니다.
 2. `package.json`의 버전을 변경하고 `npm ci`, `npm run check`, `npm test`로 확인합니다.
@@ -200,7 +181,7 @@ HACS 형식은 [공식 배포 문서](https://hacs.dev/docs/publish/start/)를 �
 
 일반 푸시와 Pull Request에서도 문법 검사와 테스트가 실행됩니다. 릴리스 없이 기본 브랜치에서 설치하는 방식도 지원합니다.
 
-태그를 푸시하기 전에 [변경 기록](CHANGELOG.md)에 사용자 영향과 필요한 조치를 남기고, HACS 설치·브라우저 표시·실제 기기 제어를 확인하세요. 태그 `vX.Y.Z`는 `package.json`의 안정 버전 `X.Y.Z`와 일치해야 합니다. 사전 릴리스는 수동으로 게시합니다. 테스트는 읽기 권한으로 실행하고, 같은 커밋을 게시하는 별도 job에만 쓰기 권한을 부여합니다.
+태그를 푸시하기 전에 [변경 기록](CHANGELOG.md)에 사용자 영향과 필요한 조치를 남기고, 마켓플레이스 설치·브라우저 표시·실제 기기 제어를 확인하세요. 태그 `vX.Y.Z`는 `package.json`의 안정 버전 `X.Y.Z`와 일치해야 합니다. 사전 릴리스는 수동으로 게시합니다. 테스트는 읽기 권한으로 실행하고, 같은 커밋을 게시하는 별도 job에만 쓰기 권한을 부여합니다.
 
 ## 지원
 
@@ -211,3 +192,7 @@ HACS 형식은 [공식 배포 문서](https://hacs.dev/docs/publish/start/)를 �
 ## 관련 프로젝트
 
 - [Overview Cards](https://github.com/eigger/hass-overview-cards)는 홈 패널 행을 대시보드 요약에 넣을 수 있습니다.
+
+## 라이선스
+
+이 프로젝트는 [MIT 라이선스](LICENSE)를 따릅니다.

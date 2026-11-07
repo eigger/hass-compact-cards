@@ -8,7 +8,7 @@
 
 ## 시작하기
 
-먼저 [설치 가이드](../README.ko.md#hacs-설치)에 따라 `compact-cards.js` 리소스를 등록하세요. 대시보드의 수동 카드 또는 YAML 편집기에 다음 구성을 추가하고 엔티티 ID를 실제 기기로 변경합니다.
+먼저 [설치 가이드](../README.ko.md#설치)에 따라 `compact-cards.js` 리소스를 등록하세요. 대시보드의 수동 카드 또는 YAML 편집기에 다음 구성을 추가하고 엔티티 ID를 실제 기기로 변경합니다.
 
 ```yaml
 type: custom:compact-climate-row

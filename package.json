@@ -3,6 +3,7 @@
   "version": "0.2.9",
   "private": true,
   "description": "Compact, responsive dashboard cards for Home Assistant.",
+  "license": "MIT",
   "scripts": {
     "check": "node --check compact-cards.js",
     "test": "node --test"
