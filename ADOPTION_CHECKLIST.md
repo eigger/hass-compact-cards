@@ -45,3 +45,11 @@ The user subsequently requested commit/push, repository metadata, CI/auto-merge 
 - PASS: `.github/FUNDING.yml` uses `github: eigger`, matching `hass-niimbot`.
 - The pinned generic auto-merge workflow was inspected at `a90531d05613597632a4c10c11ce1dbc45e0bab6` (standards `v1.1.4`). It allows only same-repository Dependabot patch/minor PRs against the default branch and includes scheduled cleanup. This does not enroll the card repository in central standards management.
 - TODO: no Dependabot PR has yet completed the automatic merge path. No tag/release was created, and release publishing, live HACS installation, rendering and device control remain unverified.
+
+## Card workflow migration · 2026-11-07
+
+- This migration started from `43440d311d6d1dc1584ba70098e4bfb2af09b4ce` on `main`. The card workflows use immutable tag `@v1.2.0` (`66ab62181edb0a4a1bc0fe53209905b8f637633c`).
+- The current Dependabot auto-merge reference is immutable tag `@v1.1.5` (`f56987f7f765a774c926fb8005fe5df68bb32451`). The initial review above describes the setup at the time.
+- The following checks passed on macOS with Node.js 22.22.0 and npm 10.9.4. `npm ci`, `npm run check`, `npm test` (126 passed), `test -s compact-cards.js`, `git diff --check`, and actionlint 1.7.12 for all three caller workflows.
+- The [migration PR #44](https://github.com/eigger/hass-compact-cards/pull/44) records the tested head, independent review, GitHub Actions run, and branch protection evidence for `check / test`.
+- TODO includes exercising publishing from a real release tag, confirming HACS installation and live HA rendering, verifying minimum HA, and obtaining the owner's license selection.
