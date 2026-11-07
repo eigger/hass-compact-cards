@@ -113,9 +113,9 @@ test('lock name toggle uses lock services with a single explicit confirmation',a
 });
 
 test('locks that need a code open more-info instead of calling a service',async t=>{
- const id='lock.door',{window,card,calls,info}=setup(t,[{entity:id}],{[id]:state(id,'locked',{code_format:'^\\d{4}$'})});
+ const id='lock.door',{window,card,calls,info}=setup(t,[{entity:id,tap_action:{action:'toggle',confirmation:true}}],{[id]:state(id,'locked',{code_format:'^\\d{4}$'})});
  let asked=false;window.confirm=()=>{asked=true;return true;};
- card._refs[0].control.click();await flush();assert.equal(calls.length,0);assert.equal(asked,false);assert.deepEqual(info,[id]);
+ card._refs[0].control.click();card._refs[0].label.click();await flush();assert.equal(calls.length,0);assert.equal(asked,false);assert.deepEqual(info,[id,id]);
 });
 
 test('a lock with a configured perform-action keeps its command button',async t=>{

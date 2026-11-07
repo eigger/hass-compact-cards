@@ -569,11 +569,11 @@ class CompactHomePanel extends HTMLElement {
   _toggle(ref) {
     const state=this._hass?.states[ref.item.entity];
     if (!state || ['unknown','unavailable'].includes(state.state) || this._busy.has(ref.item.entity)) return;
-    const explicit=ref.item.tap_action?.action==='toggle';
+    const lock=compactLockId(ref.item.entity),explicit=ref.item.tap_action?.action==='toggle';
+    // Locks that need a code go through HA's more-info dialog, which prompts for it, so no extra confirmation is asked first.
+    if (lock && state.attributes.code_format) return this._more(state);
     if (explicit && !this._confirmAction(ref.item.tap_action)) return;
-    if (compactLockId(ref.item.entity)) {
-      // Locks that need a code go through HA's more-info dialog, which prompts for it.
-      if (state.attributes.code_format) return this._more(state);
+    if (lock) {
       // The switch is on while locked. Locking stays one tap; unlocking (which may open a door or a gas valve) is confirmed
       // unless an explicit toggle confirmation was already accepted.
       const unlock=compactLocked(state);
