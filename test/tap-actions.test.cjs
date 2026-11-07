@@ -88,11 +88,38 @@ test('more-info honors optional confirmation and name lookup without sending a s
  window.confirm=()=>true;card._refs[0].label.click();await flush();assert.deepEqual(info,['sensor.room']);assert.equal(calls.length,0);
 });
 
-test('lock rows get a switch that locks and unlocks',async t=>{
- const id='lock.gas',{card,hass,calls,info}=setup(t,[{entity:id,tap_action:{action:'more-info'}}],{[id]:state(id,'locked')});
- const ref=card._refs[0];assert.equal(ref.control.getAttribute('role'),'switch');assert.equal(ref.control.getAttribute('aria-checked'),'true');
- ref.control.click();await flush();assert.deepEqual(calls[0].slice(0,2),['lock','unlock']);assert.equal(calls[0][2].entity_id,id);
- hass.states[id]=state(id,'unlocked');card.hass=hass;assert.equal(ref.control.getAttribute('aria-checked'),'false');
- ref.control.click();await flush();assert.deepEqual(calls[1].slice(0,2),['lock','lock']);
+test('lock rows get a switch that locks in one tap and confirms before unlocking',async t=>{
+ const id='lock.gas',{window,card,hass,calls,info}=setup(t,[{entity:id,name:'가스',tap_action:{action:'more-info'}}],{[id]:state(id,'locked')});
+ const ref=card._refs[0];assert.equal(ref.control.getAttribute('role'),'switch');assert.equal(ref.control.getAttribute('aria-checked'),'true');assert.equal(ref.control.getAttribute('aria-label'),'가스 잠금/해제');
+ let prompt;window.confirm=message=>{prompt=message;return false;};ref.control.click();await flush();assert.equal(prompt,'가스 잠금을 해제할까요?');assert.equal(calls.length,0);
+ window.confirm=()=>true;ref.control.click();await flush();assert.deepEqual(calls[0].slice(0,2),['lock','unlock']);assert.equal(calls[0][2].entity_id,id);
+ prompt=undefined;window.confirm=message=>{prompt=message;return false;};
+ for(const [value,checked] of [['unlocked','false'],['jammed','false'],['open','false'],['unlocking','false']]){
+  hass.states[id]=state(id,value);card.hass=hass;assert.equal(ref.control.getAttribute('aria-checked'),checked);
+  const before=calls.length;ref.control.click();await flush();assert.deepEqual(calls[before].slice(0,2),['lock','lock']);
+ }
+ assert.equal(prompt,undefined);
+ hass.states[id]=state(id,'locking');card.hass=hass;assert.equal(ref.control.getAttribute('aria-checked'),'true');
+ for(const value of ['unknown','unavailable']){hass.states[id]=state(id,value);card.hass=hass;assert.equal(ref.control.disabled,true);}
+ const before=calls.length;ref.control.onclick();await flush();assert.equal(calls.length,before);
  ref.label.click();assert.deepEqual(info,[id]);
+});
+
+test('lock name toggle uses lock services with a single explicit confirmation',async t=>{
+ const id='lock.door',{window,card,calls,info}=setup(t,[{entity:id,tap_action:{action:'toggle',confirmation:{text:'문을 열까요?'}}}],{[id]:state(id,'locked',{friendly_name:'현관'})});
+ const ref=card._refs[0];assert.equal(ref.label.getAttribute('aria-label'),'현관 잠금/해제');
+ const prompts=[];window.confirm=message=>{prompts.push(message);return true;};
+ ref.label.click();await flush();assert.deepEqual(prompts,['문을 열까요?']);assert.deepEqual(calls[0].slice(0,2),['lock','unlock']);assert.equal(info.length,0);
+});
+
+test('locks that need a code open more-info instead of calling a service',async t=>{
+ const id='lock.door',{window,card,calls,info}=setup(t,[{entity:id}],{[id]:state(id,'locked',{code_format:'^\\d{4}$'})});
+ let asked=false;window.confirm=()=>{asked=true;return true;};
+ card._refs[0].control.click();await flush();assert.equal(calls.length,0);assert.equal(asked,false);assert.deepEqual(info,[id]);
+});
+
+test('a lock with a configured perform-action keeps its command button',async t=>{
+ const id='lock.door',{card,calls}=setup(t,[{entity:id,tap_action:{action:'perform-action',perform_action:'lock.open'}}],{[id]:state(id,'locked')});
+ const ref=card._refs[0];assert.equal(ref.control.getAttribute('role'),null);assert.equal(ref.control.textContent,'실행');
+ ref.control.click();await flush();assert.deepEqual(calls[0].slice(0,2),['lock','open']);
 });

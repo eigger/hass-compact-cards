@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add a switch to `lock` rows in the home panel (on while locked) that locks or unlocks the lock. Tapping the row name still opens more-info.
+- Add a switch to `lock` rows in the home panel (on while locked) that locks or unlocks the lock. Unlocking asks for confirmation, locks that need a code open more-info instead, and a configured `perform-action` button keeps priority over the switch. Tapping the row name still opens more-info.
 
 ## 0.2.7 — 2026-10-30
 
