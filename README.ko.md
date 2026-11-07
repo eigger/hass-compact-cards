@@ -1,8 +1,14 @@
-# Compact Cards
+# Compact Cards for Home Assistant
 
 방 하나의 제어를 작은 공간에 정돈하는 Home Assistant 카드입니다. 상태를 한눈에 읽고, 카드에서 바로 조작합니다.
 
 [English](README.md) | **한국어**
+
+[![Release](https://img.shields.io/github/v/release/eigger/hass-compact-cards?style=flat)](https://github.com/eigger/hass-compact-cards/releases)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat)](#설치)
+[![Check](https://img.shields.io/github/actions/workflow/status/eigger/hass-compact-cards/check.yml?branch=main&style=flat&label=Check)](https://github.com/eigger/hass-compact-cards/actions/workflows/check.yml)
+
+## 주요 기능
 
 ![조명·냉난방·커튼·미디어를 함께 배치한 컴팩트 방별 대시보드](images/showcase-light-ko.jpg)
 
@@ -17,9 +23,7 @@
 
 전원·밝기·온도·커튼 위치·재생처럼 자주 쓰는 조작을 가까이 모읍니다. 카드 너비에 따라 배치를 조정하고 Home Assistant 테마 색상을 사용합니다. UI와 YAML 편집을 지원하며, 별도 빌드나 외부 런타임 라이브러리 없이 JavaScript 파일 하나에 9종 카드가 포함됩니다.
 
-[대시보드 구성 YAML](examples/showcase.yaml) · [방별 대시보드 가이드](docs/showcase.md) · [UI 설정 가이드](docs/visual-editor.md)
-
-## 카드와 사용 가이드
+### 카드와 사용 가이드
 
 각 문서에서 옵션과 YAML 예제를 확인할 수 있습니다. 기존 제어 카드 가이드는 화면 예시도 제공합니다. 독립 카드를 조합하거나 홈 패널 안에 제어 행을 넣어 구성하세요.
 
@@ -37,7 +41,19 @@
 
 [조작감과 상태 표시](docs/polish.md) · [UX 개선 내용](docs/ux-refinements.md) · [조명·커튼 설정](docs/light-cover.md) · [장면·환경 설정](docs/scene-environment.md)
 
-## HACS 설치
+## 설치
+
+[![Home Assistant에서 대시보드 카드 저장소 열기](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=eigger&repository=hass-compact-cards&category=plugin)
+
+Home Assistant 2026.11 이상에서는 **설정 → 마켓플레이스**에서 설치합니다.
+
+1. 위 배지로 저장소를 엽니다. 직접 추가하려면 **설정 → 마켓플레이스 → 링크에서 추가**에서 <https://github.com/eigger/hass-compact-cards>을 입력합니다. 안내가 표시되면 GitHub 계정을 연결합니다.
+2. **설치**를 선택하고 브라우저를 새로고침합니다. 마켓플레이스는 카드를 대시보드 리소스에 모듈로 추가합니다. 리소스를 YAML로 관리하는 경우 설치 화면에 표시된 항목을 직접 추가합니다. [대시보드 카드 설치 방식](https://contributors.home-assistant.io/marketplace/guides/dashboard/)
+3. 대시보드에서 카드를 추가하고 [빠른 시작](#빠른-시작)의 예제를 참고합니다.
+
+이전 Home Assistant에서 HACS를 사용하는 경우 아래 절차를 따릅니다.
+
+### HACS 설치
 
 [이 저장소](https://github.com/eigger/hass-compact-cards)를 HACS의 **사용자 지정 저장소(Custom repositories)** 로 설치할 수 있습니다. 기본 HACS 목록에 등록된 프로젝트는 아닙니다.
 
@@ -53,7 +69,7 @@ type: module
 
 위 경로는 GitHub 저장소 이름이 `hass-compact-cards`인 경우입니다. 다른 이름으로 게시했다면 해당 경로도 변경하세요. `compact-cards.js` 하나에 모든 카드가 포함되어 있습니다.
 
-## 수동 설치
+### 수동 설치
 
 1. `compact-cards.js`를 Home Assistant의 `/config/www/compact-cards.js`로 복사합니다. `www` 폴더가 없으면 생성합니다.
 2. 대시보드 리소스에 `/local/compact-cards.js`를 JavaScript 모듈로 등록합니다.
@@ -66,7 +82,7 @@ url: /local/compact-cards.js
 type: module
 ```
 
-## 사용 예제
+## 빠른 시작
 
 ```yaml
 type: custom:compact-climate-row
@@ -91,8 +107,6 @@ items:
 엔티티 ID는 실제 환경에 맞게 변경하세요. 추가 예제는 `examples/dashboard.yaml`에 있습니다.
 
 카드 추가 화면에서도 **Compact climate row**, **Compact home panel**을 선택할 수 있습니다. 9종 모두 [시각적 설정 편집기](docs/visual-editor.md)를 제공하며 YAML 편집도 지원합니다.
-
-내장 제어 레이블과 알림은 현재 한국어로 표시됩니다.
 
 ## 설정
 
@@ -139,26 +153,21 @@ items:
 
 `data`로 서비스 데이터를 전달할 수 있습니다. `target`을 생략하면 항목의 `entity`를 대상으로 사용합니다. 사용할 수 없는 엔티티는 제어가 비활성화됩니다.
 
-## 배포
+## 중요 제한사항
 
-HACS 형식은 [공식 배포 문서](https://hacs.dev/docs/publish/start/)를 기준으로 구성했습니다. `hacs.json`이 루트의 `compact-cards.js`를 설치 파일로 지정하므로 별도 빌드가 필요 없습니다.
+내장 제어 레이블과 알림은 현재 한국어로 표시됩니다. 최소 Home Assistant 버전과 실제 기기 제어는 확인이 필요합니다.
 
-1. 프로젝트를 GitHub 저장소에 커밋하고 푸시합니다.
-2. `package.json`의 버전을 변경하고 `npm ci`, `npm run check`, `npm test`로 확인합니다.
-3. 변경 사항을 커밋한 뒤 버전과 일치하는 태그(최초 버전: `v0.1.0`)를 푸시합니다.
-4. GitHub Actions가 검사 후 Release를 생성하고 `compact-cards.js`를 첨부합니다. 저장소의 Actions 실행이 허용되어 있어야 합니다.
+## 문서
 
-일반 푸시와 Pull Request에서도 문법 검사와 테스트가 실행됩니다. 릴리스 없이 기본 브랜치에서 설치하는 방식도 지원합니다.
+[대시보드 구성 YAML](examples/showcase.yaml) · [방별 대시보드 가이드](docs/showcase.md) · [UI 설정 가이드](docs/visual-editor.md)
 
-태그를 푸시하기 전에 [변경 기록](CHANGELOG.md)에 사용자 영향과 필요한 조치를 남기고, HACS 설치·브라우저 표시·실제 기기 제어를 확인하세요. 태그와 `package.json`은 `vX.Y.Z` 형식의 동일한 안정 버전이어야 합니다. 테스트는 읽기 권한으로 실행하고, 같은 커밋을 게시하는 별도 job에만 쓰기 권한을 부여합니다.
-
-## 문제 해결
+### 문제 해결
 
 - `Custom element doesn't exist`: 리소스 URL과 JavaScript 모듈 유형을 확인하고 브라우저를 강력 새로고침하세요. HACS 설치와 수동 설치 리소스를 중복 등록하지 마세요.
 - `확인 불가`: 엔티티 ID와 상태를 확인하세요. `unknown`/`unavailable` 상태에서는 제어하지 않지만, 아직 실행하지 않은 버튼·스크립트·장면은 `unknown`이어도 실행할 수 있습니다.
 - 변경 실패 알림: 해당 엔티티에서 지원하는 서비스인지 Home Assistant 개발자 도구에서 확인하세요.
 
-## 로컬 작업
+### 개발
 
 - `compact-cards.js`: 외부 런타임 의존성이 없는 카드 번들
 - `hacs.json`: HACS 설치 메타데이터
@@ -174,10 +183,31 @@ npm run check
 npm test
 ```
 
-개발 도구와 GitHub Actions 업데이트는 Dependabot이 매주 PR로 제안합니다. patch·minor 업데이트는 필수 CI 통과 후 squash 자동 병합을 예약하며, major 업데이트는 수동 검토합니다. 공용 workflow는 메타데이터만 확인하고 병합된 Dependabot 브랜치도 정리합니다. 쓰기 권한으로 PR 코드를 체크아웃하지 않습니다. 표준 참고 범위는 [STANDARDS.md](STANDARDS.md), 실제 검증 환경과 남은 확인 사항은 [검증 기록](ADOPTION_CHECKLIST.md)에 기록했습니다(영어).
+[공유 검사 workflow](.github/workflows/check.yml)는 일반 푸시와 PR에서 Node.js 22로 문법 검사와 DOM 테스트를 실행하고 번들 파일을 확인합니다. 실제 Home Assistant에서의 표시와 기기 동작은 별도로 확인해야 합니다.
+
+Dependabot은 npm과 GitHub Actions 의존성을 매주 검사합니다. 중앙 workflow의 새 버전도 갱신 PR로 제안합니다. patch·minor는 필수 CI를 통과하면 자동 스쿼시 병합할 수 있으며 major는 수동 검토합니다. 중앙 workflow 참조를 갱신할 때 기준 문서의 버전과 SHA도 맞춥니다. [기준 문서(영어)](STANDARDS.md) · [검증 기록(영어)](ADOPTION_CHECKLIST.md)
+
+자동 머지 workflow는 PR 메타데이터를 확인하고 병합된 Dependabot 브랜치를 정리합니다. PR 코드를 체크아웃하지 않습니다.
+
+### 배포
+
+HACS 형식은 [공식 배포 문서](https://hacs.dev/docs/publish/start/)를 기준으로 구성했습니다. `hacs.json`이 루트의 `compact-cards.js`를 설치 파일로 지정하므로 별도 빌드가 필요 없습니다.
+
+1. 프로젝트를 GitHub 저장소에 커밋하고 푸시합니다.
+2. `package.json`의 버전을 변경하고 `npm ci`, `npm run check`, `npm test`로 확인합니다.
+3. 변경 사항을 커밋한 뒤 버전과 일치하는 태그(최초 버전: `v0.1.0`)를 푸시합니다.
+4. [공유 릴리스 workflow](.github/workflows/release.yml)가 검사 후 GitHub Release를 생성하고 `compact-cards.js`를 첨부합니다. 저장소의 Actions 실행이 허용되어 있어야 합니다.
+
+일반 푸시와 Pull Request에서도 문법 검사와 테스트가 실행됩니다. 릴리스 없이 기본 브랜치에서 설치하는 방식도 지원합니다.
+
+태그를 푸시하기 전에 [변경 기록](CHANGELOG.md)에 사용자 영향과 필요한 조치를 남기고, HACS 설치·브라우저 표시·실제 기기 제어를 확인하세요. 태그 `vX.Y.Z`는 `package.json`의 안정 버전 `X.Y.Z`와 일치해야 합니다. 사전 릴리스는 수동으로 게시합니다. 테스트는 읽기 권한으로 실행하고, 같은 커밋을 게시하는 별도 job에만 쓰기 권한을 부여합니다.
 
 ## 지원
 
 - [Issues](https://github.com/eigger/hass-compact-cards/issues): 버그 신고와 기능 요청.
 - [Discussions](https://github.com/eigger/hass-compact-cards/discussions): 질문과 사용 경험 공유.
 - [GitHub Sponsors](https://github.com/sponsors/eigger): 개발 후원.
+
+## 관련 프로젝트
+
+- [Overview Cards](https://github.com/eigger/hass-overview-cards)는 홈 패널 행을 대시보드 요약에 넣을 수 있습니다.

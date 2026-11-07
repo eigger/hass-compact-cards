@@ -1,8 +1,14 @@
-# Compact Cards
+# Compact Cards for Home Assistant
 
 Compact Home Assistant controls, arranged for a room. Read the state at a glance and adjust it directly on the card.
 
 **English** | [한국어](README.ko.md)
+
+[![Release](https://img.shields.io/github/v/release/eigger/hass-compact-cards?style=flat)](https://github.com/eigger/hass-compact-cards/releases)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat)](#installation)
+[![Check](https://img.shields.io/github/actions/workflow/status/eigger/hass-compact-cards/check.yml?branch=main&style=flat&label=Check)](https://github.com/eigger/hass-compact-cards/actions/workflows/check.yml)
+
+## Features
 
 ![Room dashboard with compact lighting, climate, cover and media controls](images/showcase-light.jpg)
 
@@ -17,9 +23,7 @@ Compact Home Assistant controls, arranged for a room. Read the state at a glance
 
 Keep everyday controls close together: power, brightness, temperature, cover position and playback. Cards adapt to their available width and use Home Assistant theme colors. Configure them in the UI or YAML; all nine ship in one JavaScript file without a build step or external runtime libraries.
 
-[Showcase configuration](examples/showcase.yaml) · [Room dashboard guide](docs/showcase.md) · [Visual editor](docs/visual-editor.md)
-
-## Cards and guides
+### Cards and guides
 
 Guides provide options and YAML examples; existing control guides also include screenshots. Combine individual cards or embed controls in the home panel.
 
@@ -37,7 +41,19 @@ Guides provide options and YAML examples; existing control guides also include s
 
 [Interaction feedback](docs/polish.md) · [UX refinements](docs/ux-refinements.md) · [Light and cover setup](docs/light-cover.md) · [Scene and environment setup](docs/scene-environment.md)
 
-## HACS installation
+## Installation
+
+[![Open the dashboard card repository in Home Assistant](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=eigger&repository=hass-compact-cards&category=plugin)
+
+On Home Assistant 2026.11 or later, install from **Settings → Marketplace**.
+
+1. Open the repository with the badge above. To add it yourself, go to **Settings → Marketplace → Add from link** and enter <https://github.com/eigger/hass-compact-cards>. Connect GitHub if prompted.
+2. Select **Install** and reload the browser. Marketplace adds the card as a dashboard module resource. If you manage resources in YAML, copy the entry shown in the install dialog. [Dashboard card installation](https://contributors.home-assistant.io/marketplace/guides/dashboard/)
+3. Add the card to your dashboard using the [quick start](#quick-start).
+
+For earlier Home Assistant versions with HACS, follow the steps below.
+
+### HACS installation
 
 Install [this repository](https://github.com/eigger/hass-compact-cards) through HACS **Custom repositories**. This project is not in the default HACS catalog.
 
@@ -53,7 +69,7 @@ type: module
 
 This path assumes the GitHub repository is named `hass-compact-cards`. Adjust the path if you publish under another name. All cards are included in `compact-cards.js`.
 
-## Manual installation
+### Manual installation
 
 1. Copy `compact-cards.js` to `/config/www/compact-cards.js` in Home Assistant. Create the `www` directory if necessary.
 2. Register `/local/compact-cards.js` as a JavaScript module in dashboard resources.
@@ -66,7 +82,7 @@ url: /local/compact-cards.js
 type: module
 ```
 
-## Usage examples
+## Quick start
 
 ```yaml
 type: custom:compact-climate-row
@@ -91,8 +107,6 @@ items:
 Replace entity IDs with those in your installation. More examples are available in [examples/dashboard.yaml](examples/dashboard.yaml).
 
 All nine cards appear in the card picker and include a [visual configuration editor](docs/visual-editor.md). YAML configuration remains supported.
-
-Built-in control labels and notifications currently use Korean.
 
 ## Configuration
 
@@ -139,26 +153,21 @@ items:
 
 Pass service data using `data`. If `target` is omitted, the entry's `entity` is used as the target. Controls are disabled for unavailable entities.
 
-## Publishing
+## Important limitations
 
-The HACS layout follows the [official publishing documentation](https://hacs.dev/docs/publish/start/). `hacs.json` points to `compact-cards.js` in the repository root; no build is required.
+Built-in control labels and notifications currently use Korean. The minimum Home Assistant version and live device controls still need verification.
 
-1. Commit and push the project to a GitHub repository.
-2. Update the version in `package.json` and verify with `npm ci`, `npm run check` and `npm test`.
-3. Commit the changes and push a matching version tag (initial version: `v0.1.0`).
-4. GitHub Actions validates the project, creates a Release and attaches `compact-cards.js`. Actions must be enabled for the repository.
+## Documentation
 
-Syntax checks and tests also run on ordinary pushes and pull requests. Installing from the default branch without a release is supported.
+[Showcase configuration](examples/showcase.yaml) · [Room dashboard guide](docs/showcase.md) · [Visual editor](docs/visual-editor.md)
 
-Before pushing a tag, record user impact and required actions in the [changelog](CHANGELOG.md), and check HACS installation, browser rendering and actual device controls. The tag and `package.json` must identify the same stable `vX.Y.Z` version. Tests run with read access; only the separate job publishing the same commit receives write access.
-
-## Troubleshooting
+### Troubleshooting
 
 - `Custom element doesn't exist`: Check the resource URL and JavaScript module type, then hard-refresh the browser. Avoid registering both HACS and manual installation resources.
 - `확인 불가` (unavailable): Check the entity ID and its state. Controls do not operate while the state is `unknown` or `unavailable`, except that never-used buttons, scripts and scenes can be pressed while `unknown`.
 - Change failure notification: Use Home Assistant developer tools to check that the entity supports the requested service.
 
-## Local development
+### Development
 
 - `compact-cards.js`: Card bundle without external runtime dependencies.
 - `hacs.json`: HACS installation metadata.
@@ -174,10 +183,31 @@ npm run check
 npm test
 ```
 
-Dependabot proposes development-tool and GitHub Actions updates weekly. Patch and minor updates can squash auto-merge after required CI passes; major updates require manual review. The shared metadata-only workflow also cleans up merged Dependabot branches. It never checks out PR code with write permissions. See [STANDARDS.md](STANDARDS.md) for the scope of the standards reference and [verification notes](ADOPTION_CHECKLIST.md) for the actual environment and outstanding checks.
+The [shared check workflow](.github/workflows/check.yml) runs syntax checks and DOM tests on Node.js 22 and verifies the bundle on ordinary pushes and pull requests. Verify rendering and device behavior separately in a live Home Assistant instance.
+
+Dependabot checks npm and GitHub Actions dependencies weekly and proposes updates to the central workflows in pull requests. Patch and minor updates can squash-merge automatically after required CI passes. Major updates require manual review. When a central workflow reference changes, update its version and resolved SHA in the standards record as well. [Standards record](STANDARDS.md) · [Verification record](ADOPTION_CHECKLIST.md)
+
+The auto-merge workflow checks PR metadata and cleans up merged Dependabot branches. It never checks out PR code.
+
+### Publishing
+
+The HACS layout follows the [official publishing documentation](https://hacs.dev/docs/publish/start/). `hacs.json` points to `compact-cards.js` in the repository root, so no build is required.
+
+1. Commit and push the project to a GitHub repository.
+2. Update the version in `package.json` and verify with `npm ci`, `npm run check` and `npm test`.
+3. Commit the changes and push a matching version tag (the initial version was `v0.1.0`).
+4. The [shared release workflow](.github/workflows/release.yml) validates the project, creates a GitHub release and attaches `compact-cards.js`. Actions must be enabled for the repository.
+
+Syntax checks and tests also run on ordinary pushes and pull requests. Installing from the default branch without a release is supported.
+
+Before pushing a tag, record user impact and required actions in the [changelog](CHANGELOG.md), and check HACS installation, browser rendering and actual device controls. The stable `vX.Y.Z` tag must match version `X.Y.Z` in `package.json`. Publish prereleases manually. Tests run with read access; only the separate job publishing the same commit receives write access.
 
 ## Support
 
 - [Issues](https://github.com/eigger/hass-compact-cards/issues): bug reports and feature requests.
 - [Discussions](https://github.com/eigger/hass-compact-cards/discussions): questions and shared experiences.
 - [GitHub Sponsors](https://github.com/sponsors/eigger): support development.
+
+## Related Projects
+
+- [Overview Cards](https://github.com/eigger/hass-overview-cards) can embed home-panel rows in dashboard summaries.
