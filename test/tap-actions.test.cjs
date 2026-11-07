@@ -88,20 +88,19 @@ test('more-info honors optional confirmation and name lookup without sending a s
  window.confirm=()=>true;card._refs[0].label.click();await flush();assert.deepEqual(info,['sensor.room']);assert.equal(calls.length,0);
 });
 
-test('lock rows get a switch that locks in one tap and confirms before unlocking',async t=>{
+test('lock rows show their state as a button that locks and unlocks without extra confirmation',async t=>{
  const id='lock.gas',{window,card,hass,calls,info}=setup(t,[{entity:id,name:'가스',tap_action:{action:'more-info'}}],{[id]:state(id,'locked')});
- const ref=card._refs[0];assert.equal(ref.control.getAttribute('role'),'switch');assert.equal(ref.control.getAttribute('aria-checked'),'true');assert.equal(ref.control.getAttribute('aria-label'),'가스 잠금/해제');
- let prompt;window.confirm=message=>{prompt=message;return false;};ref.control.click();await flush();assert.equal(prompt,'가스 잠금을 해제할까요?');assert.equal(calls.length,0);
- window.confirm=()=>true;ref.control.click();await flush();assert.deepEqual(calls[0].slice(0,2),['lock','unlock']);assert.equal(calls[0][2].entity_id,id);
- prompt=undefined;window.confirm=message=>{prompt=message;return false;};
- for(const [value,checked] of [['unlocked','false'],['jammed','false'],['open','false'],['unlocking','false']]){
-  hass.states[id]=state(id,value);card.hass=hass;assert.equal(ref.control.getAttribute('aria-checked'),checked);
+ const ref=card._refs[0];assert.equal(ref.control.tagName,'BUTTON');assert.equal(ref.control.getAttribute('role'),null);assert.equal(ref.control,ref.value);
+ let asked=false;window.confirm=()=>{asked=true;return true;};
+ ref.control.click();await flush();assert.deepEqual(calls[0].slice(0,2),['lock','unlock']);assert.equal(calls[0][2].entity_id,id);
+ for(const value of ['unlocked','jammed','open','unlocking']){
+  hass.states[id]=state(id,value);card.hass=hass;
   const before=calls.length;ref.control.click();await flush();assert.deepEqual(calls[before].slice(0,2),['lock','lock']);
  }
- assert.equal(prompt,undefined);
- hass.states[id]=state(id,'locking');card.hass=hass;assert.equal(ref.control.getAttribute('aria-checked'),'true');
+ hass.states[id]=state(id,'locking');card.hass=hass;const before=calls.length;ref.control.click();await flush();assert.deepEqual(calls[before].slice(0,2),['lock','unlock']);
+ assert.equal(asked,false);
  for(const value of ['unknown','unavailable']){hass.states[id]=state(id,value);card.hass=hass;assert.equal(ref.control.disabled,true);}
- const before=calls.length;ref.control.onclick();await flush();assert.equal(calls.length,before);
+ const count=calls.length;ref.control.onclick();await flush();assert.equal(calls.length,count);
  ref.label.click();assert.deepEqual(info,[id]);
 });
 

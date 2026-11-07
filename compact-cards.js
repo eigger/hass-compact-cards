@@ -486,14 +486,16 @@ class CompactHomePanel extends HTMLElement {
       } else {
         label.onclick=()=>this._tap(ref);
         const domain=(item.entity || '').split('.')[0];
-        // A configured perform-action button on a lock keeps priority so existing commands such as lock.open are not dropped.
-        if (['light','switch'].includes(domain) || (domain==='lock' && item.tap_action?.action!=='perform-action')) {
+        if (['light','switch'].includes(domain)) {
           const toggle=this._make('button','switch');toggle.setAttribute('role','switch');toggle.append(this._make('span','track'));
           toggle.onclick=()=>this._toggle(ref);ref.control=toggle;row.append(toggle);
         } else if (domain === 'select') {
           const select=this._make('select');select.onchange=()=>this._call(ref,'select','select_option',{entity_id:item.entity,option:select.value});ref.select=select;row.append(select);
         } else if (item.tap_action?.action === 'perform-action') {
           const button=this._make('button','command','실행');button.onclick=()=>this._command(ref);ref.control=button;row.append(button);
+        } else if (domain==='lock') {
+          // A lock shows its state as a button: tapping the state ("잠김") locks or unlocks it.
+          const state=this._make('button','value');state.onclick=()=>this._toggle(ref);ref.value=state;ref.control=state;row.append(state);
         } else {ref.value=this._make('span','value');row.append(ref.value);}
       }
       (paired?pairGroup:body).append(row);this._refs.push(ref);
@@ -551,9 +553,10 @@ class CompactHomePanel extends HTMLElement {
         compactProp(ref.control,'disabled',offline || this._busy.has(item.entity));
         compactAttr(ref.control,'aria-busy',this._busy.has(item.entity)&&!offline);
         compactAttr(ref.control,'aria-disabled',offline || this._busy.has(item.entity));
-        const isSwitch=ref.control.getAttribute('role') === 'switch',lock=isSwitch&&compactLockId(item.entity);
-        compactAttr(ref.control,'aria-label',`${ref.name.textContent} ${lock?'잠금/해제':isSwitch?'켜기/끄기':'실행'}`);
-        if (isSwitch) compactAttr(ref.control,'aria-checked',lock?compactLocked(state):state?.state==='on');
+        const isSwitch=ref.control.getAttribute('role') === 'switch';
+        // A lock's state button keeps its visible state text as its name, so only switches and command buttons get a generated label.
+        if (ref.control!==ref.value) compactAttr(ref.control,'aria-label',`${ref.name.textContent} ${isSwitch?'켜기/끄기':'실행'}`);
+        if (isSwitch) compactAttr(ref.control,'aria-checked',state?.state==='on');
       }
       if (ref.select) {
         const options=state?.attributes.options || [];
@@ -578,13 +581,7 @@ class CompactHomePanel extends HTMLElement {
     // Locks that need a code go through HA's more-info dialog, which prompts for it, so no extra confirmation is asked first.
     if (lock && state.attributes.code_format) return this._more(state);
     if (explicit && !this._confirmAction(ref.item.tap_action)) return;
-    if (lock) {
-      // The switch is on while locked. Locking stays one tap; unlocking (which may open a door or a gas valve) is confirmed
-      // unless an explicit toggle confirmation was already accepted.
-      const unlock=compactLocked(state);
-      if (unlock && !(explicit && ref.item.tap_action.confirmation) && !window.confirm(`${ref.name.textContent} 잠금을 해제할까요?`)) return;
-      return this._call(ref,'lock',unlock?'unlock':'lock',{entity_id:ref.item.entity});
-    }
+    if (lock) return this._call(ref,'lock',compactLocked(state)?'unlock':'lock',{entity_id:ref.item.entity});
     return this._call(ref,'homeassistant','toggle',{entity_id:ref.item.entity});
   }
   async _command(ref) {
