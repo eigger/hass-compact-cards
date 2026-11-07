@@ -5,8 +5,10 @@ Compact Home Assistant controls, arranged for a room. Read the state at a glance
 **English** | [한국어](README.ko.md)
 
 [![Release](https://img.shields.io/github/v/release/eigger/hass-compact-cards?style=flat)](https://github.com/eigger/hass-compact-cards/releases)
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat)](#installation)
-[![Check](https://img.shields.io/github/actions/workflow/status/eigger/hass-compact-cards/check.yml?branch=main&style=flat&label=Check)](https://github.com/eigger/hass-compact-cards/actions/workflows/check.yml)
+[![Marketplace Custom](https://img.shields.io/badge/Marketplace-Custom-41BDF5?style=flat)](#installation)
+[![Tests](https://img.shields.io/github/actions/workflow/status/eigger/hass-compact-cards/check.yml?branch=main&style=flat&label=Tests)](https://github.com/eigger/hass-compact-cards/actions/workflows/check.yml)
+[![License](https://img.shields.io/github/license/eigger/hass-compact-cards?style=flat)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/eigger/hass-compact-cards/latest/total?style=flat&label=Downloads)](https://github.com/eigger/hass-compact-cards/releases)
 
 ## Features
 
@@ -43,39 +45,18 @@ Guides provide options and YAML examples; existing control guides also include s
 
 ## Installation
 
-[![Open the dashboard card repository in Home Assistant](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=eigger&repository=hass-compact-cards&category=plugin)
+[![Open the card repository in Home Assistant Marketplace](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=eigger&repository=hass-compact-cards&category=plugin)
 
-On Home Assistant 2026.11 or later, install from **Settings → Marketplace**.
+Use Marketplace on Home Assistant 2026.11 or later.
 
-1. Open the repository with the badge above. To add it yourself, go to **Settings → Marketplace → Add from link** and enter <https://github.com/eigger/hass-compact-cards>. Connect GitHub if prompted.
-2. Select **Install** and reload the browser. Marketplace adds the card as a dashboard module resource. If you manage resources in YAML, copy the entry shown in the install dialog. [Dashboard card installation](https://contributors.home-assistant.io/marketplace/guides/dashboard/)
-3. Add the card to your dashboard using the [quick start](#quick-start).
-
-For earlier Home Assistant versions with HACS, follow the steps below.
-
-### HACS installation
-
-Install [this repository](https://github.com/eigger/hass-compact-cards) through HACS **Custom repositories**. This project is not in the default HACS catalog.
-
-1. Open HACS → top-right menu → Custom repositories.
-2. Enter this project's GitHub repository URL and select **Dashboard**. Older HACS versions may show **Lovelace** or **Plugin**.
-3. Find **Compact Cards**, download it, and refresh the browser.
-4. Under Settings → Dashboards → Resources, check that the following resource is registered. Add it as a JavaScript module if missing. The Resources menu may require advanced mode.
-
-```yaml
-url: /hacsfiles/hass-compact-cards/compact-cards.js
-type: module
-```
-
-This path assumes the GitHub repository is named `hass-compact-cards`. Adjust the path if you publish under another name. All cards are included in `compact-cards.js`.
+1. Click the badge above, or enter <https://github.com/eigger/hass-compact-cards> in **Settings → Marketplace → Add from link**. Connect GitHub if prompted.
+2. Select **Install** and reload the browser. If you manage resources in YAML, add the entry shown in the install dialog.
+3. Add the card to your dashboard. [Quick start](#quick-start)
 
 ### Manual installation
 
-1. Copy `compact-cards.js` to `/config/www/compact-cards.js` in Home Assistant. Create the `www` directory if necessary.
-2. Register `/local/compact-cards.js` as a JavaScript module in dashboard resources.
-3. Refresh your browser and use the examples below in card configuration.
-
-If you manage resources in YAML, add this entry to your existing resource list:
+1. Copy `compact-cards.js` from the [latest release](https://github.com/eigger/hass-compact-cards/releases/latest) to `/config/www/`. Create the folder if needed.
+2. Add the URL below as a **JavaScript module** in dashboard resources and reload the browser. If you manage resources in YAML, add the entry to your existing resource list.
 
 ```yaml
 url: /local/compact-cards.js
@@ -163,14 +144,14 @@ Built-in control labels and notifications currently use Korean. The minimum Home
 
 ### Troubleshooting
 
-- `Custom element doesn't exist`: Check the resource URL and JavaScript module type, then hard-refresh the browser. Avoid registering both HACS and manual installation resources.
+- `Custom element doesn't exist`: Check the resource URL and JavaScript module type, then hard-refresh the browser. Register the resource for either the Marketplace or the manual installation.
 - `확인 불가` (unavailable): Check the entity ID and its state. Controls do not operate while the state is `unknown` or `unavailable`, except that never-used buttons, scripts and scenes can be pressed while `unknown`.
 - Change failure notification: Use Home Assistant developer tools to check that the entity supports the requested service.
 
 ### Development
 
 - `compact-cards.js`: Card bundle without external runtime dependencies.
-- `hacs.json`: HACS installation metadata.
+- `hacs.json`: Marketplace installation metadata.
 - `examples/dashboard.yaml`: Example dashboard card configuration.
 - `npm run check`: JavaScript syntax check (requires Node.js).
 - `npm test`: DOM-based card behavior tests.
@@ -191,7 +172,7 @@ The auto-merge workflow checks PR metadata and cleans up merged Dependabot branc
 
 ### Publishing
 
-The HACS layout follows the [official publishing documentation](https://hacs.dev/docs/publish/start/). `hacs.json` points to `compact-cards.js` in the repository root, so no build is required.
+The bundle follows the [Marketplace dashboard card guide](https://contributors.home-assistant.io/marketplace/guides/dashboard/). `hacs.json` points to `compact-cards.js` in the repository root, so no build is required.
 
 1. Commit and push the project to a GitHub repository.
 2. Update the version in `package.json` and verify with `npm ci`, `npm run check` and `npm test`.
@@ -200,7 +181,7 @@ The HACS layout follows the [official publishing documentation](https://hacs.dev
 
 Syntax checks and tests also run on ordinary pushes and pull requests. Installing from the default branch without a release is supported.
 
-Before pushing a tag, record user impact and required actions in the [changelog](CHANGELOG.md), and check HACS installation, browser rendering and actual device controls. The stable `vX.Y.Z` tag must match version `X.Y.Z` in `package.json`. Publish prereleases manually. Tests run with read access; only the separate job publishing the same commit receives write access.
+Before pushing a tag, record user impact and required actions in the [changelog](CHANGELOG.md), and check Marketplace installation, browser rendering and actual device controls. The stable `vX.Y.Z` tag must match version `X.Y.Z` in `package.json`. Publish prereleases manually. Tests run with read access; only the separate job publishing the same commit receives write access.
 
 ## Support
 
@@ -211,3 +192,7 @@ Before pushing a tag, record user impact and required actions in the [changelog]
 ## Related Projects
 
 - [Overview Cards](https://github.com/eigger/hass-overview-cards) can embed home-panel rows in dashboard summaries.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
