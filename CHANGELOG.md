@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix home panel `button`, `input_button`, `script` and `scene` rows being disabled while their state is `unknown` (never pressed yet), so buttons like a SMART refresh can be pressed for the first time.
+
 ## 0.2.7 — 2026-10-30
 
 - Remove the blue pressed-button background, hover backgrounds on touch devices and the mobile tap highlight, and stop dimming buttons while a request is pending, so presses no longer flash or flicker.

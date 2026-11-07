@@ -87,3 +87,11 @@ test('more-info honors optional confirmation and name lookup without sending a s
  let text;window.confirm=message=>{text=message;return false;};card._refs[0].label.click();await flush();assert.equal(text,'상세 정보를 열까요?');assert.equal(info.length,0);
  window.confirm=()=>true;card._refs[0].label.click();await flush();assert.deepEqual(info,['sensor.room']);assert.equal(calls.length,0);
 });
+
+test('never-pressed button rows (state unknown) are pressable, but unavailable ones are not',async t=>{
+ const id='button.refresh',action={action:'perform-action',perform_action:'button.press',target:{entity_id:id}};
+ const {card,hass,calls}=setup(t,[{entity:id,tap_action:action}],{[id]:state(id,'unknown')});
+ const control=card._refs[0].control;assert.equal(control.disabled,false);
+ control.click();await flush();assert.equal(calls.length,1);assert.deepEqual(calls[0].slice(0,2),['button','press']);
+ hass.states[id]=state(id,'unavailable');card.hass=hass;assert.equal(control.disabled,true);
+});

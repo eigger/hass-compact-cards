@@ -322,6 +322,11 @@ if (!window.customCards.some(c => c.type === 'compact-climate-row')) window.cust
 
 // Compact native-theme panels. Climate rows are included in this bundle.
 const compactNameIndexes = new WeakMap();
+// Buttons, scripts and scenes report `unknown` until first used; they are still pressable, so only `unavailable` counts as offline for them.
+function compactOffline(state) {
+  if (!state || state.state==='unavailable') return true;
+  return state.state==='unknown' && !['button','input_button','script','scene'].includes(state.entity_id.split('.')[0]);
+}
 function compactResolve(hass, item) {
   if (item.entity) return hass.states[item.entity];
   if (!item.find_name) return undefined;
@@ -521,7 +526,7 @@ class CompactHomePanel extends HTMLElement {
       }
       if (item.type === 'navigate') continue;
       const state=compactResolve(this._hass,item);ref.state=state;
-      const offline=!state || ['unknown','unavailable'].includes(state.state);
+      const offline=compactOffline(state);
       compactText(ref.name,item.name || state?.attributes.friendly_name || item.entity || item.find_name);
       compactProp(ref.label,'title',ref.name.textContent);
       const tapToggle=item.tap_action?.action==='toggle',tapBusy=tapToggle&&this._busy.has(item.entity);
@@ -575,7 +580,7 @@ class CompactHomePanel extends HTMLElement {
   }
   async _call(ref,domain,service,data,target) {
     const id=ref.item.entity,state=this._hass?.states[id];
-    if (!state || ['unknown','unavailable'].includes(state.state) || this._busy.has(id)) return;
+    if (compactOffline(state) || this._busy.has(id)) return;
     const feedback=compactFeedback(this,'pending','변경 요청 중');
     this._busy.add(id);this._render();
     try {await this._hass.callService(domain,service,data,undefined,target);compactFeedback(this,'success','요청 전달됨',feedback);}
