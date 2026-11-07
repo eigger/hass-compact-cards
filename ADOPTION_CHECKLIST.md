@@ -48,8 +48,8 @@ The user subsequently requested commit/push, repository metadata, CI/auto-merge 
 
 ## Card workflow migration · 2026-11-07
 
-- Base: `43440d311d6d1dc1584ba70098e4bfb2af09b4ce` on `main`. Card workflow reference: v1.2.0 (`66ab62181edb0a4a1bc0fe53209905b8f637633c`).
-- The current Dependabot auto-merge pin is v1.1.5 (`f56987f7f765a774c926fb8005fe5df68bb32451`). The initial review above describes the setup at the time.
-- PASS on macOS with Node.js 22.22.0 and npm 10.9.4: `npm ci`, `npm run check`, `npm test` (126 passed), `test -s compact-cards.js`, `git diff --check`, and actionlint 1.7.12 for all three caller workflows.
+- This migration started from `43440d311d6d1dc1584ba70098e4bfb2af09b4ce` on `main`. The card workflows use immutable tag `@v1.2.0` (`66ab62181edb0a4a1bc0fe53209905b8f637633c`).
+- The current Dependabot auto-merge reference is immutable tag `@v1.1.5` (`f56987f7f765a774c926fb8005fe5df68bb32451`). The initial review above describes the setup at the time.
+- The following checks passed on macOS with Node.js 22.22.0 and npm 10.9.4. `npm ci`, `npm run check`, `npm test` (126 passed), `test -s compact-cards.js`, `git diff --check`, and actionlint 1.7.12 for all three caller workflows.
 - The [migration PR #44](https://github.com/eigger/hass-compact-cards/pull/44) records the tested head, independent review, GitHub Actions run, and branch protection evidence for `check / test`.
-- TODO: exercise publishing from a real release tag, confirm HACS installation and live HA rendering, verify minimum HA, and obtain the owner's license selection.
+- TODO includes exercising publishing from a real release tag, confirming HACS installation and live HA rendering, verifying minimum HA, and obtaining the owner's license selection.
