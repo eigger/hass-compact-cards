@@ -128,8 +128,6 @@ items:
       perform_action: script.turn_on
       target:
         entity_id: script.good_night
-      confirmation:
-        text: Run the good night script?
 ```
 
 Pass service data using `data`. If `target` is omitted, the entry's `entity` is used as the target. Controls are disabled for unavailable entities.

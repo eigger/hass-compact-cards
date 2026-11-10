@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Service (`perform-action`) buttons on the home panel now run immediately without a confirmation popup, even when `tap_action.confirmation` is set; confirmation still applies to `toggle` and `more-info` name taps.
+
 ## 0.2.10 — 2026-11-10
 
 - Fix home panel `perform-action` buttons (e.g. `script.turn_on`, `button.press`) failing because `target` was not passed to Home Assistant; the configured `target`, or the row's entity by default, is now sent.

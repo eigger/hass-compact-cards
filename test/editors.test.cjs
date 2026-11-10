@@ -82,7 +82,7 @@ test('environment threshold forms edit numeric direction and level with immutabl
 test('home action UI edits targets confirmations and primitive service data without losing structured data',async t=>{
   const config={items:[{entity:'script.night',tap_action:{action:'perform-action',perform_action:'script.turn_on',target:{entity_id:'script.night'},confirmation:{text:'Go?',extra:5},data:{brightness:30,enabled:true,nested:{preserve:[1,2]}}}}]};
   const {window,editor,change}=await setup(t,'compact-home-panel',config);
-  change(['items',0,'tap_action'],{perform_action:'script.turn_on',target:{area_id:'bedroom'}});change(['items',0,'tap_action','confirmation'],{text:'Proceed?'});
+  change(['items',0,'tap_action'],{perform_action:'script.turn_on',target:{area_id:'bedroom'}});
   assert.equal(editor._config.items[0].tap_action.action,'perform-action');assert.equal(editor._config.items[0].tap_action.target.area_id,'bedroom');assert.equal(editor._config.items[0].tap_action.confirmation.extra,5);
   const input=editor.shadowRoot.querySelector('input[aria-label="brightness 값"]');input.value='75';input.dispatchEvent(new window.Event('change'));
   assert.equal(editor._config.items[0].tap_action.data.brightness,75);assert.deepEqual(plain(editor._config.items[0].tap_action.data.nested),{preserve:[1,2]});assert.equal(config.items[0].tap_action.data.brightness,30);
