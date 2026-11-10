@@ -188,8 +188,6 @@ items:
       target:
         entity_id: script.good_night
       data: {}
-      confirmation:
-        text: 취침 모드를 실행할까요?
 ```
 
 | 필드 | 설명 |
@@ -198,8 +196,7 @@ items:
 | `tap_action.perform_action` | `perform-action`일 때 필수. `domain.service` 형식의 서비스 이름 |
 | `tap_action.target` | `perform-action`의 선택 항목. Home Assistant 대상 객체. 생략하면 항목의 `entity` |
 | `tap_action.data` | `perform-action`의 선택 항목. 서비스 데이터 객체. 기본 빈 객체 |
-| `tap_action.confirmation` | 선택. 확인을 요청하는 객체 |
-| `tap_action.confirmation.text` | 선택. 확인 메시지. 생략하면 기본 확인 문구 |
+| `tap_action.confirmation` | `toggle`·`more-info`에서만 사용하는 선택 항목. 서비스 실행 버튼은 확인 없이 바로 실행 |
 
 이 설정은 일반 항목 오른쪽에 `실행` 버튼을 추가합니다. `light` / `switch` / `select`의 일반 항목은 오른쪽 전용 제어가 우선하므로 별도의 서비스 실행 버튼을 추가하지 않습니다. `lock` 항목은 반대로 지정한 실행 버튼이 상태 버튼보다 우선합니다. `perform-action`에서 이름은 실행 버튼과 별도로 상세 정보를 엽니다.
 
@@ -236,4 +233,4 @@ Use `custom:compact-home-panel` with an `items` array. Optional `columns` accept
 
 Plain light/switch entities show toggles, plain `lock.*` entities show their state as a button that locks or unlocks on tap (no confirmation unless `tap_action.confirmation` is set; locks with `code_format` open more-info for the code; a configured `perform-action` button replaces the state button), `select.*` shows an option selector, and other entities show state. Names open more-info by default, including with legacy `perform-action` configurations. Explicit `tap_action.action: toggle` makes the name call `homeassistant.toggle` for that item's own explicit `entity`; name-only lookup cannot toggle. Optional toggle confirmation applies to both the name and the dedicated right-hand toggle. Explicit `more-info` opens details without calling a service, including for an existing unknown/unavailable entity. Controls are disabled for missing, unavailable and unknown entities, except that never-used `button`, `input_button`, `script` and `scene` entities stay pressable while `unknown`. Right-hand dedicated controls remain separate. Use `find_name` with optional `domain` for read-only exact-name lookup; duplicates are unavailable. Headings accept named entity badges. Notes are plain text.
 
-Comparisons require existing numeric `entity` and `previous` sensors with identical units. They compare current sensor values, do not fetch history or create monthly sensors, and cannot calculate percentage change from a zero or negative previous value. Service buttons accept `perform-action`, a `domain.service` name, optional `target`, `data`, and confirmation text. Supported tap actions are limited to `toggle`, `more-info`, and `perform-action`; hold/double-tap and the full HA action schema are not implemented. Navigation uses `type: navigate` with local paths only. Controls show busy feedback, disable duplicate requests, and report failures. The representative image uses mocked local preview data.
+Comparisons require existing numeric `entity` and `previous` sensors with identical units. They compare current sensor values, do not fetch history or create monthly sensors, and cannot calculate percentage change from a zero or negative previous value. Service buttons accept `perform-action`, a `domain.service` name, optional `target` and `data`. Service buttons run immediately without a confirmation prompt. Supported tap actions are limited to `toggle`, `more-info`, and `perform-action`; hold/double-tap and the full HA action schema are not implemented. Navigation uses `type: navigate` with local paths only. Controls show busy feedback, disable duplicate requests, and report failures. The representative image uses mocked local preview data.

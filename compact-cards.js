@@ -586,7 +586,6 @@ class CompactHomePanel extends HTMLElement {
   }
   async _command(ref) {
     const action=ref.item.tap_action;
-    if (!this._confirmAction(action)) return;
     const service=action.perform_action?.split('.');
     if (service?.length===2) await this._call(ref,service[0],service[1],action.data || {},action.target || {entity_id:ref.item.entity});
   }
@@ -1494,7 +1493,6 @@ for(const [type,Constructor,name,description] of [
       if(mode!=='perform-action')return;
       section.append(this._make('p','hint','이름은 상세 정보를 열고 오른쪽 실행 버튼이 서비스를 호출합니다. 대상을 생략하면 항목의 엔티티를 사용합니다.'));
       this._form(section,[...path,'tap_action'],[text('perform_action','실행할 액션 (예: button.press)',true),field('target','대상 (생략하면 항목의 엔티티)',{target:{}})]);
-      this._confirmation(section,[...path,'tap_action'],'confirmation',item.tap_action.confirmation,true);
       this._dataFields(section,[...path,'tap_action','data']);
     }
     _confirmation(parent,path,key,value,object=false){

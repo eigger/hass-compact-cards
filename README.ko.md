@@ -128,8 +128,6 @@ items:
       perform_action: script.turn_on
       target:
         entity_id: script.good_night
-      confirmation:
-        text: 취침 모드를 실행할까요?
 ```
 
 `data`로 서비스 데이터를 전달할 수 있습니다. `target`을 생략하면 항목의 `entity`를 대상으로 사용합니다. 사용할 수 없는 엔티티는 제어가 비활성화됩니다.
