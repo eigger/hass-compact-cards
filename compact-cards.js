@@ -595,7 +595,7 @@ class CompactHomePanel extends HTMLElement {
     if (compactOffline(state) || this._busy.has(id)) return;
     const feedback=compactFeedback(this,'pending','변경 요청 중');
     this._busy.add(id);this._render();
-    try {await this._hass.callService(domain,service,data,undefined,target);compactFeedback(this,'success','요청 전달됨',feedback);}
+    try {await this._hass.callService(domain,service,data,target);compactFeedback(this,'success','요청 전달됨',feedback);}
     catch(error) {compactFeedback(this,'error','요청 실패',feedback);this.dispatchEvent(new CustomEvent('hass-notification',{detail:{message:'변경 실패: '+(error?.message || error)},bubbles:true,composed:true}));}
     finally {this._busy.delete(id);this._render();}
   }
