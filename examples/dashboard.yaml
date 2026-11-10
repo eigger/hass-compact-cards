@@ -35,8 +35,6 @@ cards:
           perform_action: script.turn_on
           target:
             entity_id: script.good_night
-          confirmation:
-            text: 취침 모드를 실행할까요?
       - type: navigate
         name: 에너지 대시보드
         navigation_path: /energy

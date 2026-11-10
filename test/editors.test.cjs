@@ -79,7 +79,7 @@ test('environment threshold forms edit numeric direction and level with immutabl
   change([],{columns:'3'});assert.equal(editor._config.columns,3);
 });
 
-test('home action UI edits targets confirmations and primitive service data without losing structured data',async t=>{
+test('home action UI edits targets and primitive service data without losing structured data',async t=>{
   const config={items:[{entity:'script.night',tap_action:{action:'perform-action',perform_action:'script.turn_on',target:{entity_id:'script.night'},confirmation:{text:'Go?',extra:5},data:{brightness:30,enabled:true,nested:{preserve:[1,2]}}}}]};
   const {window,editor,change}=await setup(t,'compact-home-panel',config);
   change(['items',0,'tap_action'],{perform_action:'script.turn_on',target:{area_id:'bedroom'}});

@@ -149,3 +149,10 @@ test('unknown toggle rows follow the same pressable rule in render and tap handl
  const [script,select]=card._refs;assert.equal(script.label.disabled,false);assert.equal(select.label.disabled,true);
  script.label.click();await select.label.onclick();await flush();assert.deepEqual(calls.map(call=>call[2].entity_id),['script.night']);
 });
+
+test('perform-action service buttons run immediately even when a confirmation is configured',async t=>{
+ const {window,card,calls}=setup(t,[{entity:'script.feed',tap_action:{action:'perform-action',perform_action:'script.turn_on',target:{entity_id:'script.feed'},confirmation:{text:'실행할까요?'}}}],{'script.feed':state('script.feed','off')});
+ let asked=0;window.confirm=()=>{asked++;return false;};
+ card._refs[0].control.click();await flush();
+ assert.equal(asked,0);assert.equal(calls.length,1);assert.deepEqual(calls[0].slice(0,2),['script','turn_on']);assert.equal(calls[0][3].entity_id,'script.feed');
+});

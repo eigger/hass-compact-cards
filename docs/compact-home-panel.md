@@ -196,7 +196,7 @@ items:
 | `tap_action.perform_action` | `perform-action`일 때 필수. `domain.service` 형식의 서비스 이름 |
 | `tap_action.target` | `perform-action`의 선택 항목. Home Assistant 대상 객체. 생략하면 항목의 `entity` |
 | `tap_action.data` | `perform-action`의 선택 항목. 서비스 데이터 객체. 기본 빈 객체 |
-| `tap_action.confirmation` | `toggle`·`more-info` 이름 터치에서만 사용하는 선택 항목. 서비스 실행 버튼은 확인 없이 바로 실행 |
+| `tap_action.confirmation` | `toggle`·`more-info`에서만 사용하는 선택 항목. 서비스 실행 버튼은 확인 없이 바로 실행 |
 
 이 설정은 일반 항목 오른쪽에 `실행` 버튼을 추가합니다. `light` / `switch` / `select`의 일반 항목은 오른쪽 전용 제어가 우선하므로 별도의 서비스 실행 버튼을 추가하지 않습니다. `lock` 항목은 반대로 지정한 실행 버튼이 상태 버튼보다 우선합니다. `perform-action`에서 이름은 실행 버튼과 별도로 상세 정보를 엽니다.
 
