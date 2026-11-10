@@ -59,7 +59,7 @@ test('default and legacy perform-action labels retain more-info while dedicated 
  ],{'light.room':state('light.room','on'),'script.night':state('script.night','off'),'select.preset':state('select.preset','Eco',{options:['Eco','Comfort']})});
  for(const ref of card._refs)ref.label.click();await flush();assert.deepEqual(info,['light.room','script.night','select.preset']);assert.equal(calls.length,0);
  card._refs[0].control.click();await flush();assert.equal(calls[0][1],'toggle');
- card._refs[1].control.click();await flush();assert.deepEqual(calls[1].slice(0,2),['script','turn_on']);assert.equal(calls[1][4].entity_id,'script.other');assert.equal(calls[1][2].variables.mode,'quiet');
+ card._refs[1].control.click();await flush();assert.deepEqual(calls[1].slice(0,2),['script','turn_on']);assert.equal(calls[1][3].entity_id,'script.other');assert.equal(calls[1][2].variables.mode,'quiet');
  const select=card._refs[2].select;select.value='Comfort';select.onchange();await flush();assert.equal(calls[2][1],'select_option');assert.equal(calls[2][2].option,'Comfort');
 });
 
@@ -79,7 +79,7 @@ test('unsupported actions, invalid services and name-only toggles fail source co
 
 test('toggle ignores foreign targets and service data while always using the row entity',async t=>{
  const {card,calls}=setup(t,[{entity:'light.room',tap_action:{action:'toggle',target:{entity_id:'light.other'},data:{entity_id:'light.other',brightness_pct:1}}}],{'light.room':state('light.room','off'),'light.other':state('light.other','on')});
- card._refs[0].label.click();await flush();assert.equal(calls.length,1);assert.deepEqual(calls[0].slice(0,2),['homeassistant','toggle']);assert.equal(calls[0][2].entity_id,'light.room');assert.equal(calls[0][2].brightness_pct,undefined);assert.equal(calls[0][4],undefined);
+ card._refs[0].label.click();await flush();assert.equal(calls.length,1);assert.deepEqual(calls[0].slice(0,2),['homeassistant','toggle']);assert.equal(calls[0][2].entity_id,'light.room');assert.equal(calls[0][2].brightness_pct,undefined);assert.equal(calls[0][3],undefined);
 });
 
 test('more-info honors optional confirmation and name lookup without sending a service',async t=>{

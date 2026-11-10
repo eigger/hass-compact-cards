@@ -160,7 +160,7 @@ test('commands preserve Home Assistant target separately from service data', asy
   hass.states['button.test'] = state('button.test', '2026-10-30T00:00:00Z');
   element.hass = hass;
   await element._command(element._refs[0]);
-  assert.equal(calls[0][4].device_id, 'device-123');
+  assert.equal(calls[0][3].device_id, 'device-123');
   assert.equal(calls[0][2].device_id, undefined);
 });
 
