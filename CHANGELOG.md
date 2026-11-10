@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.11 — 2026-11-10
+
 - Service (`perform-action`) buttons on the home panel now run immediately without a confirmation popup, even when `tap_action.confirmation` is set; confirmation still applies to `toggle` and `more-info` name taps.
 
 ## 0.2.10 — 2026-11-10
