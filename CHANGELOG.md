@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.10 — 2026-11-10
+
 - Fix home panel `perform-action` buttons (e.g. `script.turn_on`, `button.press`) failing because `target` was not passed to Home Assistant; the configured `target`, or the row's entity by default, is now sent.
 
 ## 0.2.9 — 2026-11-07
